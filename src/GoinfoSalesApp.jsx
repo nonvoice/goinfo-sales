@@ -36,14 +36,27 @@ export default function App() {
   };
 
   const [customerForm, setCustomerForm] = useState(initialCustomerForm);
-  const [customerList, setCustomerList] = useState(mockCustomers); // 儲存所有客戶清單
+  const [customerList, setCustomerList] = useState([]); // 清空假資料
   const [searchTerm, setSearchTerm] = useState(''); // 搜尋關鍵字
   const [selectedCustomerCode, setSelectedCustomerCode] = useState(null); // 目前選中的客戶
 
-  // 模擬組件載入時，向 n8n 索取客戶清單 (未來可實作 GET API)
+  // --- 初始化：向 n8n 索取真實客戶清單 ---
   useEffect(() => {
-    // 這裡可以寫 fetch 呼叫取得資料庫清單，目前使用 mock 資料
-    // setCustomerList(dataFromAPI);
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/get-customers');
+        if (response.ok) {
+          const data = await response.json();
+          // 如果 n8n 傳回來的不是陣列（例如回傳空物件），要給空陣列以防報錯
+          setCustomerList(Array.isArray(data) ? data : []); 
+        } else {
+          console.error("無法取得客戶清單，狀態碼:", response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+      }
+    };
+    fetchCustomers();
   }, []);
 
   const handleCustomerChange = (e) => {
