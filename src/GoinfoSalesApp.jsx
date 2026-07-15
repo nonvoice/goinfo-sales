@@ -47,8 +47,18 @@ export default function App() {
         const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/get-customers');
         if (response.ok) {
           const data = await response.json();
-          // 如果 n8n 傳回來的不是陣列（例如回傳空物件），要給空陣列以防報錯
-          setCustomerList(Array.isArray(data) ? data : []); 
+          console.log("從 n8n 取得的資料:", data); // 新增這行，方便我們在瀏覽器 Console 除錯
+          
+          // 確保我們存入 setCustomerList 的一定是一個陣列
+          // n8n 有時會回傳直接的陣列，有時可能包在某個屬性裡，我們直接檢查它是不是陣列
+          if (Array.isArray(data)) {
+            setCustomerList(data);
+          } else if (data && data.data && Array.isArray(data.data)) {
+             setCustomerList(data.data);
+          } else {
+            console.warn("回傳的資料格式不是預期的陣列:", data);
+            setCustomerList([]);
+          }
         } else {
           console.error("無法取得客戶清單，狀態碼:", response.status);
         }
@@ -57,7 +67,7 @@ export default function App() {
       }
     };
     fetchCustomers();
-  }, []);
+  }, []); // 空陣列代表只在元件第一次掛載時執行
 
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
