@@ -16,14 +16,6 @@ const mockPricingRules = [
   { SystemId: 3, RuleType: 'MAINTENANCE', FirstUserPrice: 6000, AdditionalUserPrice: 1500 },
 ];
 
-// 模擬的客戶清單
-const mockCustomers = [
-  { Code: 'TC-1150701', Name: '晨翔建設開發股份有限公司', Ucode: '86836492', Boss: '楊傑翔', Contacter: '廖麗萍', Tel: '04-8929666', Fax: '04-8929922', Phone: '', Addr1: '台南市六甲區裕農路296巷22號', Addr2: '彰化縣北斗鎮德安巷9號', Email: 'hoxiang.tw@gmail.com', PayM: '1', State: '1', demoT: '2026-07-22', ContT: '2026-07-08', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
-  { Code: '12744907', Name: '勇志餐飲設備有限公司', Ucode: '12744907', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
-  { Code: '16431075', Name: '大潤發流通事業股份有限公司', Ucode: '16431075', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
-];
-
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('customer'); // 預設頁面改為客戶建檔
 
@@ -47,16 +39,31 @@ export default function App() {
         const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/get-customers');
         if (response.ok) {
           const data = await response.json();
-          console.log("從 n8n 取得的資料:", data); // 新增這行，方便我們在瀏覽器 Console 除錯
+          console.log("從 n8n 取得的資料完整結構:", data); 
           
-          // 確保我們存入 setCustomerList 的一定是一個陣列
-          // n8n 有時會回傳直接的陣列，有時可能包在某個屬性裡，我們直接檢查它是不是陣列
+          // --- 解析 n8n 回傳的各種可能結構 ---
           if (Array.isArray(data)) {
             setCustomerList(data);
           } else if (data && data.data && Array.isArray(data.data)) {
              setCustomerList(data.data);
+          } else if (data && typeof data === 'object') {
+            const arrayProperty = Object.values(data).find(val => Array.isArray(val));
+            if (arrayProperty) {
+              setCustomerList(arrayProperty);
+            } else if (Object.keys(data).length > 0 && typeof data[Object.keys(data)[0]] === 'object') {
+               const arrayFromObj = Object.values(data);
+               if(arrayFromObj.length > 0 && arrayFromObj[0].Code){
+                 setCustomerList(arrayFromObj);
+               } else {
+                 console.warn("無法從 Object 中解析出客戶陣列", data);
+                 setCustomerList([]);
+               }
+            } else {
+               console.warn("未知的 Object 結構", data);
+               setCustomerList([]);
+            }
           } else {
-            console.warn("回傳的資料格式不是預期的陣列:", data);
+            console.warn("完全無法辨識的回傳格式:", data);
             setCustomerList([]);
           }
         } else {
@@ -67,26 +74,23 @@ export default function App() {
       }
     };
     fetchCustomers();
-  }, []); // 空陣列代表只在元件第一次掛載時執行
+  }, []);
 
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setCustomerForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // 當使用者點擊左側列表的客戶時
-  const handleSelectCustomer = (customer) => {
-    setSelectedCustomerCode(customer.Code);
-    setCustomerForm(customer); // 將選中客戶的資料填入右側表單
-  };
-
-  // 點擊新增客戶按鈕
   const handleNewCustomer = () => {
-    setSelectedCustomerCode(null);
     setCustomerForm(initialCustomerForm);
+    setSelectedCustomerCode(null);
   };
 
-  // --- 串接 n8n API 儲存客戶資料 ---
+  const handleSelectCustomer = (customer) => {
+    setCustomerForm(customer);
+    setSelectedCustomerCode(customer.Code);
+  };
+
   const saveCustomer = async () => {
     if (!customerForm.Code) {
       alert("請輸入客戶代號");
@@ -105,16 +109,14 @@ export default function App() {
       if (response.ok) {
         alert('客戶資料已成功存入資料庫！');
         
-        // 樂觀更新前端清單 (假裝成功後直接更新畫面，省去再發一次 GET)
+        // 樂觀更新前端清單
         setCustomerList(prev => {
           const existingIndex = prev.findIndex(c => c.Code === customerForm.Code);
           if (existingIndex >= 0) {
-            // 更新現有
             const newList = [...prev];
             newList[existingIndex] = customerForm;
             return newList;
           } else {
-            // 新增
             return [customerForm, ...prev];
           }
         });
