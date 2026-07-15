@@ -32,6 +32,28 @@ export default function App() {
     setCustomerForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- 串接 n8n API 儲存客戶資料 ---
+  const saveCustomer = async () => {
+    try {
+      const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/save-customer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerForm) // 將前端的 state 轉成 JSON 送出
+      });
+      
+      if (response.ok) {
+        alert('客戶資料已成功存入資料庫！');
+      } else {
+        alert('儲存失敗，請檢查網路狀態。');
+      }
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      alert('發生錯誤，無法連線至 n8n 伺服器。');
+    }
+  };
+
   // --- 營建系統報價建檔 (New Quote) 的狀態 ---
   const [customerName, setCustomerName] = useState('');
   const [quoteItems, setQuoteItems] = useState([]);
@@ -79,7 +101,8 @@ export default function App() {
     return quoteItems.reduce((sum, item) => sum + calculateLineAmount(item), 0);
   }, [quoteItems]);
 
-  const handleSubmit = (actionType) => {
+  // --- 串接 n8n API 儲存報價單資料 ---
+  const handleSubmit = async (actionType) => {
     const payload = {
       action: actionType,
       customer: customerName,
@@ -91,7 +114,24 @@ export default function App() {
       })),
       totalAmount: totalAmount * 1.05
     };
-    alert(`[${actionType}] 已送出至 n8n 工作流！\n` + JSON.stringify(payload, null, 2));
+
+    try {
+      const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/save-quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert(`[${actionType}] 報價單已成功存入資料庫！`);
+        setQuoteItems([]); // 送出成功後清空明細
+      } else {
+        alert('報價單儲存失敗，請檢查網路狀態。');
+      }
+    } catch (error) {
+      console.error('Error saving quote:', error);
+      alert('發生錯誤，無法連線至 n8n 伺服器。');
+    }
   };
 
   
@@ -104,7 +144,7 @@ export default function App() {
           <p className="text-gray-500 text-sm mt-1">對應資料表：<code>dbo.Customer</code></p>
         </div>
         <button 
-          onClick={() => alert('客戶資料已準備好送出儲存！\n\n' + JSON.stringify(customerForm, null, 2))}
+          onClick={saveCustomer}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium shadow transition whitespace-nowrap"
         >
           儲存客戶資料
