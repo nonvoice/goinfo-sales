@@ -47,20 +47,26 @@ export default function App() {
           } else if (data && data.data && Array.isArray(data.data)) {
              setCustomerList(data.data);
           } else if (data && typeof data === 'object') {
-            const arrayProperty = Object.values(data).find(val => Array.isArray(val));
-            if (arrayProperty) {
-              setCustomerList(arrayProperty);
-            } else if (Object.keys(data).length > 0 && typeof data[Object.keys(data)[0]] === 'object') {
-               const arrayFromObj = Object.values(data);
-               if(arrayFromObj.length > 0 && arrayFromObj[0].Code){
-                 setCustomerList(arrayFromObj);
-               } else {
-                 console.warn("無法從 Object 中解析出客戶陣列", data);
-                 setCustomerList([]);
-               }
+            // 新增判斷：如果直接收到單筆客戶物件 (包含 Code 欄位)
+            if (data.Code !== undefined) {
+              console.log("偵測到單筆客戶物件，自動轉換為陣列");
+              setCustomerList([data]);
             } else {
-               console.warn("未知的 Object 結構", data);
-               setCustomerList([]);
+              const arrayProperty = Object.values(data).find(val => Array.isArray(val));
+              if (arrayProperty) {
+                setCustomerList(arrayProperty);
+              } else if (Object.keys(data).length > 0 && typeof data[Object.keys(data)[0]] === 'object') {
+                 const arrayFromObj = Object.values(data);
+                 if(arrayFromObj.length > 0 && arrayFromObj[0].Code){
+                   setCustomerList(arrayFromObj);
+                 } else {
+                   console.warn("無法從 Object 中解析出客戶陣列", data);
+                   setCustomerList([]);
+                 }
+              } else {
+                 console.warn("未知的 Object 結構", data);
+                 setCustomerList([]);
+              }
             }
           } else {
             console.warn("完全無法辨識的回傳格式:", data);
