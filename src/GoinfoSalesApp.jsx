@@ -16,35 +16,87 @@ const mockPricingRules = [
   { SystemId: 3, RuleType: 'MAINTENANCE', FirstUserPrice: 6000, AdditionalUserPrice: 1500 },
 ];
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('quote_new'); // 預設頁面
+// 模擬的客戶清單
+const mockCustomers = [
+  { Code: 'TC-1150701', Name: '晨翔建設開發股份有限公司', Ucode: '86836492', Boss: '楊傑翔', Contacter: '廖麗萍', Tel: '04-8929666', Fax: '04-8929922', Phone: '', Addr1: '台南市六甲區裕農路296巷22號', Addr2: '彰化縣北斗鎮德安巷9號', Email: 'hoxiang.tw@gmail.com', PayM: '1', State: '1', demoT: '2026-07-22', ContT: '2026-07-08', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
+  { Code: '12744907', Name: '勇志餐飲設備有限公司', Ucode: '12744907', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
+  { Code: '16431075', Name: '大潤發流通事業股份有限公司', Ucode: '16431075', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' },
+];
 
-  // --- 1. (潛在)客戶資料建檔的表單狀態 ---
-  const [customerForm, setCustomerForm] = useState({
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('customer'); // 預設頁面改為客戶建檔
+
+  // --- 1. (潛在)客戶資料建檔的表單與列表狀態 ---
+  const initialCustomerForm = {
     Code: '', Name: '', Ucode: '', Boss: '', Contacter: '',
     Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '',
-    Email: '', PayM: '1', State: '1', demoT: '', ContT: '',
+    Email: '', PayM: '0', State: '1', demoT: '', ContT: '',
     SetupT: '', Note: '', StateReason: '', PayMDetail: ''
-  });
+  };
+
+  const [customerForm, setCustomerForm] = useState(initialCustomerForm);
+  const [customerList, setCustomerList] = useState(mockCustomers); // 儲存所有客戶清單
+  const [searchTerm, setSearchTerm] = useState(''); // 搜尋關鍵字
+  const [selectedCustomerCode, setSelectedCustomerCode] = useState(null); // 目前選中的客戶
+
+  // 模擬組件載入時，向 n8n 索取客戶清單 (未來可實作 GET API)
+  useEffect(() => {
+    // 這裡可以寫 fetch 呼叫取得資料庫清單，目前使用 mock 資料
+    // setCustomerList(dataFromAPI);
+  }, []);
 
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     setCustomerForm(prev => ({ ...prev, [name]: value }));
   };
 
+  // 當使用者點擊左側列表的客戶時
+  const handleSelectCustomer = (customer) => {
+    setSelectedCustomerCode(customer.Code);
+    setCustomerForm(customer); // 將選中客戶的資料填入右側表單
+  };
+
+  // 點擊新增客戶按鈕
+  const handleNewCustomer = () => {
+    setSelectedCustomerCode(null);
+    setCustomerForm(initialCustomerForm);
+  };
+
   // --- 串接 n8n API 儲存客戶資料 ---
   const saveCustomer = async () => {
+    if (!customerForm.Code) {
+      alert("請輸入客戶代號");
+      return;
+    }
+
     try {
       const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/save-customer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(customerForm) // 將前端的 state 轉成 JSON 送出
+        body: JSON.stringify(customerForm) 
       });
       
       if (response.ok) {
         alert('客戶資料已成功存入資料庫！');
+        
+        // 樂觀更新前端清單 (假裝成功後直接更新畫面，省去再發一次 GET)
+        setCustomerList(prev => {
+          const existingIndex = prev.findIndex(c => c.Code === customerForm.Code);
+          if (existingIndex >= 0) {
+            // 更新現有
+            const newList = [...prev];
+            newList[existingIndex] = customerForm;
+            return newList;
+          } else {
+            // 新增
+            return [customerForm, ...prev];
+          }
+        });
+        setSelectedCustomerCode(customerForm.Code);
+
       } else {
         alert('儲存失敗，請檢查網路狀態。');
       }
@@ -54,11 +106,11 @@ export default function App() {
     }
   };
 
+
   // --- 營建系統報價建檔 (New Quote) 的狀態 ---
   const [customerName, setCustomerName] = useState('');
   const [quoteItems, setQuoteItems] = useState([]);
   
-  // 新增報價項目
   const addItem = (defaultType = 'NEW_LICENSE') => {
     setQuoteItems([...quoteItems, {
       id: Date.now(),
@@ -80,15 +132,12 @@ export default function App() {
 
   const calculateLineAmount = (item) => {
     if (!item.systemId) return 0;
-    
     const ruleType = item.itemType === 'MAINTENANCE' ? 'MAINTENANCE' : 'LICENSE';
     const rule = mockPricingRules.find(r => r.SystemId === parseInt(item.systemId) && r.RuleType === ruleType);
-    
     if (!rule) return 0;
 
     let amount = 0;
     const users = parseInt(item.userCount) || 0;
-
     if (item.itemType === 'NEW_LICENSE' || item.itemType === 'MAINTENANCE') {
       if (users >= 1) amount = rule.FirstUserPrice + ((users - 1) * rule.AdditionalUserPrice);
     } else if (item.itemType === 'ADD_USER') {
@@ -101,7 +150,6 @@ export default function App() {
     return quoteItems.reduce((sum, item) => sum + calculateLineAmount(item), 0);
   }, [quoteItems]);
 
-  // --- 串接 n8n API 儲存報價單資料 ---
   const handleSubmit = async (actionType) => {
     const payload = {
       action: actionType,
@@ -121,10 +169,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       if (response.ok) {
         alert(`[${actionType}] 報價單已成功存入資料庫！`);
-        setQuoteItems([]); // 送出成功後清空明細
+        setQuoteItems([]);
       } else {
         alert('報價單儲存失敗，請檢查網路狀態。');
       }
@@ -135,162 +182,232 @@ export default function App() {
   };
 
   
-  // 1. (潛在)客戶資料建檔
-  const renderCustomerForm = () => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">1. (潛在)客戶資料建檔</h2>
-          <p className="text-gray-500 text-sm mt-1">對應資料表：<code>dbo.Customer</code></p>
+  // 1. (潛在)客戶資料建檔 - Master/Detail 版面
+  const renderCustomerForm = () => {
+    // 過濾客戶清單
+    const filteredCustomers = customerList.filter(c => 
+      (c.Name && c.Name.includes(searchTerm)) || 
+      (c.Code && c.Code.includes(searchTerm))
+    );
+
+    return (
+      <div className="flex flex-col lg:flex-row h-full gap-4 max-h-[calc(100vh-3rem)]">
+        {/* 左側清單區塊 (Master) */}
+        <div className="w-full lg:w-1/3 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden shrink-0">
+          
+          <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col gap-3">
+             <div className="flex justify-between items-center">
+                <h3 className="font-bold text-gray-700">客戶清單</h3>
+                <button 
+                  onClick={handleNewCustomer}
+                  className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-md shadow-sm transition"
+                >
+                  + 新增客戶
+                </button>
+             </div>
+             
+             {/* 搜尋列 */}
+             <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="搜尋客戶代號或名稱..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <svg className="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+             </div>
+          </div>
+          
+          {/* 清單捲動區 */}
+          <div className="flex-1 overflow-y-auto">
+             <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-500 uppercase bg-gray-100 sticky top-0">
+                   <tr>
+                      <th className="px-3 py-2 border-b">客戶代號</th>
+                      <th className="px-3 py-2 border-b">客戶名稱</th>
+                   </tr>
+                </thead>
+                <tbody>
+                   {filteredCustomers.length === 0 ? (
+                      <tr>
+                        <td colSpan="2" className="text-center py-4 text-gray-400">找不到相符的客戶</td>
+                      </tr>
+                   ) : (
+                     filteredCustomers.map(c => (
+                        <tr 
+                          key={c.Code} 
+                          onClick={() => handleSelectCustomer(c)}
+                          className={`cursor-pointer border-b last:border-b-0 hover:bg-blue-50 transition-colors ${selectedCustomerCode === c.Code ? 'bg-blue-100 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}
+                        >
+                           <td className="px-3 py-2.5 font-medium">{c.Code}</td>
+                           <td className="px-3 py-2.5 truncate max-w-[150px]">{c.Name}</td>
+                        </tr>
+                     ))
+                   )}
+                </tbody>
+             </table>
+          </div>
         </div>
-        <button 
-          onClick={saveCustomer}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium shadow transition whitespace-nowrap"
-        >
-          儲存客戶資料
-        </button>
-      </div>
 
-      <div className="space-y-8">
-        {/* 基本資料 */}
-        <section>
-          <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">基本資料</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 右側詳細資料表單 (Detail) */}
+        <div className="w-full lg:w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 overflow-y-auto flex-1">
+          
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 sticky top-0 bg-white z-10 pb-4 border-b border-gray-100">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">客戶代號 (Code) <span className="text-red-500">*</span></label>
-              <input type="text" name="Code" value={customerForm.Code} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="如: CUST-001" />
+              <h2 className="text-xl font-bold text-gray-800">
+                {selectedCustomerCode ? '編輯客戶資料' : '新增客戶資料'}
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">對應資料表：<code>dbo.Customer</code></p>
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-600 mb-1">客戶名稱 (Name)</label>
-              <input type="text" name="Name" value={customerForm.Name} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入公司全名" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">統一編號 (Ucode)</label>
-              <input type="text" name="Ucode" value={customerForm.Ucode} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">負責人 (Boss)</label>
-              <input type="text" name="Boss" value={customerForm.Boss} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
+            <button 
+              onClick={saveCustomer}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium shadow transition whitespace-nowrap"
+            >
+              儲存客戶資料
+            </button>
           </div>
-        </section>
 
-        {/* 聯絡資訊 */}
-        <section>
-          <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">聯絡資訊</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">聯絡人 (Contacter)</label>
-              <input type="text" name="Contacter" value={customerForm.Contacter} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">聯絡電話 (Tel)</label>
-              <input type="text" name="Tel" value={customerForm.Tel} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">行動電話 (Phone)</label>
-              <input type="text" name="Phone" value={customerForm.Phone} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">傳真電話 (Fax)</label>
-              <input type="text" name="Fax" value={customerForm.Fax} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-600 mb-1">E-Mail (Email)</label>
-              <input type="email" name="Email" value={customerForm.Email} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="example@company.com" />
-            </div>
-          </div>
-        </section>
-
-        {/* 地址資訊 */}
-        <section>
-          <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">地址資訊</h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">發票地址 (Addr1)</label>
-              <input type="text" name="Addr1" value={customerForm.Addr1} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">通訊地址 (Addr2)</label>
-              <input type="text" name="Addr2" value={customerForm.Addr2} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-          </div>
-        </section>
-
-        {/* 狀態與歷程 */}
-        <section>
-          <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">狀態與歷程</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
-            {/* 銷售狀態與條件欄位 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">銷售狀態 (State)</label>
-              <select name="State" value={customerForm.State} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                <option value="1">1 - 潛在開發中</option>
-                <option value="2">2 - 已傳報價單</option>
-                <option value="3">3 - 議價中</option>
-                <option value="4">4 - 已簽約成交</option>
-                <option value="5">5 - 已安裝並完成教育訓練</option>
-                <option value="6">6 - 懸而未決</option>
-                <option value="7">7 - 未成案(未購買)</option>
-              </select>
-            </div>
-            {(customerForm.State === '6' || customerForm.State === '7') ? (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">懸而未決/未成案原因 <span className="text-red-500">*</span></label>
-                <input type="text" name="StateReason" value={customerForm.StateReason} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-red-50" placeholder="請詳細說明原因..." />
+          <div className="space-y-8">
+            {/* 基本資料 */}
+            <section>
+              <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">基本資料</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">客戶代號 (Code) <span className="text-red-500">*</span></label>
+                  <input type="text" name="Code" value={customerForm.Code} onChange={handleCustomerChange} disabled={!!selectedCustomerCode} className={`w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none ${selectedCustomerCode ? 'bg-gray-100 cursor-not-allowed' : ''}`} required placeholder="如: TC-1150701" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">客戶名稱 (Name)</label>
+                  <input type="text" name="Name" value={customerForm.Name} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入公司全名" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">統一編號 (Ucode)</label>
+                  <input type="text" name="Ucode" value={customerForm.Ucode} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">負責人 (Boss)</label>
+                  <input type="text" name="Boss" value={customerForm.Boss} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
-            ) : <div className="hidden md:block md:col-span-2"></div>}
+            </section>
 
-            {/* 付款方式與條件欄位 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">付款方式 (PayM)</label>
-              <select name="PayM" value={customerForm.PayM} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                <option value="1">1 - 現金</option>
-                <option value="2">2 - 匯款</option>
-                <option value="3">3 - 支票</option>
-                <option value="4">4 - 分期支付(匯款)</option>
-                <option value="5">5 - 分期支付(支票)</option>
-                <option value="6">6 - 多管道付款</option>
-              </select>
-            </div>
-            {customerForm.PayM === '6' ? (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">多管道付款方式說明 <span className="text-blue-500">*</span></label>
-                <input type="text" name="PayMDetail" value={customerForm.PayMDetail} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50" placeholder="請說明詳細的付款拆分方式..." />
+            {/* 聯絡資訊 */}
+            <section>
+              <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">聯絡資訊</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">聯絡人 (Contacter)</label>
+                  <input type="text" name="Contacter" value={customerForm.Contacter} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">聯絡電話 (Tel)</label>
+                  <input type="text" name="Tel" value={customerForm.Tel} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">行動電話 (Phone)</label>
+                  <input type="text" name="Phone" value={customerForm.Phone} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">傳真電話 (Fax)</label>
+                  <input type="text" name="Fax" value={customerForm.Fax} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">E-Mail (Email)</label>
+                  <input type="email" name="Email" value={customerForm.Email} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="example@company.com" />
+                </div>
               </div>
-            ) : <div className="hidden md:block md:col-span-2"></div>}
-            
-            {/* 日期區塊 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">展示日期 (demoT)</label>
-              <input type="date" name="demoT" value={customerForm.demoT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">最後聯絡日期 (ContT)</label>
-              <input type="date" name="ContT" value={customerForm.ContT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">安裝日期 (SetupT)</label>
-              <input type="date" name="SetupT" value={customerForm.SetupT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* 備註 */}
-        <section>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">備註 (Note)</label>
-              <textarea name="Note" value={customerForm.Note} onChange={handleCustomerChange} rows="3" className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-            </div>
+            {/* 地址資訊 */}
+            <section>
+              <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">地址資訊</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">發票地址 (Addr1)</label>
+                  <input type="text" name="Addr1" value={customerForm.Addr1} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">通訊地址 (Addr2)</label>
+                  <input type="text" name="Addr2" value={customerForm.Addr2} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+            </section>
+
+            {/* 狀態與歷程 */}
+            <section>
+              <h3 className="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">狀態與歷程</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">銷售狀態 (State)</label>
+                  <select name="State" value={customerForm.State} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <option value="1">1 - 潛在開發中</option>
+                    <option value="2">2 - 已傳報價單</option>
+                    <option value="3">3 - 議價中</option>
+                    <option value="4">4 - 已簽約成交</option>
+                    <option value="5">5 - 已安裝並完成教育訓練</option>
+                    <option value="6">6 - 懸而未決</option>
+                    <option value="7">7 - 未成案(未購買)</option>
+                  </select>
+                </div>
+                {(customerForm.State === '6' || customerForm.State === '7') ? (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">懸而未決/未成案原因 <span className="text-red-500">*</span></label>
+                    <input type="text" name="StateReason" value={customerForm.StateReason} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-red-50" placeholder="請詳細說明原因..." />
+                  </div>
+                ) : <div className="hidden md:block md:col-span-2"></div>}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">付款方式 (PayM)</label>
+                  <select name="PayM" value={customerForm.PayM} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    <option value="0">0 - 尚未確認</option>
+                    <option value="1">1 - 現金</option>
+                    <option value="2">2 - 匯款</option>
+                    <option value="3">3 - 支票</option>
+                    <option value="4">4 - 分期支付(匯款)</option>
+                    <option value="5">5 - 分期支付(支票)</option>
+                    <option value="6">6 - 多管道付款</option>
+                  </select>
+                </div>
+                {customerForm.PayM === '6' ? (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">多管道付款方式說明 <span className="text-blue-500">*</span></label>
+                    <input type="text" name="PayMDetail" value={customerForm.PayMDetail} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50" placeholder="請說明詳細的付款拆分方式..." />
+                  </div>
+                ) : <div className="hidden md:block md:col-span-2"></div>}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">展示日期 (demoT)</label>
+                  <input type="date" name="demoT" value={customerForm.demoT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">最後聯絡日期 (ContT)</label>
+                  <input type="date" name="ContT" value={customerForm.ContT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">安裝日期 (SetupT)</label>
+                  <input type="date" name="SetupT" value={customerForm.SetupT} onChange={handleCustomerChange} className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+            </section>
+
+            {/* 備註 */}
+            <section>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">備註 (Note)</label>
+                  <textarea name="Note" value={customerForm.Note} onChange={handleCustomerChange} rows="3" className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  // 2. 營建系統報價建檔 (共用的報價介面，可傳入預設類型)
+  // 2. 營建系統報價建檔 (共用的報價介面)
   const renderQuotationForm = (title, defaultItemType, actionType) => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
        <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
@@ -357,17 +474,16 @@ export default function App() {
     </div>
   );
 
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row font-sans">
+    <div className="h-screen bg-gray-100 flex flex-col md:flex-row font-sans overflow-hidden">
       
       {/* 左側 Sidebar 導覽列 */}
-      <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0">
+      <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0 z-20">
         <div className="p-6 bg-gray-950 border-b border-gray-800">
           <h1 className="text-xl font-bold text-blue-400">高益營建軟體</h1>
           <div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div>
         </div>
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto">
           <button onClick={() => setActiveTab('customer')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'customer' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             1. (潛在)客戶資料建檔
           </button>
@@ -390,8 +506,8 @@ export default function App() {
       </div>
 
       {/* 右側主內容區 */}
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-5xl mx-auto">
+      <div className="flex-1 p-6 overflow-y-auto bg-gray-100">
+        <div className="max-w-7xl mx-auto h-full">
           {activeTab === 'customer' && renderCustomerForm()}
           {activeTab === 'quote_new' && renderQuotationForm('2. 營建系統報價建檔 (新購)', 'NEW_LICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'sales_track' && renderSalesTracking()}
