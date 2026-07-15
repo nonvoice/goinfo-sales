@@ -77,10 +77,24 @@ export default function App() {
     setSelectedCustomerCode(null);
   };
 
-  const handleSelectCustomer = (customer) => {
-    setCustomerForm(customer);
-    setSelectedCustomerCode(customer.Code);
-  };
+const formatDateForInput = (value) => {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+};
+
+const handleSelectCustomer = (customer) => {
+  setCustomerForm({
+    ...initialCustomerForm,
+    ...customer,
+    PayM: String(customer.PayM ?? 0),
+    State: String(customer.State ?? 1),
+    demoT: formatDateForInput(customer.demoT),
+    ContT: formatDateForInput(customer.ContT),
+    SetupT: formatDateForInput(customer.SetupT),
+  });
+
+  setSelectedCustomerCode(customer.Code);
+};
 
   const saveCustomer = async () => {
   if (!customerForm.Code?.trim()) {
