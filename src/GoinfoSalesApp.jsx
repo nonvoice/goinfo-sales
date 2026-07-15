@@ -39,41 +39,19 @@ export default function App() {
         const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/get-customers');
         if (response.ok) {
           const data = await response.json();
-          console.log("從 n8n 取得的資料完整結構:", data); 
           
-          // --- 解析 n8n 回傳的各種可能結構 ---
+          let list = [];
           if (Array.isArray(data)) {
-            setCustomerList(data);
+            list = data;
           } else if (data && data.data && Array.isArray(data.data)) {
-             setCustomerList(data.data);
-          } else if (data && typeof data === 'object') {
-            // 新增判斷：如果直接收到單筆客戶物件 (包含 Code 欄位)
-            if (data.Code !== undefined) {
-              console.log("偵測到單筆客戶物件，自動轉換為陣列");
-              setCustomerList([data]);
-            } else {
-              const arrayProperty = Object.values(data).find(val => Array.isArray(val));
-              if (arrayProperty) {
-                setCustomerList(arrayProperty);
-              } else if (Object.keys(data).length > 0 && typeof data[Object.keys(data)[0]] === 'object') {
-                 const arrayFromObj = Object.values(data);
-                 if(arrayFromObj.length > 0 && arrayFromObj[0].Code){
-                   setCustomerList(arrayFromObj);
-                 } else {
-                   console.warn("無法從 Object 中解析出客戶陣列", data);
-                   setCustomerList([]);
-                 }
-              } else {
-                 console.warn("未知的 Object 結構", data);
-                 setCustomerList([]);
-              }
-            }
+            list = data.data;
+          } else if (data && typeof data === 'object' && data.Code !== undefined) {
+            list = [data];
           } else {
-            console.warn("完全無法辨識的回傳格式:", data);
-            setCustomerList([]);
+            const arrayProperty = Object.values(data).find(val => Array.isArray(val));
+            list = arrayProperty || [];
           }
-        } else {
-          console.error("無法取得客戶清單，狀態碼:", response.status);
+          setCustomerList(list);
         }
       } catch (error) {
         console.error('Error fetching customers:', error);
@@ -81,6 +59,13 @@ export default function App() {
     };
     fetchCustomers();
   }, []);
+
+  // --- 自動預設選取第一筆資料 ---
+  useEffect(() => {
+    if (customerList.length > 0 && !selectedCustomerCode) {
+      handleSelectCustomer(customerList[0]);
+    }
+  }, [customerList]);
 
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
@@ -98,43 +83,23 @@ export default function App() {
   };
 
   const saveCustomer = async () => {
-    if (!customerForm.Code) {
-      alert("請輸入客戶代號");
-      return;
-    }
-
+    if (!customerForm.Code) { alert("請輸入客戶代號"); return; }
     try {
       const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/save-customer', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customerForm) 
       });
-      
       if (response.ok) {
         alert('客戶資料已成功存入資料庫！');
-        
-        // 樂觀更新前端清單
         setCustomerList(prev => {
-          const existingIndex = prev.findIndex(c => c.Code === customerForm.Code);
-          if (existingIndex >= 0) {
-            const newList = [...prev];
-            newList[existingIndex] = customerForm;
-            return newList;
-          } else {
-            return [customerForm, ...prev];
-          }
+          const idx = prev.findIndex(c => c.Code === customerForm.Code);
+          if (idx >= 0) { const l = [...prev]; l[idx] = customerForm; return l; }
+          return [customerForm, ...prev];
         });
         setSelectedCustomerCode(customerForm.Code);
-
-      } else {
-        alert('儲存失敗，請檢查網路狀態。');
-      }
-    } catch (error) {
-      console.error('Error saving customer:', error);
-      alert('發生錯誤，無法連線至 n8n 伺服器。');
-    }
+      } else { alert('儲存失敗'); }
+    } catch (error) { alert('發生錯誤'); }
   };
 
 
