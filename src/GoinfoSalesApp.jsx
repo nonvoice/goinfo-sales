@@ -1,236 +1,111 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-// === 模擬資料庫資料 (未來由 n8n Webhook 提供) ===
-const mockSystems = [
-  { SystemId: 1, SystemCode: 'ERP01', SystemName: '營建ERP主系統', Category: '核心系統' },
-  { SystemId: 2, SystemCode: 'EST01', SystemName: '發包計價模組', Category: '工程管理' },
-  { SystemId: 3, SystemCode: 'HR01', SystemName: '出勤計薪模組', Category: '人事管理' }
-];
-
-const mockPricingRules = [
-  { SystemId: 1, RuleType: 'LICENSE', FirstUserPrice: 100000, AdditionalUserPrice: 20000 },
-  { SystemId: 1, RuleType: 'MAINTENANCE', FirstUserPrice: 15000, AdditionalUserPrice: 3000 },
-  { SystemId: 2, RuleType: 'LICENSE', FirstUserPrice: 60000, AdditionalUserPrice: 15000 },
-  { SystemId: 2, RuleType: 'MAINTENANCE', FirstUserPrice: 9000, AdditionalUserPrice: 2000 },
-  { SystemId: 3, RuleType: 'LICENSE', FirstUserPrice: 40000, AdditionalUserPrice: 10000 },
-  { SystemId: 3, RuleType: 'MAINTENANCE', FirstUserPrice: 6000, AdditionalUserPrice: 1500 },
-];
+const API_BASE = 'https://goinfosales-n8n.zeabur.app/webhook';
+const initialSystemForm = { SystemId: '', SystemCode: '', SystemName: '', Category: '', IsActive: true, Note: '' };
+const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', VersionNo: 1, EffectiveStartDate: new Date().toISOString().slice(0, 10), EffectiveEndDate: '', FirstUserPrice: '', AdditionalUserPrice: '', MinimumUsers: 1, IsActive: true, Remark: '' };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('customer'); // 預設頁面改為客戶建檔
+  const [activeTab, setActiveTab] = useState('customer');
+  const [systemList, setSystemList] = useState([]);
+  const [pricingRuleList, setPricingRuleList] = useState([]);
+  const [systemForm, setSystemForm] = useState(initialSystemForm);
+  const [ruleForm, setRuleForm] = useState(initialRuleForm);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(sessionStorage.getItem('goinfo_admin_token') !== null);
+  const [adminToken, setAdminToken] = useState(sessionStorage.getItem('goinfo_admin_token') || '');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminLoginForm, setAdminLoginForm] = useState({ username: 'admin', password: '' });
+  const [adminLoginError, setAdminLoginError] = useState('');
+  const [pressTimer, setPressTimer] = useState(null);
 
-  // --- 1. (潛在)客戶資料建檔的表單與列表狀態 ---
-  const initialCustomerForm = {
-    Code: '', Name: '', Ucode: '', Boss: '', Contacter: '',
-    Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '',
-    Email: '', PayM: '0', State: '1', demoT: '', ContT: '',
-    SetupT: '', Note: '', StateReason: '', PayMDetail: ''
-  };
-
+  const initialCustomerForm = { Code: '', Name: '', Ucode: '', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' };
   const [customerForm, setCustomerForm] = useState(initialCustomerForm);
-  const [customerList, setCustomerList] = useState([]); // 清空假資料
-  const [searchTerm, setSearchTerm] = useState(''); // 搜尋關鍵字
-  const [selectedCustomerCode, setSelectedCustomerCode] = useState(null); // 目前選中的客戶
-
-  // --- 初始化：向 n8n 索取真實客戶清單 ---
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/get-customers');
-        if (response.ok) {
-          const data = await response.json();
-          
-          let list = [];
-          if (Array.isArray(data)) {
-            list = data;
-          } else if (data && data.data && Array.isArray(data.data)) {
-            list = data.data;
-          } else if (data && typeof data === 'object' && data.Code !== undefined) {
-            list = [data];
-          } else {
-            const arrayProperty = Object.values(data).find(val => Array.isArray(val));
-            list = arrayProperty || [];
-          }
-          setCustomerList(list);
-        }
-      } catch (error) {
-        console.error('Error fetching customers:', error);
-      }
-    };
-    fetchCustomers();
-  }, []);
-
-  // --- 自動預設選取第一筆資料 ---
-  useEffect(() => {
-    if (customerList.length > 0 && !selectedCustomerCode) {
-      handleSelectCustomer(customerList[0]);
-    }
-  }, [customerList]);
-
-  const handleCustomerChange = (e) => {
-    const { name, value } = e.target;
-    setCustomerForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleNewCustomer = () => {
-    setCustomerForm(initialCustomerForm);
-    setSelectedCustomerCode(null);
-  };
-
-const formatDateForInput = (value) => {
-  if (!value) return '';
-  return String(value).slice(0, 10);
-};
-
-const handleSelectCustomer = (customer) => {
-  setCustomerForm({
-    ...initialCustomerForm,
-    ...customer,
-    PayM: String(customer.PayM ?? 0),
-    State: String(customer.State ?? 1),
-    demoT: formatDateForInput(customer.demoT),
-    ContT: formatDateForInput(customer.ContT),
-    SetupT: formatDateForInput(customer.SetupT),
-  });
-
-  setSelectedCustomerCode(customer.Code);
-};
-
-  const saveCustomer = async () => {
-  if (!customerForm.Code?.trim()) {
-    alert('請輸入客戶代號');
-    return;
-  }
-
-  const toNullableDate = (value) => {
-    return value && value.trim() !== '' ? value : null;
-  };
-
-  const payload = {
-    ...customerForm,
-    Code: customerForm.Code.trim(),
-    Name: customerForm.Name?.trim() || '',
-    PayM: Number(customerForm.PayM) || 0,
-    State: Number(customerForm.State) || 1,
-    demoT: toNullableDate(customerForm.demoT),
-    ContT: toNullableDate(customerForm.ContT),
-    SetupT: toNullableDate(customerForm.SetupT),
-  };
-
-  try {
-    const response = await fetch(
-      'https://goinfosales-n8n.zeabur.app/webhook/save-customer',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('儲存客戶失敗：', errorText);
-      alert(`儲存失敗：${errorText || response.status}`);
-      return;
-    }
-
-    alert('客戶資料已成功存入資料庫！');
-
-    setCustomerList((prev) => {
-      const idx = prev.findIndex((c) => c.Code === payload.Code);
-
-      if (idx >= 0) {
-        const list = [...prev];
-        list[idx] = payload;
-        return list;
-      }
-
-      return [payload, ...prev];
-    });
-
-    setSelectedCustomerCode(payload.Code);
-  } catch (error) {
-    console.error('儲存客戶發生錯誤：', error);
-    alert('發生錯誤，無法連線至 n8n 伺服器。');
-  }
-};
-
-
-  // --- 營建系統報價建檔 (New Quote) 的狀態 ---
-  const [customerName, setCustomerName] = useState('');
+  const [customerList, setCustomerList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCustomerCode, setSelectedCustomerCode] = useState(null);
+  const [customerCode, setCustomerCode] = useState('');
   const [quoteItems, setQuoteItems] = useState([]);
-  
-  const addItem = (defaultType = 'NEW_LICENSE') => {
-    setQuoteItems([...quoteItems, {
-      id: Date.now(),
-      systemId: '',
-      itemType: defaultType, 
-      userCount: 1,
-    }]);
-  };
 
-  const updateItem = (id, field, value) => {
-    setQuoteItems(quoteItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeItem = (id) => {
-    setQuoteItems(quoteItems.filter(item => item.id !== id));
-  };
-
-  const calculateLineAmount = (item) => {
-    if (!item.systemId) return 0;
-    const ruleType = item.itemType === 'MAINTENANCE' ? 'MAINTENANCE' : 'LICENSE';
-    const rule = mockPricingRules.find(r => r.SystemId === parseInt(item.systemId) && r.RuleType === ruleType);
-    if (!rule) return 0;
-
-    let amount = 0;
-    const users = parseInt(item.userCount) || 0;
-    if (item.itemType === 'NEW_LICENSE' || item.itemType === 'MAINTENANCE') {
-      if (users >= 1) amount = rule.FirstUserPrice + ((users - 1) * rule.AdditionalUserPrice);
-    } else if (item.itemType === 'ADD_USER') {
-      amount = users * rule.AdditionalUserPrice;
-    }
-    return amount;
-  };
-
-  const totalAmount = useMemo(() => {
-    return quoteItems.reduce((sum, item) => sum + calculateLineAmount(item), 0);
-  }, [quoteItems]);
-
-  const handleSubmit = async (actionType) => {
-    const payload = {
-      action: actionType,
-      customer: customerName,
-      items: quoteItems.map(item => ({
-        systemId: item.systemId,
-        itemType: item.itemType,
-        userCount: item.userCount,
-        lineAmount: calculateLineAmount(item)
-      })),
-      totalAmount: totalAmount * 1.05
-    };
-
+  const normalizeList = (data) => Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : (data && typeof data === 'object' ? Object.values(data).find(Array.isArray) || [data] : []);
+  const getApiList = async (url) => { const res = await fetch(url); if (!res.ok) throw new Error(String(res.status)); return normalizeList(await res.json()); };
+  const loadCustomers = async () => { try { setCustomerList(await getApiList(`${API_BASE}/get-customers`)); } catch (e) { console.error('讀取客戶失敗', e); } };
+  // 使用既有 get-systems 工作流；回傳格式必須是 { systems: [...], rules: [...] }。
+  const loadSystemSettings = async () => {
     try {
-      const response = await fetch('https://goinfosales-n8n.zeabur.app/webhook/save-quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        alert(`[${actionType}] 報價單已成功存入資料庫！`);
-        setQuoteItems([]);
-      } else {
-        alert('報價單儲存失敗，請檢查網路狀態。');
-      }
-    } catch (error) {
-      console.error('Error saving quote:', error);
-      alert('發生錯誤，無法連線至 n8n 伺服器。');
+      const response = await fetch(`${API_BASE}/get-systems`);
+      if (!response.ok) throw new Error(String(response.status));
+      const raw = await response.json();
+      const data = Array.isArray(raw) ? (raw[0] || {}) : raw;
+      setSystemList(Array.isArray(data.systems) ? data.systems : []);
+      setPricingRuleList(Array.isArray(data.rules) ? data.rules : []);
+    } catch (e) {
+      console.error('讀取系統設定失敗', e);
+      setSystemList([]);
+      setPricingRuleList([]);
     }
   };
+  useEffect(() => { loadCustomers(); loadSystemSettings(); }, []);
+  useEffect(() => { if (customerList.length && !selectedCustomerCode) handleSelectCustomer(customerList[0]); }, [customerList]);
 
-  
+  const formatDateForInput = (v) => v ? String(v).slice(0, 10) : '';
+  const handleCustomerChange = (e) => setCustomerForm(p => ({ ...p, [e.target.name]: e.target.value }));
+  const handleNewCustomer = () => { setCustomerForm(initialCustomerForm); setSelectedCustomerCode(null); };
+  const handleSelectCustomer = (customer) => { setCustomerForm({ ...initialCustomerForm, ...customer, PayM: String(customer.PayM ?? 0), State: String(customer.State ?? 1), demoT: formatDateForInput(customer.demoT), ContT: formatDateForInput(customer.ContT), SetupT: formatDateForInput(customer.SetupT) }); setSelectedCustomerCode(customer.Code); };
+  const saveCustomer = async () => { if (!customerForm.Code?.trim()) return alert('請輸入客戶代號'); const payload = { ...customerForm, Code: customerForm.Code.trim(), Name: customerForm.Name?.trim() || '', PayM: Number(customerForm.PayM) || 0, State: Number(customerForm.State) || 1, demoT: customerForm.demoT || null, ContT: customerForm.ContT || null, SetupT: customerForm.SetupT || null }; try { const res = await fetch(`${API_BASE}/save-customer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(await res.text()); setCustomerList(prev => { const i=prev.findIndex(c=>c.Code===payload.Code); return i < 0 ? [payload,...prev] : prev.map((c,n)=>n===i?payload:c); }); setSelectedCustomerCode(payload.Code); alert('客戶資料已成功存入資料庫！'); } catch (e) { console.error(e); alert('儲存客戶失敗。'); } };
+
+  const handleAdminLogin = async (e) => { e.preventDefault(); setAdminLoginError(''); try { const res = await fetch(`${API_BASE}/admin-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(adminLoginForm) }); const data = await res.json(); if (!res.ok || !data?.success) return setAdminLoginError(data?.message || '帳號或密碼錯誤'); const token=data.token || `admin-${Date.now()}`; sessionStorage.setItem('goinfo_admin_token', token); setAdminToken(token); setIsAdminLoggedIn(true); setShowAdminLogin(false); setAdminLoginForm({username:'admin',password:''}); setActiveTab('system_settings'); } catch(e) { setAdminLoginError('無法連線至後台驗證服務'); } };
+  const handleAdminLogout = () => { sessionStorage.removeItem('goinfo_admin_token'); setAdminToken(''); setIsAdminLoggedIn(false); setActiveTab('customer'); };
+  const authorizedPost = async (path, payload) => fetch(`${API_BASE}/${path}`, { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${adminToken}`}, body:JSON.stringify(payload) });
+  const saveSystem = async () => { if (!systemForm.SystemCode.trim() || !systemForm.SystemName.trim()) return alert('請填寫系統代號及系統名稱'); try { const r=await authorizedPost('save-system-product', {...systemForm, IsActive:!!systemForm.IsActive}); if(!r.ok) throw new Error(); await loadSystemSettings(); setSystemForm(initialSystemForm); alert('系統資料已儲存'); } catch(e){ alert('系統資料儲存失敗'); } };
+  const saveRule = async () => { if (!ruleForm.SystemId || ruleForm.FirstUserPrice === '' || ruleForm.AdditionalUserPrice === '') return alert('請填寫系統、首位價格及增購單價'); try { const r=await authorizedPost('save-pricing-rule', {...ruleForm, SystemId:Number(ruleForm.SystemId), VersionNo:Number(ruleForm.VersionNo)||1, FirstUserPrice:Number(ruleForm.FirstUserPrice), AdditionalUserPrice:Number(ruleForm.AdditionalUserPrice), MinimumUsers:Number(ruleForm.MinimumUsers)||1, IsActive:!!ruleForm.IsActive, EffectiveEndDate:ruleForm.EffectiveEndDate||null}); if(!r.ok) throw new Error(); await loadSystemSettings(); setRuleForm(initialRuleForm); alert('價格規則已儲存'); } catch(e){ alert('價格規則儲存失敗'); } };
+
+  const addItem = (itemType='NEW_LICENSE') => setQuoteItems(p => [...p, { id:`${Date.now()}-${Math.random()}`, systemId:'', itemType, userCount:1, discountRate:100, specialPrice:'' }]);
+  const updateItem = (id, field, value) => setQuoteItems(p => p.map(x => x.id===id ? {...x,[field]:value} : x));
+  const removeItem = (id) => setQuoteItems(p => p.filter(x => x.id !== id));
+  const getEffectivePricingRule = (systemId, itemType) => { const today=new Date().toISOString().slice(0,10), type=itemType==='MAINTENANCE'?'MAINTENANCE':'LICENSE'; return pricingRuleList.filter(r => Number(r.SystemId)===Number(systemId) && r.RuleType===type && (r.IsActive===true || r.IsActive===1 || r.IsActive==='true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10)<=today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10)>=today)).sort((a,b)=>String(b.EffectiveStartDate||'').localeCompare(String(a.EffectiveStartDate||'')))[0]; };
+  const calculateListAmount = (item) => { const rule=getEffectivePricingRule(item.systemId,item.itemType); if(!rule) return 0; const users=Math.max(Number(item.userCount)||0,0), first=Number(rule.FirstUserPrice)||0, add=Number(rule.AdditionalUserPrice)||0; return item.itemType==='ADD_USER' ? users*add : users>=1 ? first+(users-1)*add : 0; };
+  const getDiscountPercent = (item) => Math.min(Math.max(Number(item.discountRate) || 100, 0), 100);
+  const calculateTaxIncludedListAmount = (item) => Math.round(calculateListAmount(item) * 1.05);
+  // Discount 表示「幾折」：80 代表 8 折（80%）；DiscountAmount 為含稅牌價乘折數後的含稅金額。
+  const calculateDiscountAmount = (item) => Math.round(calculateTaxIncludedListAmount(item) * (getDiscountPercent(item) / 100));
+  // FinalAmount 為含稅折後金額再行議價的最終含稅價格；未填時採用 DiscountAmount。
+  const hasFinalAmount = (item) => item.specialPrice !== '' && Number.isFinite(Number(item.specialPrice)) && Number(item.specialPrice) >= 0;
+  const calculateFinalTaxIncludedAmount = (item) => hasFinalAmount(item) ? Math.round(Number(item.specialPrice)) : calculateDiscountAmount(item);
+  const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
+  const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; return {listAmount,taxIncludedListAmount,discountAmount,taxExcludedAmount,taxAmount,taxIncludedAmount}; }, [quoteItems, pricingRuleList]);
+  const handleSubmit = async (action) => {
+    if (!customerCode) return alert('請先選擇客戶');
+    if (!quoteItems.length || quoteItems.some(x => !x.systemId)) return alert('請至少新增一筆完整的系統報價明細');
+    const customer = customerList.find(c => String(c.CustomerId) === String(customerCode));
+    if (!customer?.CustomerId) return alert('客戶資料缺少 CustomerId，請先依下方說明更新 get-customers 工作流。');
+    const quoteNo = `Q${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}${String(Date.now()).slice(-3)}`;
+    const payload = {
+      action,
+      quoteNo,
+      customerId: Number(customer.CustomerId),
+      customerCode: customer.Code,
+      customerName: customer.Name || '',
+      taxRate: 0.05,
+      listAmount: quoteSummary.listAmount,
+      discountAmount: quoteSummary.discountAmount,
+      taxExcludedAmount: quoteSummary.taxExcludedAmount,
+      taxAmount: quoteSummary.taxAmount,
+      taxIncludedAmount: quoteSummary.taxIncludedAmount,
+      totalAmount: quoteSummary.taxIncludedAmount,
+      items: quoteItems.map(x => ({
+        systemId: Number(x.systemId), itemType: x.itemType, userCount: Number(x.userCount),
+        listAmount: calculateListAmount(x),
+        discount: Number(x.discountRate) || 0,
+        discountRate: Number(x.discountRate) || 0,
+        discountAmount: calculateDiscountAmount(x),
+        specialPrice: x.specialPrice === '' ? null : Number(x.specialPrice),
+        finalAmount: hasFinalAmount(x) ? calculateFinalTaxIncludedAmount(x) : null,
+        taxExcludedAmount: calculateLineAmount(x),
+        lineAmount: calculateLineAmount(x)
+      }))
+    };
+    try { const r = await fetch(`${API_BASE}/save-quote`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if(!r.ok) throw new Error(); alert(`[${action}] 報價單已成功存入資料庫！`); setQuoteItems([]); } catch(e) { alert('報價單儲存失敗，請檢查網路狀態。'); }
+  };
+
   // 1. (潛在)客戶資料建檔 - Master/Detail 版面
   const renderCustomerForm = () => {
     // 過濾客戶清單
@@ -456,54 +331,17 @@ const handleSelectCustomer = (customer) => {
     );
   }
 
-  // 2. 營建系統報價建檔 (共用的報價介面)
   const renderQuotationForm = (title, defaultItemType, actionType) => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-       <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
-       
-       <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">選擇客戶</label>
-          <input type="text" className="w-full border border-gray-300 rounded-lg p-2" placeholder="請輸入或選擇客戶..." value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-       </div>
-
-       <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-gray-800">報價明細</h3>
-          <button onClick={() => addItem(defaultItemType)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
-            + 新增模組
-          </button>
-       </div>
-
-       <div className="space-y-4 mb-6">
-          {quoteItems.length === 0 && <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">尚無項目</div>}
-          {quoteItems.map(item => (
-            <div key={item.id} className="flex gap-4 items-center bg-gray-50 p-4 rounded-lg border">
-              <select className="flex-1 border p-2 rounded" value={item.systemId} onChange={(e) => updateItem(item.id, 'systemId', e.target.value)}>
-                <option value="">選擇系統</option>
-                {mockSystems.map(sys => <option key={sys.SystemId} value={sys.SystemId}>{sys.SystemName}</option>)}
-              </select>
-              <select className="flex-1 border p-2 rounded" value={item.itemType} onChange={(e) => updateItem(item.id, 'itemType', e.target.value)}>
-                <option value="NEW_LICENSE">新購授權</option>
-                <option value="ADD_USER">增設授權</option>
-                <option value="MAINTENANCE">維護費</option>
-              </select>
-              <input type="number" min="1" className="w-24 border p-2 rounded text-right" value={item.userCount} onChange={(e) => updateItem(item.id, 'userCount', e.target.value)} />
-              <div className="w-32 text-right font-bold text-blue-600">${calculateLineAmount(item).toLocaleString()}</div>
-              <button onClick={() => removeItem(item.id)} className="text-red-500">X</button>
-            </div>
-          ))}
-       </div>
-
-       {quoteItems.length > 0 && (
-         <div className="border-t pt-4 text-right">
-           <div className="text-gray-600">未稅: ${totalAmount.toLocaleString()}</div>
-           <div className="text-xl font-bold mt-2">含稅總計: ${(totalAmount * 1.05).toLocaleString()}</div>
-           <button onClick={() => handleSubmit(actionType)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow">
-             產生並存檔
-           </button>
-         </div>
-       )}
+      <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
+      <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">選擇客戶</label><select className="w-full border border-gray-300 rounded-lg p-2 bg-white" value={customerCode} onChange={e=>setCustomerCode(e.target.value)}><option value="">請選擇客戶</option>{customerList.map(c=><option key={c.Code} value={c.CustomerId}>{c.Code}－{c.Name}</option>)}</select></div>
+      <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800">報價明細</h3><button onClick={()=>addItem(defaultItemType)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">+ 新增模組</button></div>
+      <div className="space-y-4 mb-6">{quoteItems.length===0 && <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">尚無項目</div>}{quoteItems.map(item=><div key={item.id} className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"><div className="lg:col-span-3"><label className="text-xs text-gray-500">系統</label><select className="w-full border p-2 rounded" value={item.systemId} onChange={e=>updateItem(item.id,'systemId',e.target.value)}><option value="">選擇系統</option>{systemList.filter(s=>s.IsActive!==false && s.IsActive!==0).map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">報價類型</label><select className="w-full border p-2 rounded" value={item.itemType} onChange={e=>updateItem(item.id,'itemType',e.target.value)}><option value="NEW_LICENSE">新購授權</option><option value="ADD_USER">增設授權</option><option value="MAINTENANCE">維護費</option></select></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">人數</label><input type="number" min="1" className="w-full border p-2 rounded text-right" value={item.userCount} onChange={e=>updateItem(item.id,'userCount',e.target.value)}/></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">牌價</label><div className="border bg-white p-2 rounded text-right">${calculateListAmount(item).toLocaleString()}</div></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折數（80＝8折）</label><input type="number" min="0" max="100" step="1" className="w-full border p-2 rounded text-right" value={item.discountRate} onChange={e=>updateItem(item.id,'discountRate',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">最終優惠價</label><input type="number" min="0" placeholder="選填" className="w-full border p-2 rounded text-right" value={item.specialPrice} onChange={e=>updateItem(item.id,'specialPrice',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折後金額（含稅）</label><div className="font-bold text-blue-600 text-right p-2">${calculateFinalTaxIncludedAmount(item).toLocaleString()}</div></div><button type="button" onClick={()=>removeItem(item.id)} className="lg:col-span-1 text-red-500 hover:text-red-700 p-2">刪除</button></div>)}</div>
+      {quoteItems.length>0 && <div className="border-t pt-4 text-right space-y-1"><div className="text-gray-500">原始牌價（未稅）：${quoteSummary.listAmount.toLocaleString()}</div><div className="text-orange-600">折後金額（含稅）：${quoteSummary.discountAmount.toLocaleString()}</div><div className="text-gray-500">最終議價差額（含稅）：-${(quoteSummary.discountAmount - quoteSummary.taxIncludedAmount).toLocaleString()}</div><div>未稅總計：${quoteSummary.taxExcludedAmount.toLocaleString()}</div><div>營業稅（5%）：${quoteSummary.taxAmount.toLocaleString()}</div><div className="text-xl font-bold mt-2">含稅總計：${quoteSummary.taxIncludedAmount.toLocaleString()}</div><button onClick={()=>handleSubmit(actionType)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow">產生並存檔</button></div>}
     </div>
   );
+
+  const renderSystemSettings = () => <div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-sm border"><h2 className="text-xl font-bold">系統設定：軟體及價格</h2><p className="text-sm text-gray-500 mt-1">管理可報價的軟體產品與生效中的價格規則。</p></div><div className="grid grid-cols-1 xl:grid-cols-2 gap-6"><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">軟體產品設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input placeholder="系統代號 *" className="border p-2 rounded" value={systemForm.SystemCode} onChange={e=>setSystemForm(p=>({...p,SystemCode:e.target.value}))}/><input placeholder="系統名稱 *" className="border p-2 rounded" value={systemForm.SystemName} onChange={e=>setSystemForm(p=>({...p,SystemName:e.target.value}))}/><input placeholder="分類" className="border p-2 rounded" value={systemForm.Category} onChange={e=>setSystemForm(p=>({...p,Category:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!systemForm.IsActive} onChange={e=>setSystemForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="系統內容說明" className="border p-2 rounded md:col-span-2" value={systemForm.Note} onChange={e=>setSystemForm(p=>({...p,Note:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveSystem} className="bg-blue-600 text-white px-4 py-2 rounded">儲存軟體</button><button onClick={()=>setSystemForm(initialSystemForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">代號</th><th className="p-2">名稱</th><th className="p-2">分類</th><th className="p-2">狀態</th><th></th></tr></thead><tbody>{systemList.map(s=><tr key={s.SystemId} className="border-b"><td className="p-2">{s.SystemCode}</td><td className="p-2">{s.SystemName}</td><td className="p-2">{s.Category}</td><td className="p-2">{s.IsActive===false||s.IsActive===0?'停用':'啟用'}</td><td><button className="text-blue-600" onClick={()=>setSystemForm({...initialSystemForm,...s,IsActive:s.IsActive!==false&&s.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">價格規則設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><select className="border p-2 rounded" value={ruleForm.SystemId} onChange={e=>setRuleForm(p=>({...p,SystemId:e.target.value}))}><option value="">選擇系統 *</option>{systemList.map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select><select className="border p-2 rounded" value={ruleForm.RuleType} onChange={e=>setRuleForm(p=>({...p,RuleType:e.target.value}))}><option value="LICENSE">授權價格</option><option value="MAINTENANCE">維護價格</option></select><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveStartDate} onChange={e=>setRuleForm(p=>({...p,EffectiveStartDate:e.target.value}))}/><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveEndDate} onChange={e=>setRuleForm(p=>({...p,EffectiveEndDate:e.target.value}))}/><input type="number" placeholder="首位價格 *" className="border p-2 rounded" value={ruleForm.FirstUserPrice} onChange={e=>setRuleForm(p=>({...p,FirstUserPrice:e.target.value}))}/><input type="number" placeholder="增購單價 *" className="border p-2 rounded" value={ruleForm.AdditionalUserPrice} onChange={e=>setRuleForm(p=>({...p,AdditionalUserPrice:e.target.value}))}/><input type="number" min="1" placeholder="最低人數" className="border p-2 rounded" value={ruleForm.MinimumUsers} onChange={e=>setRuleForm(p=>({...p,MinimumUsers:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!ruleForm.IsActive} onChange={e=>setRuleForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="備註" className="border p-2 rounded md:col-span-2" value={ruleForm.Remark} onChange={e=>setRuleForm(p=>({...p,Remark:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveRule} className="bg-blue-600 text-white px-4 py-2 rounded">儲存價格</button><button onClick={()=>setRuleForm(initialRuleForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">系統</th><th className="p-2">類型</th><th className="p-2">首位</th><th className="p-2">增購</th><th></th></tr></thead><tbody>{pricingRuleList.map(r=><tr key={r.PricingRuleId||`${r.SystemId}-${r.RuleType}-${r.EffectiveStartDate}`} className="border-b"><td className="p-2">{systemList.find(s=>Number(s.SystemId)===Number(r.SystemId))?.SystemName||r.SystemId}</td><td className="p-2">{r.RuleType==='MAINTENANCE'?'維護':'授權'}</td><td className="p-2">${Number(r.FirstUserPrice||0).toLocaleString()}</td><td className="p-2">${Number(r.AdditionalUserPrice||0).toLocaleString()}</td><td><button className="text-blue-600" onClick={()=>setRuleForm({...initialRuleForm,...r,SystemId:String(r.SystemId),EffectiveStartDate:formatDateForInput(r.EffectiveStartDate),EffectiveEndDate:formatDateForInput(r.EffectiveEndDate),IsActive:r.IsActive!==false&&r.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div></div></div>;
 
   // 3. 業務銷售追蹤專區
   const renderSalesTracking = () => (
@@ -528,15 +366,12 @@ const handleSelectCustomer = (customer) => {
       
       {/* 左側 Sidebar 導覽列 */}
       <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0 z-20">
-        <div className="p-6 bg-gray-950 border-b border-gray-800">
-          <h1 className="text-xl font-bold text-blue-400">高益營建軟體</h1>
-          <div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div>
-        </div>
+        <div className="p-6 bg-gray-950 border-b border-gray-800 select-none" onContextMenu={e=>{e.preventDefault();setAdminLoginError('');setShowAdminLogin(true);}} onTouchStart={()=>setPressTimer(setTimeout(()=>{setAdminLoginError('');setShowAdminLogin(true);},700))} onTouchEnd={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}} onTouchMove={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}}><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div><div className="text-[10px] text-gray-600 mt-2">右鍵／長按進入系統設定</div></div>
         <nav className="p-4 space-y-2 overflow-y-auto">
           <button onClick={() => setActiveTab('customer')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'customer' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             1. (潛在)客戶資料建檔
           </button>
-          <button onClick={() => {setActiveTab('quote_new'); setQuoteItems([]);}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_new' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quote_new'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_new' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             2. 營建系統報價建檔
           </button>
           <button onClick={() => setActiveTab('sales_track')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'sales_track' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
@@ -545,12 +380,13 @@ const handleSelectCustomer = (customer) => {
           <button onClick={() => setActiveTab('contracts')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'contracts' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             4. 客戶合約資料專區
           </button>
-          <button onClick={() => {setActiveTab('quote_add'); setQuoteItems([]);}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_add' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quote_add'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_add' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             5. 增設授權報價建檔
           </button>
-          <button onClick={() => {setActiveTab('quote_maint'); setQuoteItems([]);}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_maint' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quote_maint'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_maint' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             6. 維護合約報價建檔
           </button>
+          {isAdminLoggedIn && <><div className="border-t border-gray-700 my-3"/><button onClick={()=>setActiveTab('system_settings')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'system_settings' ? 'bg-amber-500 text-white' : 'text-amber-300 hover:bg-gray-800'}`}>⚙ 系統設定：軟體與價格</button><button onClick={handleAdminLogout} className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800">登出後台</button></>}
         </nav>
       </div>
 
@@ -560,12 +396,14 @@ const handleSelectCustomer = (customer) => {
           {activeTab === 'customer' && renderCustomerForm()}
           {activeTab === 'quote_new' && renderQuotationForm('2. 營建系統報價建檔 (新購)', 'NEW_LICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'sales_track' && renderSalesTracking()}
+          {activeTab === 'system_settings' && isAdminLoggedIn && renderSystemSettings()}
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quote_add' && renderQuotationForm('5. 增設授權報價建檔 (舊客加買人數)', 'ADD_USER', 'CreateAddUserQuote')}
           {activeTab === 'quote_maint' && renderQuotationForm('6. 維護合約報價建檔 (續約)', 'MAINTENANCE', 'CreateMaintenanceQuote')}
         </div>
       </div>
       
+      {showAdminLogin && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><form onSubmit={handleAdminLogin} className="w-full max-w-sm bg-white rounded-xl shadow-2xl p-6"><h2 className="text-xl font-bold text-gray-800">系統設定登入</h2><p className="text-sm text-gray-500 mt-1 mb-5">請輸入管理者帳號與密碼</p><label className="block text-sm font-medium text-gray-700 mb-1">帳號</label><input value={adminLoginForm.username} onChange={e=>setAdminLoginForm(p=>({...p,username:e.target.value}))} className="w-full border rounded-lg p-2 mb-4" required/><label className="block text-sm font-medium text-gray-700 mb-1">密碼</label><input type="password" value={adminLoginForm.password} onChange={e=>setAdminLoginForm(p=>({...p,password:e.target.value}))} className="w-full border rounded-lg p-2" autoFocus required/>{adminLoginError&&<div className="mt-3 rounded bg-red-50 p-2 text-sm text-red-600">{adminLoginError}</div>}<div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setShowAdminLogin(false)} className="px-4 py-2 rounded-lg border">取消</button><button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white">登入設定</button></div></form></div>}
     </div>
   );
 }
