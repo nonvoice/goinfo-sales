@@ -26,6 +26,10 @@ export default function App() {
   const [quoteItems, setQuoteItems] = useState([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [customerPickerTerm, setCustomerPickerTerm] = useState('');
+  const [quoteList, setQuoteList] = useState([]);
+  const [quoteListLoading, setQuoteListLoading] = useState(false);
+  const [showQuotePreview, setShowQuotePreview] = useState(false);
+  const [previewQuote, setPreviewQuote] = useState(null);
 
   const normalizeList = (data) => Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : (data && typeof data === 'object' ? Object.values(data).find(Array.isArray) || [data] : []);
   const getApiList = async (url) => { const res = await fetch(url); if (!res.ok) throw new Error(String(res.status)); return normalizeList(await res.json()); };
@@ -46,6 +50,7 @@ export default function App() {
     }
   };
   useEffect(() => { loadCustomers(); loadSystemSettings(); }, []);
+  useEffect(() => { loadQuotes(); }, []);
   useEffect(() => { if (customerList.length && !selectedCustomerCode) handleSelectCustomer(customerList[0]); }, [customerList]);
 
   const formatDateForInput = (v) => v ? String(v).slice(0, 10) : '';
@@ -74,9 +79,50 @@ export default function App() {
   const calculateFinalTaxIncludedAmount = (item) => hasFinalAmount(item) ? Math.round(Number(item.specialPrice)) : calculateDiscountAmount(item);
   const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
   const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; return {listAmount,taxIncludedListAmount,discountAmount,taxExcludedAmount,taxAmount,taxIncludedAmount}; }, [quoteItems, pricingRuleList]);
+  const loadQuotes = async () => {
+    setQuoteListLoading(true);
+    try { setQuoteList(await getApiList(`${API_BASE}/get-quotes`)); }
+    catch (e) { console.error('讀取報價清單失敗', e); }
+    finally { setQuoteListLoading(false); }
+  };
+  const previewQuoteById = async (quotationId) => {
+    try {
+      const response = await fetch(`${API_BASE}/get-quote-detail?quotationId=${encodeURIComponent(quotationId)}`);
+      if (!response.ok) throw new Error(String(response.status));
+      const raw = await response.json();
+      const data = Array.isArray(raw) ? (raw[0] || {}) : raw;
+      setPreviewQuote({ quote: data.quote || data, items: Array.isArray(data.items) ? data.items : [] });
+      setShowQuotePreview(true);
+    } catch (e) { console.error(e); alert('無法讀取報價單詳細資料，請確認 get-quote-detail 工作流。'); }
+  };
+  const voidQuote = async (quote) => {
+    if (!window.confirm(`確定要作廢報價單「${quote.QuotationNo}」嗎？作廢後可保留歷史紀錄，但不能再使用。`)) return;
+    try {
+      const response = await fetch(`${API_BASE}/void-quote`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({quotationId: quote.QuotationId}) });
+      if (!response.ok) throw new Error(String(response.status));
+      alert('報價單已作廢');
+      await loadQuotes();
+    } catch (e) { console.error(e); alert('作廢失敗，請確認 void-quote 工作流。'); }
+  };
+  const editQuote = async (quote) => {
+    try {
+      const response = await fetch(`${API_BASE}/get-quote-detail?quotationId=${encodeURIComponent(quote.QuotationId)}`);
+      if (!response.ok) throw new Error(String(response.status));
+      const raw = await response.json(); const data = Array.isArray(raw) ? (raw[0] || {}) : raw;
+      const header = data.quote || data;
+      const items = Array.isArray(data.items) ? data.items : [];
+      setCustomerCode(header.CustomerId);
+      setQuoteItems(items.map((item, index) => ({ id: item.QuotationItemId || `${Date.now()}-${index}`, systemId: String(item.SystemId), itemType: item.ItemType, userCount: item.UserCount, discountRate: item.Discount ?? 100, specialPrice: item.FinalAmount ?? '' })));
+      setShowQuotePreview(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      alert('已帶入報價資料。此版本會另存為一張新報價單，原報價不會被覆寫。');
+    } catch (e) { console.error(e); alert('無法載入報價資料，請確認 get-quote-detail 工作流。'); }
+  };
+
   const handleSubmit = async (action) => {
     if (!customerCode) return alert('請先選擇客戶');
     if (!quoteItems.length || quoteItems.some(x => !x.systemId)) return alert('請至少新增一筆完整的系統報價明細');
+    if (quoteItems.some(x => !getEffectivePricingRule(x.systemId, x.itemType))) return alert('選取的系統找不到有效價格規則，請先至系統設定建立並啟用價格。');
     const customer = customerList.find(c => String(c.CustomerId) === String(customerCode));
     if (!customer?.CustomerId) return alert('客戶資料缺少 CustomerId，請先依下方說明更新 get-customers 工作流。');
     const quoteNo = `Q${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}${String(Date.now()).slice(-3)}`;
@@ -93,19 +139,28 @@ export default function App() {
       taxAmount: quoteSummary.taxAmount,
       taxIncludedAmount: quoteSummary.taxIncludedAmount,
       totalAmount: quoteSummary.taxIncludedAmount,
-      items: quoteItems.map(x => ({
-        systemId: Number(x.systemId), itemType: x.itemType, userCount: Number(x.userCount),
-        listAmount: calculateListAmount(x),
-        discount: Number(x.discountRate) || 0,
-        discountRate: Number(x.discountRate) || 0,
-        discountAmount: calculateDiscountAmount(x),
-        specialPrice: x.specialPrice === '' ? null : Number(x.specialPrice),
-        finalAmount: hasFinalAmount(x) ? calculateFinalTaxIncludedAmount(x) : null,
-        taxExcludedAmount: calculateLineAmount(x),
-        lineAmount: calculateLineAmount(x)
-      }))
+      items: quoteItems.map((x, index) => {
+        const rule = getEffectivePricingRule(x.systemId, x.itemType);
+        return {
+          systemId: Number(x.systemId),
+          pricingRuleId: Number(rule?.PricingRuleId) || 0,
+          itemType: x.itemType,
+          userCount: Number(x.userCount),
+          firstUserPriceSnapshot: Number(rule?.FirstUserPrice) || 0,
+          additionalUserPriceSnapshot: Number(rule?.AdditionalUserPrice) || 0,
+          listAmount: calculateListAmount(x),
+          discount: Number(x.discountRate) || 100,
+          discountRate: Number(x.discountRate) || 100,
+          discountAmount: calculateDiscountAmount(x),
+          specialPrice: x.specialPrice === '' ? null : Number(x.specialPrice),
+          finalAmount: hasFinalAmount(x) ? calculateFinalTaxIncludedAmount(x) : null,
+          taxExcludedAmount: calculateLineAmount(x),
+          lineAmount: calculateListAmount(x),
+          sortOrder: index + 1
+        };
+      })
     };
-    try { const r = await fetch(`${API_BASE}/save-quote`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if(!r.ok) throw new Error(); alert(`[${action}] 報價單已成功存入資料庫！`); setQuoteItems([]); } catch(e) { alert('報價單儲存失敗，請檢查網路狀態。'); }
+    try { const r = await fetch(`${API_BASE}/save-quote`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if(!r.ok) throw new Error(); alert(`[${action}] 報價單已成功存入資料庫！`); setQuoteItems([]); await loadQuotes(); } catch(e) { alert('報價單儲存失敗，請檢查網路狀態。'); }
   };
 
   // 1. (潛在)客戶資料建檔 - Master/Detail 版面
@@ -345,6 +400,7 @@ export default function App() {
   };
 
   const renderQuotationForm = (title, defaultItemType, actionType) => (
+    <>
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
       <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">選擇客戶</label><div className="flex gap-2"><input type="text" readOnly value={selectedQuoteCustomer ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}` : ''} placeholder="請點選右側按鈕選擇客戶" className="flex-1 border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-700"/><button type="button" onClick={()=>setShowCustomerPicker(true)} className="px-4 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium whitespace-nowrap">選擇客戶</button></div></div>
@@ -352,6 +408,11 @@ export default function App() {
       <div className="space-y-4 mb-6">{quoteItems.length===0 && <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">尚無項目</div>}{quoteItems.map(item=><div key={item.id} className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"><div className="lg:col-span-3"><label className="text-xs text-gray-500">系統</label><select className="w-full border p-2 rounded" value={item.systemId} onChange={e=>updateItem(item.id,'systemId',e.target.value)}><option value="">選擇系統</option>{systemList.filter(s=>s.IsActive!==false && s.IsActive!==0).map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">報價類型</label><select className="w-full border p-2 rounded" value={item.itemType} onChange={e=>updateItem(item.id,'itemType',e.target.value)}><option value="NEW_LICENSE">新購授權</option><option value="ADD_USER">增設授權</option><option value="MAINTENANCE">維護費</option></select></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">人數</label><input type="number" min="1" className="w-full border p-2 rounded text-right" value={item.userCount} onChange={e=>updateItem(item.id,'userCount',e.target.value)}/></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">牌價</label><div className="border bg-white p-2 rounded text-right">${calculateListAmount(item).toLocaleString()}</div></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折數（80＝8折）</label><input type="number" min="0" max="100" step="1" className="w-full border p-2 rounded text-right" value={item.discountRate} onChange={e=>updateItem(item.id,'discountRate',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">最終優惠價</label><input type="number" min="0" placeholder="選填" className="w-full border p-2 rounded text-right" value={item.specialPrice} onChange={e=>updateItem(item.id,'specialPrice',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折後金額（含稅）</label><div className="font-bold text-blue-600 text-right p-2">${calculateFinalTaxIncludedAmount(item).toLocaleString()}</div></div><button type="button" onClick={()=>removeItem(item.id)} className="lg:col-span-1 text-red-500 hover:text-red-700 p-2">刪除</button></div>)}</div>
       {quoteItems.length>0 && <div className="border-t pt-4 text-right space-y-1"><div className="text-gray-500">原始牌價（未稅）：${quoteSummary.listAmount.toLocaleString()}</div><div className="text-orange-600">折後金額（含稅）：${quoteSummary.discountAmount.toLocaleString()}</div><div className="text-gray-500">最終議價差額（含稅）：-${(quoteSummary.discountAmount - quoteSummary.taxIncludedAmount).toLocaleString()}</div><div>未稅總計：${quoteSummary.taxExcludedAmount.toLocaleString()}</div><div>營業稅（5%）：${quoteSummary.taxAmount.toLocaleString()}</div><div className="text-xl font-bold mt-2">含稅總計：${quoteSummary.taxIncludedAmount.toLocaleString()}</div><button onClick={()=>handleSubmit(actionType)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow">產生並存檔</button></div>}
     </div>
+    <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex justify-between items-center mb-4"><div><h3 className="text-lg font-bold text-gray-800">已建立報價單</h3><p className="text-sm text-gray-500 mt-1">可預覽、帶入修改或作廢報價紀錄。</p></div><button onClick={loadQuotes} className="border px-3 py-2 rounded-lg text-sm hover:bg-gray-50">重新整理</button></div>
+      <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-gray-100 text-gray-600"><tr><th className="p-3">報價單號</th><th className="p-3">日期</th><th className="p-3">客戶</th><th className="p-3 text-right">未稅</th><th className="p-3 text-right">含稅總額</th><th className="p-3">狀態</th><th className="p-3 text-center">操作</th></tr></thead><tbody>{quoteListLoading ? <tr><td colSpan="7" className="p-8 text-center text-gray-400">讀取中...</td></tr> : quoteList.length ? quoteList.map(q=><tr key={q.QuotationId} className="border-b hover:bg-blue-50"><td className="p-3 font-medium">{q.QuotationNo}</td><td className="p-3">{formatDateForInput(q.QuoteDate)}</td><td className="p-3">{q.CustomerCode}－{q.CustomerName}</td><td className="p-3 text-right">${Number(q.SubtotalAmount || 0).toLocaleString()}</td><td className="p-3 text-right font-medium">${Number(q.FinalAmount ?? q.TotalAmount ?? 0).toLocaleString()}</td><td className="p-3"><span className={`px-2 py-1 rounded text-xs ${q.Status === 'VOID' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{q.Status || 'DRAFT'}</span></td><td className="p-3"><div className="flex gap-2 justify-center"><button onClick={()=>previewQuoteById(q.QuotationId)} className="text-blue-600 hover:underline">預覽</button><button onClick={()=>editQuote(q)} className="text-amber-600 hover:underline">修改</button><button onClick={()=>voidQuote(q)} disabled={q.Status === 'VOID'} className="text-red-600 hover:underline disabled:text-gray-300">作廢</button></div></td></tr>) : <tr><td colSpan="7" className="p-8 text-center text-gray-400">尚無已建立的報價單</td></tr>}</tbody></table></div>
+    </div>
+    </>
   );
 
   const renderSystemSettings = () => <div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-sm border"><h2 className="text-xl font-bold">系統設定：軟體及價格</h2><p className="text-sm text-gray-500 mt-1">管理可報價的軟體產品與生效中的價格規則。</p></div><div className="grid grid-cols-1 xl:grid-cols-2 gap-6"><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">軟體產品設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input placeholder="系統代號 *" className="border p-2 rounded" value={systemForm.SystemCode} onChange={e=>setSystemForm(p=>({...p,SystemCode:e.target.value}))}/><input placeholder="系統名稱 *" className="border p-2 rounded" value={systemForm.SystemName} onChange={e=>setSystemForm(p=>({...p,SystemName:e.target.value}))}/><input placeholder="分類" className="border p-2 rounded" value={systemForm.Category} onChange={e=>setSystemForm(p=>({...p,Category:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!systemForm.IsActive} onChange={e=>setSystemForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="系統內容說明" className="border p-2 rounded md:col-span-2" value={systemForm.Note} onChange={e=>setSystemForm(p=>({...p,Note:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveSystem} className="bg-blue-600 text-white px-4 py-2 rounded">儲存軟體</button><button onClick={()=>setSystemForm(initialSystemForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">代號</th><th className="p-2">名稱</th><th className="p-2">分類</th><th className="p-2">狀態</th><th></th></tr></thead><tbody>{systemList.map(s=><tr key={s.SystemId} className="border-b"><td className="p-2">{s.SystemCode}</td><td className="p-2">{s.SystemName}</td><td className="p-2">{s.Category}</td><td className="p-2">{s.IsActive===false||s.IsActive===0?'停用':'啟用'}</td><td><button className="text-blue-600" onClick={()=>setSystemForm({...initialSystemForm,...s,IsActive:s.IsActive!==false&&s.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">價格規則設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><select className="border p-2 rounded" value={ruleForm.SystemId} onChange={e=>setRuleForm(p=>({...p,SystemId:e.target.value}))}><option value="">選擇系統 *</option>{systemList.map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select><select className="border p-2 rounded" value={ruleForm.RuleType} onChange={e=>setRuleForm(p=>({...p,RuleType:e.target.value}))}><option value="LICENSE">授權價格</option><option value="MAINTENANCE">維護價格</option></select><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveStartDate} onChange={e=>setRuleForm(p=>({...p,EffectiveStartDate:e.target.value}))}/><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveEndDate} onChange={e=>setRuleForm(p=>({...p,EffectiveEndDate:e.target.value}))}/><input type="number" placeholder="首位價格 *" className="border p-2 rounded" value={ruleForm.FirstUserPrice} onChange={e=>setRuleForm(p=>({...p,FirstUserPrice:e.target.value}))}/><input type="number" placeholder="增購單價 *" className="border p-2 rounded" value={ruleForm.AdditionalUserPrice} onChange={e=>setRuleForm(p=>({...p,AdditionalUserPrice:e.target.value}))}/><input type="number" min="1" placeholder="最低人數" className="border p-2 rounded" value={ruleForm.MinimumUsers} onChange={e=>setRuleForm(p=>({...p,MinimumUsers:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!ruleForm.IsActive} onChange={e=>setRuleForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="備註" className="border p-2 rounded md:col-span-2" value={ruleForm.Remark} onChange={e=>setRuleForm(p=>({...p,Remark:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveRule} className="bg-blue-600 text-white px-4 py-2 rounded">儲存價格</button><button onClick={()=>setRuleForm(initialRuleForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">系統</th><th className="p-2">類型</th><th className="p-2">首位</th><th className="p-2">增購</th><th></th></tr></thead><tbody>{pricingRuleList.map(r=><tr key={r.PricingRuleId||`${r.SystemId}-${r.RuleType}-${r.EffectiveStartDate}`} className="border-b"><td className="p-2">{systemList.find(s=>Number(s.SystemId)===Number(r.SystemId))?.SystemName||r.SystemId}</td><td className="p-2">{r.RuleType==='MAINTENANCE'?'維護':'授權'}</td><td className="p-2">${Number(r.FirstUserPrice||0).toLocaleString()}</td><td className="p-2">${Number(r.AdditionalUserPrice||0).toLocaleString()}</td><td><button className="text-blue-600" onClick={()=>setRuleForm({...initialRuleForm,...r,SystemId:String(r.SystemId),EffectiveStartDate:formatDateForInput(r.EffectiveStartDate),EffectiveEndDate:formatDateForInput(r.EffectiveEndDate),IsActive:r.IsActive!==false&&r.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div></div></div>;
@@ -416,6 +477,7 @@ export default function App() {
         </div>
       </div>
       
+      {showQuotePreview && previewQuote && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onMouseDown={()=>setShowQuotePreview(false)}><div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl p-7" onMouseDown={e=>e.stopPropagation()}><div className="flex justify-between items-start border-b pb-4 mb-5"><div><h2 className="text-2xl font-bold">高益營建軟體－系統報價單</h2><div className="text-sm text-gray-500 mt-1">報價單號：{previewQuote.quote.QuotationNo}　日期：{formatDateForInput(previewQuote.quote.QuoteDate)}</div></div><button onClick={()=>setShowQuotePreview(false)} className="text-2xl text-gray-400">×</button></div><div className="grid grid-cols-2 gap-3 mb-5 text-sm"><div><span className="text-gray-500">客戶：</span>{previewQuote.quote.CustomerCode}－{previewQuote.quote.CustomerName}</div><div><span className="text-gray-500">狀態：</span>{previewQuote.quote.Status || 'DRAFT'}</div></div><table className="w-full text-sm border"><thead className="bg-gray-100"><tr><th className="p-2 text-left">系統</th><th className="p-2 text-right">人數</th><th className="p-2 text-right">未稅牌價</th><th className="p-2 text-right">折數</th><th className="p-2 text-right">折後含稅</th><th className="p-2 text-right">最終優惠價</th></tr></thead><tbody>{previewQuote.items.map(item=><tr key={item.QuotationItemId} className="border-t"><td className="p-2">{item.SystemCode}－{item.SystemName}</td><td className="p-2 text-right">{item.UserCount}</td><td className="p-2 text-right">${Number(item.LineAmount||0).toLocaleString()}</td><td className="p-2 text-right">{item.Discount ?? 100}</td><td className="p-2 text-right">${Number(item.DiscountAmount||0).toLocaleString()}</td><td className="p-2 text-right">{item.FinalAmount == null ? '－' : `$${Number(item.FinalAmount).toLocaleString()}`}</td></tr>)}</tbody></table><div className="mt-5 text-right space-y-1"><div>未稅小計：${Number(previewQuote.quote.SubtotalAmount||0).toLocaleString()}</div><div>營業稅：${Number(previewQuote.quote.TaxAmount||0).toLocaleString()}</div><div className="text-xl font-bold">含稅總額：${Number(previewQuote.quote.FinalAmount ?? previewQuote.quote.TotalAmount ?? 0).toLocaleString()}</div></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-lg">列印</button><button onClick={()=>editQuote(previewQuote.quote)} className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg">帶入修改</button><button onClick={()=>setShowQuotePreview(false)} className="px-4 py-2 border rounded-lg">關閉</button></div></div></div>}
       {showCustomerPicker && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onMouseDown={()=>setShowCustomerPicker(false)}><div className="w-full max-w-2xl max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col" onMouseDown={e=>e.stopPropagation()}><div className="flex items-center justify-between p-5 border-b"><h2 className="text-xl font-bold text-gray-800">選擇客戶</h2><button type="button" onClick={()=>setShowCustomerPicker(false)} className="text-2xl text-gray-400 hover:text-gray-700">×</button></div><div className="p-4 border-b"><div className="relative"><input autoFocus type="text" value={customerPickerTerm} onChange={e=>setCustomerPickerTerm(e.target.value)} placeholder="搜尋客戶代號或名稱關鍵字..." className="w-full border border-blue-400 rounded-lg py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-blue-300"/><span className="absolute left-3 top-2.5 text-gray-400">⌕</span></div></div><div className="overflow-y-auto flex-1">{pickerCustomers.length ? pickerCustomers.map(c=><button type="button" key={c.CustomerId || c.Code} onClick={()=>selectQuoteCustomer(c)} className="w-full grid grid-cols-[140px_1fr] gap-4 text-left px-5 py-4 border-b hover:bg-blue-50 transition"><span className="font-medium text-blue-700">{c.Code}</span><span className="text-gray-800">{c.Name}</span></button>) : <div className="py-10 text-center text-gray-400">找不到符合的客戶</div>}</div><div className="p-4 border-t text-right"><button type="button" onClick={()=>setShowCustomerPicker(false)} className="px-4 py-2 border rounded-lg">取消</button></div></div></div>}
       {showAdminLogin && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><form onSubmit={handleAdminLogin} className="w-full max-w-sm bg-white rounded-xl shadow-2xl p-6"><h2 className="text-xl font-bold text-gray-800">系統設定登入</h2><p className="text-sm text-gray-500 mt-1 mb-5">請輸入管理者帳號與密碼</p><label className="block text-sm font-medium text-gray-700 mb-1">帳號</label><input value={adminLoginForm.username} onChange={e=>setAdminLoginForm(p=>({...p,username:e.target.value}))} className="w-full border rounded-lg p-2 mb-4" required/><label className="block text-sm font-medium text-gray-700 mb-1">密碼</label><input type="password" value={adminLoginForm.password} onChange={e=>setAdminLoginForm(p=>({...p,password:e.target.value}))} className="w-full border rounded-lg p-2" autoFocus required/>{adminLoginError&&<div className="mt-3 rounded bg-red-50 p-2 text-sm text-red-600">{adminLoginError}</div>}<div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setShowAdminLogin(false)} className="px-4 py-2 rounded-lg border">取消</button><button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white">登入設定</button></div></form></div>}
     </div>
