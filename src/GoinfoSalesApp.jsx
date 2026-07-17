@@ -85,7 +85,7 @@ export default function App() {
     catch (e) { console.error('讀取報價清單失敗', e); }
     finally { setQuoteListLoading(false); }
   };
-  const quoteStatusLabel = (status) => ({ '1':'新購', '2':'增設', '3':'維護', '4':'其他', NEW_LICENSE:'新購', ADD_USER:'增設', MAINTENANCE:'維護', OTHER:'其他' }[String(status)] || status || '其他');
+  const quoteStatusLabel = (status) => ({ '1':'1. 新購', '2':'2. 增設', '3':'3. 維護', '4':'4. 其他', NEW_LICENSE:'1. 新購', ADD_USER:'2. 增設', MAINTENANCE:'3. 維護', OTHER:'4. 其他', DRAFT:'4. 其他' }[String(status)] || '4. 其他');
   const itemTypeLabel = (type) => ({ NEW_LICENSE:'新購', ADD_USER:'增設', MAINTENANCE:'維護', OTHER:'其他' }[String(type)] || String(type || '其他'));
 
   const normalizeQuoteDetail = (raw) => {
