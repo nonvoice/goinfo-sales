@@ -4,8 +4,199 @@ const API_BASE = 'https://goinfosales-n8n.zeabur.app/webhook';
 const initialSystemForm = { SystemId: '', SystemCode: '', SystemName: '', Category: '', IsActive: true, Note: '' };
 const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', VersionNo: 1, EffectiveStartDate: new Date().toISOString().slice(0, 10), EffectiveEndDate: '', FirstUserPrice: '', AdditionalUserPrice: '', MinimumUsers: 1, IsActive: true, Remark: '' };
 
+function SalesLoginPage({ onLoginSuccess }) {
+  const [form, setForm] = useState({
+    loginAccount: '',
+    password: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!form.loginAccount.trim() || !form.password) {
+      setError('請輸入帳號與密碼');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(
+        'https://goinfosales-n8n.zeabur.app/webhook/auth-login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            loginAccount: form.loginAccount.trim(),
+            password: form.password,
+          }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.token || !data.user) {
+        throw new Error(data.message || '帳號或密碼錯誤');
+      }
+
+      sessionStorage.setItem('salesToken', data.token);
+      sessionStorage.setItem('salesUser', JSON.stringify(data.user));
+
+      onLoginSuccess(data.user);
+    } catch (err) {
+      setError(err.message || '登入失敗，請稍後再試');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+if (!salesAuthReady) {
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+      系統載入中...
+    </div>
+  );
+}
+
+if (!salesUser) {
+  return (
+    <SalesLoginPage
+      onLoginSuccess={(user) => {
+        setSalesUser(user);
+        setActiveTab('salestrack');
+      }}
+    />
+  );
+}
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"
+      >
+        <div className="mb-7 text-center">
+          <h1 className="text-2xl font-bold text-slate-800">
+            Goinfo Sales
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            業務案件管理系統
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-4">
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            帳號
+          </label>
+          <input
+            type="text"
+            autoComplete="username"
+            value={form.loginAccount}
+            onChange={(event) =>
+              setForm((prev) => ({
+                ...prev,
+                loginAccount: event.target.value,
+              }))
+            }
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            placeholder="請輸入帳號"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            密碼
+          </label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={form.password}
+            onChange={(event) =>
+              setForm((prev) => ({
+                ...prev,
+                password: event.target.value,
+              }))
+            }
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            placeholder="請輸入密碼"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {loading ? '登入驗證中...' : '登入'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('customer');
+  const [salesUser, setSalesUser] = useState(() => {
+  try {
+    const raw = sessionStorage.getItem('salesUser');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+});
+
+  const [salesAuthReady, setSalesAuthReady] = useState(false);
+
+  const [opportunityList, setOpportunityList] = useState([]);
+  const [opportunityLoading, setOpportunityLoading] = useState(false);
+  const [opportunityError, setOpportunityError] = useState('');
+
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState(null);
+  const [selectedOpportunity, setSelectedOpportunity] = useState(null);
+  const [followUpList, setFollowUpList] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const [showOpportunityForm, setShowOpportunityForm] = useState(false);
+  const [opportunitySaving, setOpportunitySaving] = useState(false);
+
+  const initialOpportunityForm = {
+    opportunityId: '',
+    customerId: '',
+    quotationId: '',
+    opportunityName: '',
+    stage: 'INITIAL_CONTACT',
+    customerGrade: 'B',
+    estimatedAmount: '',
+    expectedCloseDate: '',
+    nextFollowUpDate: '',
+    description: '',
+  };
+
+  const [opportunityForm, setOpportunityForm] = useState(
+    initialOpportunityForm
+  );
+
+  const initialFollowUpForm = {
+    followUpType: 'PHONE',
+    content: '',
+    nextFollowUpDate: '',
+    contactName: '',
+    contactMethod: '電話',
+  };
+
+  const [followUpForm, setFollowUpForm] = useState(initialFollowUpForm);
+  const [followUpSaving, setFollowUpSaving] = useState(false);
   const [systemList, setSystemList] = useState([]);
   const [pricingRuleList, setPricingRuleList] = useState([]);
   const [systemForm, setSystemForm] = useState(initialSystemForm);
@@ -41,6 +232,262 @@ export default function App() {
     return data && typeof data === 'object' ? [data] : [];
   };
   const getApiList = async (url) => { const res = await fetch(url); if (!res.ok) throw new Error(String(res.status)); return normalizeList(await res.json()); };
+  const SALES_API_BASE = `${APIBASE}`;
+
+  const handleSalesLogout = () => {
+    sessionStorage.removeItem('salesToken');
+    sessionStorage.removeItem('salesUser');
+
+    setSalesUser(null);
+    setOpportunityList([]);
+    setSelectedOpportunity(null);
+    setFollowUpList([]);
+    setSelectedOpportunityId(null);
+    setActiveTab('customer');
+  };
+
+  const salesApiFetch = async (path, options = {}) => {
+    const token = sessionStorage.getItem('salesToken');
+
+    if (!token) {
+      handleSalesLogout();
+      throw new Error('請先登入');
+    }
+
+    const response = await fetch(`${SALES_API_BASE}/${path}`, {
+      ...options,
+      headers: {
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      handleSalesLogout();
+      throw new Error(data.message || '登入已失效，請重新登入');
+    }
+
+    if (response.status === 403) {
+      throw new Error(data.message || '您沒有此案件的存取權限');
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || `系統處理失敗：${response.status}`);
+    }
+
+    return data;
+  };
+
+  const getResultList = (data) => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.rows)) return data.rows;
+    return [];
+  };
+
+const loadOpportunities = async () => {
+  setOpportunityLoading(true);
+  setOpportunityError('');
+
+  try {
+    const result = await salesApiFetch('get-sales-opportunities');
+    setOpportunityList(getResultList(result));
+  } catch (error) {
+    console.error('loadOpportunities error:', error);
+    setOpportunityError(error.message || '讀取案件清單失敗');
+  } finally {
+    setOpportunityLoading(false);
+  }
+};
+
+const loadOpportunityDetail = async (opportunityId) => {
+  if (!opportunityId) return;
+
+  setDetailLoading(true);
+
+  try {
+    const result = await salesApiFetch(
+      `get-sales-opportunity-detail?opportunityId=${encodeURIComponent(
+        opportunityId
+      )}`
+    );
+
+    const detail = Array.isArray(result) ? result[0] : result;
+    const opportunity =
+      detail?.opportunity ||
+      detail?.data?.opportunity ||
+      detail?.data ||
+      detail;
+
+    const followUps =
+      detail?.followUps ||
+      detail?.data?.followUps ||
+      detail?.followUpList ||
+      [];
+
+    if (!opportunity?.OpportunityId && !opportunity?.opportunityId) {
+      throw new Error('找不到案件，或您沒有檢視此案件的權限');
+    }
+
+    setSelectedOpportunity(opportunity);
+    setFollowUpList(Array.isArray(followUps) ? followUps : []);
+    setSelectedOpportunityId(
+      opportunity.OpportunityId || opportunity.opportunityId
+    );
+  } catch (error) {
+    console.error('loadOpportunityDetail error:', error);
+    alert(error.message || '讀取案件明細失敗');
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+const openNewOpportunity = () => {
+  setOpportunityForm(initialOpportunityForm);
+  setShowOpportunityForm(true);
+};
+
+const openEditOpportunity = () => {
+  if (!selectedOpportunity) return;
+
+  setOpportunityForm({
+    opportunityId:
+      selectedOpportunity.OpportunityId ||
+      selectedOpportunity.opportunityId ||
+      '',
+    customerId:
+      selectedOpportunity.CustomerId ||
+      selectedOpportunity.customerId ||
+      '',
+    quotationId:
+      selectedOpportunity.QuotationId ||
+      selectedOpportunity.quotationId ||
+      '',
+    opportunityName:
+      selectedOpportunity.OpportunityName ||
+      selectedOpportunity.opportunityName ||
+      '',
+    stage: selectedOpportunity.Stage || selectedOpportunity.stage || 'INITIAL_CONTACT',
+    customerGrade:
+      selectedOpportunity.CustomerGrade ||
+      selectedOpportunity.customerGrade ||
+      'B',
+    estimatedAmount:
+      selectedOpportunity.EstimatedAmount ||
+      selectedOpportunity.estimatedAmount ||
+      '',
+    expectedCloseDate: formatDateForInput(
+      selectedOpportunity.ExpectedCloseDate ||
+        selectedOpportunity.expectedCloseDate
+    ),
+    nextFollowUpDate: formatDateForInput(
+      selectedOpportunity.NextFollowUpDate ||
+        selectedOpportunity.nextFollowUpDate
+    ),
+    description:
+      selectedOpportunity.Description ||
+      selectedOpportunity.description ||
+      '',
+  });
+
+  setShowOpportunityForm(true);
+};
+
+const saveOpportunity = async () => {
+  if (!opportunityForm.customerId) {
+    alert('請選擇客戶');
+    return;
+  }
+
+  if (!opportunityForm.opportunityName.trim()) {
+    alert('請輸入案件名稱');
+    return;
+  }
+
+  setOpportunitySaving(true);
+
+  try {
+    const payload = {
+      action: opportunityForm.opportunityId ? 'update' : 'create',
+      opportunityId: opportunityForm.opportunityId
+        ? Number(opportunityForm.opportunityId)
+        : null,
+      customerId: Number(opportunityForm.customerId),
+      quotationId: opportunityForm.quotationId
+        ? Number(opportunityForm.quotationId)
+        : null,
+      opportunityName: opportunityForm.opportunityName.trim(),
+      stage: opportunityForm.stage,
+      customerGrade: opportunityForm.customerGrade || null,
+      estimatedAmount: Number(opportunityForm.estimatedAmount || 0),
+      expectedCloseDate: opportunityForm.expectedCloseDate || null,
+      nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
+      description: opportunityForm.description || null,
+    };
+
+    await salesApiFetch('save-sales-opportunity', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    setShowOpportunityForm(false);
+    await loadOpportunities();
+
+    if (payload.opportunityId) {
+      await loadOpportunityDetail(payload.opportunityId);
+    }
+
+    alert('案件已儲存');
+  } catch (error) {
+    console.error('saveOpportunity error:', error);
+    alert(error.message || '儲存案件失敗');
+  } finally {
+    setOpportunitySaving(false);
+  }
+};
+
+const saveFollowUp = async () => {
+  if (!selectedOpportunityId) {
+    alert('請先選擇案件');
+    return;
+  }
+
+  if (!followUpForm.content.trim()) {
+    alert('請輸入追蹤內容');
+    return;
+  }
+
+  setFollowUpSaving(true);
+
+  try {
+    await salesApiFetch('save-sales-follow-up', {
+      method: 'POST',
+      body: JSON.stringify({
+        opportunityId: Number(selectedOpportunityId),
+        followUpType: followUpForm.followUpType,
+        content: followUpForm.content.trim(),
+        nextFollowUpDate: followUpForm.nextFollowUpDate || null,
+        contactName: followUpForm.contactName || null,
+        contactMethod: followUpForm.contactMethod || null,
+      }),
+    });
+
+    setFollowUpForm(initialFollowUpForm);
+    await loadOpportunityDetail(selectedOpportunityId);
+    await loadOpportunities();
+
+    alert('追蹤紀錄已儲存');
+  } catch (error) {
+    console.error('saveFollowUp error:', error);
+    alert(error.message || '儲存追蹤紀錄失敗');
+  } finally {
+    setFollowUpSaving(false);
+  }
+};
+
   const loadCustomers = async () => { try { setCustomerList(await getApiList(`${API_BASE}/get-customers`)); } catch (e) { console.error('讀取客戶失敗', e); } };
   // 使用既有 get-systems 工作流；回傳格式必須是 { systems: [...], rules: [...] }。
   const loadSystemSettings = async () => {
@@ -60,6 +507,15 @@ export default function App() {
   useEffect(() => { loadCustomers(); loadSystemSettings(); }, []);
   useEffect(() => { loadQuotes(); }, []);
   useEffect(() => { if (customerList.length && !selectedCustomerCode) handleSelectCustomer(customerList[0]); }, [customerList]);
+  useEffect(() => {
+    setSalesAuthReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (salesUser && activeTab === 'salestrack') {
+      loadOpportunities();
+    }
+  }, [salesUser, activeTab]);
 
   const formatDateForInput = (v) => v ? String(v).slice(0, 10) : '';
   const handleCustomerChange = (e) => setCustomerForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -470,13 +926,552 @@ export default function App() {
   const renderSystemSettings = () => <div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-sm border"><h2 className="text-xl font-bold">系統設定：軟體及價格</h2><p className="text-sm text-gray-500 mt-1">管理可報價的軟體產品與生效中的價格規則。</p></div><div className="grid grid-cols-1 xl:grid-cols-2 gap-6"><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">軟體產品設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input placeholder="系統代號 *" className="border p-2 rounded" value={systemForm.SystemCode} onChange={e=>setSystemForm(p=>({...p,SystemCode:e.target.value}))}/><input placeholder="系統名稱 *" className="border p-2 rounded" value={systemForm.SystemName} onChange={e=>setSystemForm(p=>({...p,SystemName:e.target.value}))}/><input placeholder="分類" className="border p-2 rounded" value={systemForm.Category} onChange={e=>setSystemForm(p=>({...p,Category:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!systemForm.IsActive} onChange={e=>setSystemForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="系統內容說明" className="border p-2 rounded md:col-span-2" value={systemForm.Note} onChange={e=>setSystemForm(p=>({...p,Note:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveSystem} className="bg-blue-600 text-white px-4 py-2 rounded">儲存軟體</button><button onClick={()=>setSystemForm(initialSystemForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">代號</th><th className="p-2">名稱</th><th className="p-2">分類</th><th className="p-2">狀態</th><th></th></tr></thead><tbody>{systemList.map(s=><tr key={s.SystemId} className="border-b"><td className="p-2">{s.SystemCode}</td><td className="p-2">{s.SystemName}</td><td className="p-2">{s.Category}</td><td className="p-2">{s.IsActive===false||s.IsActive===0?'停用':'啟用'}</td><td><button className="text-blue-600" onClick={()=>setSystemForm({...initialSystemForm,...s,IsActive:s.IsActive!==false&&s.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">價格規則設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><select className="border p-2 rounded" value={ruleForm.SystemId} onChange={e=>setRuleForm(p=>({...p,SystemId:e.target.value}))}><option value="">選擇系統 *</option>{systemList.map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select><select className="border p-2 rounded" value={ruleForm.RuleType} onChange={e=>setRuleForm(p=>({...p,RuleType:e.target.value}))}><option value="LICENSE">授權價格</option><option value="MAINTENANCE">維護價格</option></select><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveStartDate} onChange={e=>setRuleForm(p=>({...p,EffectiveStartDate:e.target.value}))}/><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveEndDate} onChange={e=>setRuleForm(p=>({...p,EffectiveEndDate:e.target.value}))}/><input type="number" placeholder="首位價格 *" className="border p-2 rounded" value={ruleForm.FirstUserPrice} onChange={e=>setRuleForm(p=>({...p,FirstUserPrice:e.target.value}))}/><input type="number" placeholder="增購單價 *" className="border p-2 rounded" value={ruleForm.AdditionalUserPrice} onChange={e=>setRuleForm(p=>({...p,AdditionalUserPrice:e.target.value}))}/><input type="number" min="1" placeholder="最低人數" className="border p-2 rounded" value={ruleForm.MinimumUsers} onChange={e=>setRuleForm(p=>({...p,MinimumUsers:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!ruleForm.IsActive} onChange={e=>setRuleForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="備註" className="border p-2 rounded md:col-span-2" value={ruleForm.Remark} onChange={e=>setRuleForm(p=>({...p,Remark:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveRule} className="bg-blue-600 text-white px-4 py-2 rounded">儲存價格</button><button onClick={()=>setRuleForm(initialRuleForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">系統</th><th className="p-2">類型</th><th className="p-2">首位</th><th className="p-2">增購</th><th></th></tr></thead><tbody>{pricingRuleList.map(r=><tr key={r.PricingRuleId||`${r.SystemId}-${r.RuleType}-${r.EffectiveStartDate}`} className="border-b"><td className="p-2">{systemList.find(s=>Number(s.SystemId)===Number(r.SystemId))?.SystemName||r.SystemId}</td><td className="p-2">{r.RuleType==='MAINTENANCE'?'維護':'授權'}</td><td className="p-2">${Number(r.FirstUserPrice||0).toLocaleString()}</td><td className="p-2">${Number(r.AdditionalUserPrice||0).toLocaleString()}</td><td><button className="text-blue-600" onClick={()=>setRuleForm({...initialRuleForm,...r,SystemId:String(r.SystemId),EffectiveStartDate:formatDateForInput(r.EffectiveStartDate),EffectiveEndDate:formatDateForInput(r.EffectiveEndDate),IsActive:r.IsActive!==false&&r.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div></div></div>;
 
   // 3. 業務銷售追蹤專區
-  const renderSalesTracking = () => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">3. 業務銷售追蹤專區</h2>
-      <p className="text-gray-500 mb-4">此區塊將透過 n8n 撈取 `Quotation` 資料表狀態為 DRAFT 或 SENT 的報價單，以 Kanban (看板) 或列表呈現。</p>
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">開發建置中...</div>
+const renderSalesTracking = () => {
+  const isManager =
+    salesUser?.role === 'MANAGER' || salesUser?.role === 'ADMIN';
+
+  const stageLabel = {
+    INITIAL_CONTACT: '初步接洽',
+    REQUIREMENT_CONFIRMED: '需求確認',
+    QUOTED: '已報價',
+    DEMO_COMPLETED: 'Demo 完成',
+    NEGOTIATION: '商務洽談',
+    WON: '成交',
+    LOST: '失單',
+  };
+
+  const selectedId =
+    selectedOpportunity?.OpportunityId ||
+    selectedOpportunity?.opportunityId;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">
+            3. 銷售案件追蹤
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {isManager
+              ? '您目前可檢視全部業務案件。'
+              : '您目前只能檢視與處理自己負責的案件。'}
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={loadOpportunities}
+            disabled={opportunityLoading}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+          >
+            {opportunityLoading ? '讀取中...' : '重新整理'}
+          </button>
+
+          <button
+            onClick={openNewOpportunity}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + 新增案件
+          </button>
+        </div>
+      </div>
+
+      {opportunityError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {opportunityError}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm xl:col-span-2">
+          <div className="border-b bg-gray-50 px-4 py-3">
+            <h3 className="font-bold text-gray-700">案件清單</h3>
+          </div>
+
+          <div className="max-h-[680px] overflow-y-auto">
+            {opportunityLoading ? (
+              <div className="p-8 text-center text-sm text-gray-400">
+                案件讀取中...
+              </div>
+            ) : opportunityList.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">
+                尚無可檢視案件
+              </div>
+            ) : (
+              opportunityList.map((item) => {
+                const itemId = item.OpportunityId || item.opportunityId;
+                const itemStage = item.Stage || item.stage;
+                const isSelected = Number(itemId) === Number(selectedId);
+
+                return (
+                  <button
+                    key={itemId}
+                    type="button"
+                    onClick={() => loadOpportunityDetail(itemId)}
+                    className={`w-full border-b p-4 text-left transition last:border-b-0 ${
+                      isSelected
+                        ? 'border-l-4 border-l-blue-600 bg-blue-50'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="mb-1 flex items-start justify-between gap-3">
+                      <div className="font-semibold text-gray-800">
+                        {item.OpportunityName || item.opportunityName}
+                      </div>
+                      <span className="whitespace-nowrap rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">
+                        {stageLabel[itemStage] || itemStage || '-'}
+                      </span>
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      {item.CustomerName ||
+                        item.customerName ||
+                        item.CustomerCode ||
+                        item.customerCode ||
+                        '-'}
+                    </div>
+
+                    <div className="mt-2 flex justify-between text-xs text-gray-500">
+                      <span>
+                        負責：{item.OwnerName || item.ownerName || '-'}
+                      </span>
+                      <span>
+                        ${Number(
+                          item.EstimatedAmount || item.estimatedAmount || 0
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm xl:col-span-3">
+          {!selectedOpportunity && !detailLoading && (
+            <div className="flex min-h-[450px] items-center justify-center text-gray-400">
+              請由左側選擇案件，查看明細與追蹤紀錄。
+            </div>
+          )}
+
+          {detailLoading && (
+            <div className="flex min-h-[450px] items-center justify-center text-gray-400">
+              案件明細讀取中...
+            </div>
+          )}
+
+          {selectedOpportunity && !detailLoading && (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {selectedOpportunity.OpportunityName ||
+                      selectedOpportunity.opportunityName}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    客戶：
+                    {selectedOpportunity.CustomerName ||
+                      selectedOpportunity.customerName ||
+                      selectedOpportunity.CustomerCode ||
+                      selectedOpportunity.customerCode ||
+                      '-'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={openEditOpportunity}
+                  className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                >
+                  編輯案件
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
+                <div className="rounded bg-gray-50 p-3">
+                  <div className="text-xs text-gray-500">目前階段</div>
+                  <div className="mt-1 font-medium">
+                    {stageLabel[
+                      selectedOpportunity.Stage || selectedOpportunity.stage
+                    ] ||
+                      selectedOpportunity.Stage ||
+                      selectedOpportunity.stage ||
+                      '-'}
+                  </div>
+                </div>
+
+                <div className="rounded bg-gray-50 p-3">
+                  <div className="text-xs text-gray-500">預估金額</div>
+                  <div className="mt-1 font-medium">
+                    $
+                    {Number(
+                      selectedOpportunity.EstimatedAmount ||
+                        selectedOpportunity.estimatedAmount ||
+                        0
+                    ).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="rounded bg-gray-50 p-3">
+                  <div className="text-xs text-gray-500">下次追蹤日</div>
+                  <div className="mt-1 font-medium">
+                    {formatDateForInput(
+                      selectedOpportunity.NextFollowUpDate ||
+                        selectedOpportunity.nextFollowUpDate
+                    ) || '-'}
+                  </div>
+                </div>
+              </div>
+
+              {(selectedOpportunity.Description ||
+                selectedOpportunity.description) && (
+                <div>
+                  <h4 className="mb-2 font-semibold text-gray-700">案件說明</h4>
+                  <div className="whitespace-pre-wrap rounded border bg-gray-50 p-3 text-sm text-gray-700">
+                    {selectedOpportunity.Description ||
+                      selectedOpportunity.description}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-5">
+                <h4 className="mb-3 font-semibold text-gray-700">
+                  新增追蹤紀錄
+                </h4>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <select
+                    value={followUpForm.followUpType}
+                    onChange={(event) =>
+                      setFollowUpForm((prev) => ({
+                        ...prev,
+                        followUpType: event.target.value,
+                      }))
+                    }
+                    className="rounded border p-2"
+                  >
+                    <option value="PHONE">電話</option>
+                    <option value="MEETING">拜訪／會議</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="LINE">LINE</option>
+                    <option value="OTHER">其他</option>
+                  </select>
+
+                  <input
+                    value={followUpForm.contactName}
+                    onChange={(event) =>
+                      setFollowUpForm((prev) => ({
+                        ...prev,
+                        contactName: event.target.value,
+                      }))
+                    }
+                    placeholder="聯絡人"
+                    className="rounded border p-2"
+                  />
+
+                  <input
+                    value={followUpForm.contactMethod}
+                    onChange={(event) =>
+                      setFollowUpForm((prev) => ({
+                        ...prev,
+                        contactMethod: event.target.value,
+                      }))
+                    }
+                    placeholder="聯絡方式"
+                    className="rounded border p-2"
+                  />
+
+                  <input
+                    type="date"
+                    value={followUpForm.nextFollowUpDate}
+                    onChange={(event) =>
+                      setFollowUpForm((prev) => ({
+                        ...prev,
+                        nextFollowUpDate: event.target.value,
+                      }))
+                    }
+                    className="rounded border p-2"
+                  />
+
+                  <textarea
+                    value={followUpForm.content}
+                    onChange={(event) =>
+                      setFollowUpForm((prev) => ({
+                        ...prev,
+                        content: event.target.value,
+                      }))
+                    }
+                    placeholder="請輸入本次追蹤內容"
+                    rows="3"
+                    className="rounded border p-2 md:col-span-2"
+                  />
+                </div>
+
+                <div className="mt-3 text-right">
+                  <button
+                    onClick={saveFollowUp}
+                    disabled={followUpSaving}
+                    className="rounded bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400"
+                  >
+                    {followUpSaving ? '儲存中...' : '儲存追蹤紀錄'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t pt-5">
+                <h4 className="mb-3 font-semibold text-gray-700">
+                  歷史追蹤紀錄
+                </h4>
+
+                {followUpList.length === 0 ? (
+                  <div className="rounded bg-gray-50 p-4 text-sm text-gray-400">
+                    尚無追蹤紀錄
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {followUpList.map((item, index) => (
+                      <div
+                        key={item.FollowUpId || item.followUpId || index}
+                        className="rounded border border-gray-200 p-4"
+                      >
+                        <div className="flex flex-col gap-1 text-sm md:flex-row md:items-center md:justify-between">
+                          <div className="font-medium text-gray-700">
+                            {item.FollowUpType || item.followUpType || '追蹤'}
+                            {item.ContactName || item.contactName
+                              ? `｜${item.ContactName || item.contactName}`
+                              : ''}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatDateForInput(
+                              item.FollowUpDate || item.followUpDate
+                            )}
+                            {'　'}
+                            {item.CreatedByName || item.createdByName || ''}
+                          </div>
+                        </div>
+
+                        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                          {item.Content || item.content}
+                        </div>
+
+                        {(item.NextFollowUpDate || item.nextFollowUpDate) && (
+                          <div className="mt-2 text-xs text-blue-600">
+                            下次追蹤：
+                            {formatDateForInput(
+                              item.NextFollowUpDate || item.nextFollowUpDate
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showOpportunityForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={() => setShowOpportunityForm(false)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-800">
+                {opportunityForm.opportunityId ? '編輯案件' : '新增案件'}
+              </h3>
+              <button
+                onClick={() => setShowOpportunityForm(false)}
+                className="text-2xl leading-none text-gray-400 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  客戶 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={opportunityForm.customerId}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      customerId: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                >
+                  <option value="">請選擇客戶</option>
+                  {customerList.map((customer) => (
+                    <option
+                      key={customer.CustomerId}
+                      value={customer.CustomerId}
+                    >
+                      {customer.Code}　{customer.Name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  案件名稱 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={opportunityForm.opportunityName}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      opportunityName: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  銷售階段
+                </label>
+                <select
+                  value={opportunityForm.stage}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      stage: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                >
+                  <option value="INITIAL_CONTACT">初步接洽</option>
+                  <option value="REQUIREMENT_CONFIRMED">需求確認</option>
+                  <option value="QUOTED">已報價</option>
+                  <option value="DEMO_COMPLETED">Demo 完成</option>
+                  <option value="NEGOTIATION">商務洽談</option>
+                  <option value="WON">成交</option>
+                  <option value="LOST">失單</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  客戶等級
+                </label>
+                <select
+                  value={opportunityForm.customerGrade}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      customerGrade: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                >
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  預估金額
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={opportunityForm.estimatedAmount}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      estimatedAmount: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  預計成交日
+                </label>
+                <input
+                  type="date"
+                  value={opportunityForm.expectedCloseDate}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      expectedCloseDate: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  下次追蹤日
+                </label>
+                <input
+                  type="date"
+                  value={opportunityForm.nextFollowUpDate}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      nextFollowUpDate: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  案件說明
+                </label>
+                <textarea
+                  rows="4"
+                  value={opportunityForm.description}
+                  onChange={(event) =>
+                    setOpportunityForm((prev) => ({
+                      ...prev,
+                      description: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded border p-2"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowOpportunityForm(false)}
+                className="rounded border px-5 py-2 hover:bg-gray-50"
+              >
+                取消
+              </button>
+
+              <button
+                onClick={saveOpportunity}
+                disabled={opportunitySaving}
+                className="rounded bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {opportunitySaving ? '儲存中...' : '儲存案件'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
 
   // 4. 客戶合約資料專區
   const renderContracts = () => (
@@ -493,6 +1488,26 @@ export default function App() {
       {/* 左側 Sidebar 導覽列 */}
       <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0 z-20">
         <div className="p-6 bg-gray-950 border-b border-gray-800 select-none" onContextMenu={e=>{e.preventDefault();setAdminLoginError('');setShowAdminLogin(true);}} onTouchStart={()=>setPressTimer(setTimeout(()=>{setAdminLoginError('');setShowAdminLogin(true);},700))} onTouchEnd={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}} onTouchMove={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}}><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div><div className="text-[10px] text-gray-600 mt-2">右鍵／長按進入系統設定</div></div>
+<div className="border-b border-gray-800 px-6 py-4">
+  <div className="text-sm font-medium text-white">
+    {salesUser?.displayName || salesUser?.DisplayName}
+  </div>
+
+  <div className="mt-1 text-xs text-blue-300">
+    {salesUser?.role === 'ADMIN'
+      ? '系統管理者'
+      : salesUser?.role === 'MANAGER'
+      ? '業務主管'
+      : '業務人員'}
+  </div>
+
+  <button
+    onClick={handleSalesLogout}
+    className="mt-3 text-xs text-gray-400 hover:text-white"
+  >
+    登出目前帳號
+  </button>
+</div>
         <nav className="p-4 space-y-2 overflow-y-auto">
           <button onClick={() => setActiveTab('customer')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'customer' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             1. (潛在)客戶資料建檔
