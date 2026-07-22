@@ -55,25 +55,6 @@ function SalesLoginPage({ onLoginSuccess }) {
     }
   };
 
-if (!salesAuthReady) {
-  return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-      系統載入中...
-    </div>
-  );
-}
-
-if (!salesUser) {
-  return (
-    <SalesLoginPage
-      onLoginSuccess={(user) => {
-        setSalesUser(user);
-        setActiveTab('salestrack');
-      }}
-    />
-  );
-}
-
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <form
@@ -232,7 +213,7 @@ export default function App() {
     return data && typeof data === 'object' ? [data] : [];
   };
   const getApiList = async (url) => { const res = await fetch(url); if (!res.ok) throw new Error(String(res.status)); return normalizeList(await res.json()); };
-  const SALES_API_BASE = `${APIBASE}`;
+  const SALES_API_BASE = `${API_BASE}`;
 
   const handleSalesLogout = () => {
     sessionStorage.removeItem('salesToken');
@@ -504,11 +485,15 @@ const saveFollowUp = async () => {
       setPricingRuleList([]);
     }
   };
-  useEffect(() => { loadCustomers(); loadSystemSettings(); }, []);
+
   useEffect(() => { loadQuotes(); }, []);
   useEffect(() => { if (customerList.length && !selectedCustomerCode) handleSelectCustomer(customerList[0]); }, [customerList]);
   useEffect(() => {
     setSalesAuthReady(true);
+  }, []);
+  useEffect(() => { 
+    loadCustomers(); 
+    loadSystemSettings(); 
   }, []);
 
   useEffect(() => {
@@ -1481,6 +1466,25 @@ const renderSalesTracking = () => {
       <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">開發建置中...</div>
     </div>
   );
+
+  if (!salesAuthReady) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        系統載入中...
+      </div>
+    );
+  }
+
+  if (!salesUser) {
+    return (
+      <SalesLoginPage
+        onLoginSuccess={(user) => {
+          setSalesUser(user);
+          setActiveTab('salestrack');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col md:flex-row font-sans overflow-hidden">
