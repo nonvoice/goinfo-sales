@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 const API_BASE = 'https://goinfosales-n8n.zeabur.app/webhook';
-console.log('Goinfo Sales frontend version: 2026-07-23-1625');
+console.log('Goinfo Sales frontend version: 2026-07-23-1648');
 const initialSystemForm = { SystemId: '', SystemCode: '', SystemName: '', Category: '', IsActive: true, Note: '' };
 const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', VersionNo: 1, EffectiveStartDate: new Date().toISOString().slice(0, 10), EffectiveEndDate: '', FirstUserPrice: '', AdditionalUserPrice: '', MinimumUsers: 1, IsActive: true, Remark: '' };
 
@@ -1480,6 +1480,8 @@ const renderSalesTracking = () => {
     return (
       <SalesLoginPage
         onLoginSuccess={(user) => {
+        console.log('Login success user:', user);
+        console.log('Switching activeTab to: salestrack');
           setSalesUser(user);
           setActiveTab('salestrack');
         }}
