@@ -1539,16 +1539,16 @@ const renderSalesTracking = () => {
       </div>
 
       {/* 右側主內容區 */}
-      <div className="flex-1 p-6 overflow-y-auto bg-gray-100">
-        <div className="max-w-7xl mx-auto h-full">
+      <div className="flex-1 overflow-y-auto bg-gray-100 p-6">
+        <div className="mx-auto min-h-full max-w-7xl">
           {activeTab === 'customer' && renderCustomerForm()}
-          {activeTab === 'quote_new' && renderQuotationForm('2. 營建系統報價建檔 (新購)', 'NEW_LICENSE', 'CreateNewSystemQuote')}
-          {activeTab === 'sales_track' && renderSalesTracking()}
-          {activeTab === 'system_settings' && isAdminLoggedIn && renderSystemSettings()}
+          {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
+          {activeTab === 'salestrack' && renderSalesTracking()}
+          {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
           {activeTab === 'contracts' && renderContracts()}
-          {activeTab === 'quote_add' && renderQuotationForm('5. 增設授權報價建檔 (舊客加買人數)', 'ADD_USER', 'CreateAddUserQuote')}
-          {activeTab === 'quote_maint' && renderQuotationForm('6. 維護合約報價建檔 (續約)', 'MAINTENANCE', 'CreateMaintenanceQuote')}
-        </div>
+          {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
+          {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
+         </div>
       </div>
       
       {showQuotePreview && previewQuote && (
