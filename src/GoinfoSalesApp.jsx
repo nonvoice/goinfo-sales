@@ -1481,7 +1481,7 @@ const renderSalesTracking = () => {
       <SalesLoginPage
         onLoginSuccess={(user) => {
           setSalesUser(user);
-          setActiveTab('customer');
+          setActiveTab('salestrack');
         }}
       />
     );
