@@ -128,7 +128,7 @@ function SalesLoginPage({ onLoginSuccess }) {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('customer');
+  const [activeTab, setActiveTab] = useState('salestrack');
   const [salesUser, setSalesUser] = useState(() => {
   try {
     const raw = sessionStorage.getItem('salesUser');
