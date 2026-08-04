@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 const API_BASE = 'https://goinfosales-n8n.zeabur.app/webhook';
-console.log('Goinfo Sales frontend version: 2026-07-23-1648');
+console.log('Goinfo Sales frontend version: 2026-08-04-tab-fix');
 const initialSystemForm = { SystemId: '', SystemCode: '', SystemName: '', Category: '', IsActive: true, Note: '' };
 const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', VersionNo: 1, EffectiveStartDate: new Date().toISOString().slice(0, 10), EffectiveEndDate: '', FirstUserPrice: '', AdditionalUserPrice: '', MinimumUsers: 1, IsActive: true, Remark: '' };
 
@@ -509,7 +509,7 @@ const saveFollowUp = async () => {
   const handleSelectCustomer = (customer) => { setCustomerForm({ ...initialCustomerForm, ...customer, PayM: String(customer.PayM ?? 0), State: String(customer.State ?? 1), demoT: formatDateForInput(customer.demoT), ContT: formatDateForInput(customer.ContT), SetupT: formatDateForInput(customer.SetupT) }); setSelectedCustomerCode(customer.Code); };
   const saveCustomer = async () => { if (!customerForm.Code?.trim()) return alert('請輸入客戶代號'); const payload = { ...customerForm, Code: customerForm.Code.trim(), Name: customerForm.Name?.trim() || '', PayM: Number(customerForm.PayM) || 0, State: Number(customerForm.State) || 1, demoT: customerForm.demoT || null, ContT: customerForm.ContT || null, SetupT: customerForm.SetupT || null }; try { const res = await fetch(`${API_BASE}/save-customer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(await res.text()); setCustomerList(prev => { const i=prev.findIndex(c=>c.Code===payload.Code); return i < 0 ? [payload,...prev] : prev.map((c,n)=>n===i?payload:c); }); setSelectedCustomerCode(payload.Code); alert('客戶資料已成功存入資料庫！'); } catch (e) { console.error(e); alert('儲存客戶失敗。'); } };
 
-  const handleAdminLogin = async (e) => { e.preventDefault(); setAdminLoginError(''); try { const res = await fetch(`${API_BASE}/admin-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(adminLoginForm) }); const data = await res.json(); if (!res.ok || !data?.success) return setAdminLoginError(data?.message || '帳號或密碼錯誤'); const token=data.token || `admin-${Date.now()}`; sessionStorage.setItem('goinfo_admin_token', token); setAdminToken(token); setIsAdminLoggedIn(true); setShowAdminLogin(false); setAdminLoginForm({username:'admin',password:''}); setActiveTab('system_settings'); } catch(e) { setAdminLoginError('無法連線至後台驗證服務'); } };
+  const handleAdminLogin = async (e) => { e.preventDefault(); setAdminLoginError(''); try { const res = await fetch(`${API_BASE}/admin-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(adminLoginForm) }); const data = await res.json(); if (!res.ok || !data?.success) return setAdminLoginError(data?.message || '帳號或密碼錯誤'); const token=data.token || `admin-${Date.now()}`; sessionStorage.setItem('goinfo_admin_token', token); setAdminToken(token); setIsAdminLoggedIn(true); setShowAdminLogin(false); setAdminLoginForm({username:'admin',password:''}); setActiveTab('systemsettings'); } catch(e) { setAdminLoginError('無法連線至後台驗證服務'); } };
   const handleAdminLogout = () => { sessionStorage.removeItem('goinfo_admin_token'); setAdminToken(''); setIsAdminLoggedIn(false); setActiveTab('customer'); };
   const authorizedPost = async (path, payload) => fetch(`${API_BASE}/${path}`, { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${adminToken}`}, body:JSON.stringify(payload) });
   const saveSystem = async () => { if (!systemForm.SystemCode.trim() || !systemForm.SystemName.trim()) return alert('請填寫系統代號及系統名稱'); try { const r=await authorizedPost('save-system-product', {...systemForm, IsActive:!!systemForm.IsActive}); if(!r.ok) throw new Error(); await loadSystemSettings(); setSystemForm(initialSystemForm); alert('系統資料已儲存'); } catch(e){ alert('系統資料儲存失敗'); } };
@@ -1519,22 +1519,22 @@ const renderSalesTracking = () => {
           <button onClick={() => setActiveTab('customer')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'customer' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             1. (潛在)客戶資料建檔
           </button>
-          <button onClick={() => {setActiveTab('quote_new'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_new' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quotenew'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quotenew' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             2. 營建系統報價建檔
           </button>
-          <button onClick={() => setActiveTab('sales_track')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'sales_track' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab('salestrack')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'salestrack' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             3. 業務銷售追蹤專區
           </button>
           <button onClick={() => setActiveTab('contracts')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'contracts' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             4. 客戶合約資料專區
           </button>
-          <button onClick={() => {setActiveTab('quote_add'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_add' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quoteadd'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quoteadd' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             5. 增設授權報價建檔
           </button>
-          <button onClick={() => {setActiveTab('quote_maint'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quote_maint' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+          <button onClick={() => {setActiveTab('quotemaint'); setQuoteItems([]); setCustomerCode('');}} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'quotemaint' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
             6. 維護合約報價建檔
           </button>
-          {isAdminLoggedIn && <><div className="border-t border-gray-700 my-3"/><button onClick={()=>setActiveTab('system_settings')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'system_settings' ? 'bg-amber-500 text-white' : 'text-amber-300 hover:bg-gray-800'}`}>⚙ 系統設定：軟體與價格</button><button onClick={handleAdminLogout} className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800">登出後台</button></>}
+          {isAdminLoggedIn && <><div className="border-t border-gray-700 my-3"/><button onClick={()=>setActiveTab('systemsettings')} className={`w-full text-left px-4 py-3 rounded transition ${activeTab === 'systemsettings' ? 'bg-amber-500 text-white' : 'text-amber-300 hover:bg-gray-800'}`}>⚙ 系統設定：軟體與價格</button><button onClick={handleAdminLogout} className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800">登出後台</button></>}
         </nav>
       </div>
 
