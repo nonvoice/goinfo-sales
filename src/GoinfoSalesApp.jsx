@@ -159,6 +159,7 @@ export default function App() {
     opportunityName: '',
     stage: 'INITIAL_CONTACT',
     customerGrade: 'B',
+    createdAt: new Date().toISOString().slice(0, 10),
     estimatedAmount: '',
     expectedCloseDate: '',
     nextFollowUpDate: '',
@@ -175,10 +176,20 @@ export default function App() {
     nextFollowUpDate: '',
     contactName: '',
     contactMethod: '電話',
+    stage: '',
+    customerGrade: '',
+    followUpDate: new Date().toISOString().slice(0, 10),
   };
 
   const [followUpForm, setFollowUpForm] = useState(initialFollowUpForm);
   const [followUpSaving, setFollowUpSaving] = useState(false);
+  const [opportunityDateFrom, setOpportunityDateFrom] = useState('');
+  const [opportunityDateTo, setOpportunityDateTo] = useState('');
+  const [opportunitySearch, setOpportunitySearch] = useState('');
+  const [opportunitySort, setOpportunitySort] = useState('CreatedAt');
+  const [hideNoFollowUp, setHideNoFollowUp] = useState(true);
+  const [showOpportunityCustomerPicker, setShowOpportunityCustomerPicker] = useState(false);
+  const [opportunityCustomerSearch, setOpportunityCustomerSearch] = useState('');
   const [systemList, setSystemList] = useState([]);
   const [pricingRuleList, setPricingRuleList] = useState([]);
   const [systemForm, setSystemForm] = useState(initialSystemForm);
@@ -408,6 +419,7 @@ const saveOpportunity = async () => {
       expectedCloseDate: opportunityForm.expectedCloseDate || null,
       nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
       description: opportunityForm.description || null,
+      createdAt: opportunityForm.createdAt || new Date().toISOString().slice(0, 10),
     };
 
     await salesApiFetch('save-sales-opportunity', {
@@ -454,6 +466,9 @@ const saveFollowUp = async () => {
         nextFollowUpDate: followUpForm.nextFollowUpDate || null,
         contactName: followUpForm.contactName || null,
         contactMethod: followUpForm.contactMethod || null,
+        followUpDate: followUpForm.followUpDate || new Date().toISOString().slice(0, 10),
+        stage: followUpForm.stage || null,
+        customerGrade: followUpForm.customerGrade || null,
       }),
     });
 
@@ -913,553 +928,71 @@ const saveFollowUp = async () => {
 
   // 3. 業務銷售追蹤專區
 const renderSalesTracking = () => {
-  const isManager =
-    salesUser?.role === 'MANAGER' || salesUser?.role === 'ADMIN';
-
-  const stageLabel = {
-    INITIAL_CONTACT: '初步接洽',
-    REQUIREMENT_CONFIRMED: '需求確認',
-    QUOTED: '已報價',
-    DEMO_COMPLETED: 'Demo 完成',
-    NEGOTIATION: '商務洽談',
-    WON: '成交',
-    LOST: '失單',
-  };
-
-  const selectedId =
-    selectedOpportunity?.OpportunityId ||
-    selectedOpportunity?.opportunityId;
-
+  const stageOptions = [
+    ['INITIAL_CONTACT', '初步接洽'], ['REQUIREMENT_CONFIRMED', '需求確認'],
+    ['DEMO_COMPLETED', '系統展示完成'], ['QUOTED', '已進行報價'],
+    ['NEGOTIATION', '洽談磋商中'], ['WON', '確定成交'], ['LOST', '不需再追'],
+  ];
+  const stageLabel = Object.fromEntries(stageOptions);
+  const intentOptions = [['S','S-意願極高'], ['A','A-意願尚可'], ['B','B-未表明意願'], ['C','C-意願欠佳']];
+  const intentLabel = Object.fromEntries(intentOptions);
+  const contactLabel = { PHONE: '電話', MEETING: '會面', EMAIL: '電子郵件', LINE: 'LINE', OTHER: '其他', '電話':'電話', '會面':'會面', '電子郵件':'電子郵件', LINE:'LINE', '其他':'其他' };
+  const selectedId = selectedOpportunity?.OpportunityId || selectedOpportunity?.opportunityId;
+  const dateValue = (value) => value ? String(value).slice(0, 10) : '';
+  const itemDate = (item) => dateValue(item.CreatedAt || item.createdAt || item.FillDate || item.fillDate);
+  const filteredOpportunities = [...opportunityList]
+    .filter(item => {
+      const date = itemDate(item);
+      const name = String(item.CustomerName || item.customerName || item.CustomerCode || item.customerCode || '').toLowerCase();
+      const stage = item.Stage || item.stage;
+      return (!opportunityDateFrom || date >= opportunityDateFrom) && (!opportunityDateTo || date <= opportunityDateTo) && (!opportunitySearch.trim() || name.includes(opportunitySearch.trim().toLowerCase())) && (!hideNoFollowUp || stage !== 'LOST');
+    })
+    .sort((a,b) => {
+      const field = opportunitySort === 'CustomerName' ? (a.CustomerName || a.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[a.Stage || a.stage] || '') : opportunitySort === 'CustomerGrade' ? (a.CustomerGrade || a.customerGrade || '') : itemDate(a);
+      const other = opportunitySort === 'CustomerName' ? (b.CustomerName || b.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[b.Stage || b.stage] || '') : opportunitySort === 'CustomerGrade' ? (b.CustomerGrade || b.customerGrade || '') : itemDate(b);
+      return String(field).localeCompare(String(other), 'zh-Hant');
+    });
+  const pickerCustomers = customerList.filter(c => {
+    const term = opportunityCustomerSearch.trim().toLowerCase();
+    return !term || String(c.Code || '').toLowerCase().includes(term) || String(c.Name || '').toLowerCase().includes(term);
+  });
+  const selectedCustomer = customerList.find(c => String(c.CustomerId) === String(opportunityForm.customerId));
+  const updateFollowUp = (field, value) => setFollowUpForm(prev => ({...prev, [field]: value}));
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">
-            3. 銷售案件追蹤
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {isManager
-              ? '您目前可檢視全部業務案件。'
-              : '您目前只能檢視與處理自己負責的案件。'}
-          </p>
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div><h2 className="text-xl font-bold text-gray-800">3. 銷售案件追蹤</h2><p className="mt-1 text-sm text-gray-500">可依填單日期、客戶名稱篩選並管理業務案件。</p></div>
+          <div className="flex gap-2"><button onClick={loadOpportunities} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">重新整理</button><button onClick={openNewOpportunity} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ 新增案件</button></div>
         </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={loadOpportunities}
-            disabled={opportunityLoading}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
-          >
-            {opportunityLoading ? '讀取中...' : '重新整理'}
-          </button>
-
-          <button
-            onClick={openNewOpportunity}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            + 新增案件
-          </button>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <label className="text-sm text-gray-600">填單日篩選<input type="date" value={opportunityDateFrom} onChange={e=>setOpportunityDateFrom(e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
+          <label className="text-sm text-gray-600">至<input type="date" value={opportunityDateTo} onChange={e=>setOpportunityDateTo(e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
+          <label className="text-sm text-gray-600">搜尋客戶<input value={opportunitySearch} onChange={e=>setOpportunitySearch(e.target.value)} placeholder="客戶名稱關鍵字" className="mt-1 w-full rounded border p-2" /></label>
+          <label className="text-sm text-gray-600">排序選擇<select value={opportunitySort} onChange={e=>setOpportunitySort(e.target.value)} className="mt-1 w-full rounded border p-2"><option value="CreatedAt">依填單日</option><option value="CustomerName">依客戶名稱</option><option value="Stage">依銷售階段</option><option value="CustomerGrade">依購買意願</option></select></label>
+          <label className="flex items-center gap-2 pt-6 text-sm font-medium text-gray-700"><input type="checkbox" checked={hideNoFollowUp} onChange={e=>setHideNoFollowUp(e.target.checked)} />不需再追者略</label>
         </div>
       </div>
-
-      {opportunityError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {opportunityError}
-        </div>
-      )}
-
+      {opportunityError && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{opportunityError}</div>}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm xl:col-span-2">
-          <div className="border-b bg-gray-50 px-4 py-3">
-            <h3 className="font-bold text-gray-700">案件清單</h3>
-          </div>
-
-          <div className="max-h-[680px] overflow-y-auto">
-            {opportunityLoading ? (
-              <div className="p-8 text-center text-sm text-gray-400">
-                案件讀取中...
-              </div>
-            ) : opportunityList.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-400">
-                尚無可檢視案件
-              </div>
-            ) : (
-              opportunityList.map((item) => {
-                const itemId = item.OpportunityId || item.opportunityId;
-                const itemStage = item.Stage || item.stage;
-                const isSelected = Number(itemId) === Number(selectedId);
-
-                return (
-                  <button
-                    key={itemId}
-                    type="button"
-                    onClick={() => loadOpportunityDetail(itemId)}
-                    className={`w-full border-b p-4 text-left transition last:border-b-0 ${
-                      isSelected
-                        ? 'border-l-4 border-l-blue-600 bg-blue-50'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="mb-1 flex items-start justify-between gap-3">
-                      <div className="font-semibold text-gray-800">
-                        {item.OpportunityName || item.opportunityName}
-                      </div>
-                      <span className="whitespace-nowrap rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">
-                        {stageLabel[itemStage] || itemStage || '-'}
-                      </span>
-                    </div>
-
-                    <div className="text-sm text-gray-600">
-                      {item.CustomerName ||
-                        item.customerName ||
-                        item.CustomerCode ||
-                        item.customerCode ||
-                        '-'}
-                    </div>
-
-                    <div className="mt-2 flex justify-between text-xs text-gray-500">
-                      <span>
-                        負責：{item.OwnerName || item.ownerName || '-'}
-                      </span>
-                      <span>
-                        ${Number(
-                          item.EstimatedAmount || item.estimatedAmount || 0
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm xl:col-span-3">
-          {!selectedOpportunity && !detailLoading && (
-            <div className="flex min-h-[450px] items-center justify-center text-gray-400">
-              請由左側選擇案件，查看明細與追蹤紀錄。
-            </div>
-          )}
-
-          {detailLoading && (
-            <div className="flex min-h-[450px] items-center justify-center text-gray-400">
-              案件明細讀取中...
-            </div>
-          )}
-
-          {selectedOpportunity && !detailLoading && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {selectedOpportunity.OpportunityName ||
-                      selectedOpportunity.opportunityName}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    客戶：
-                    {selectedOpportunity.CustomerName ||
-                      selectedOpportunity.customerName ||
-                      selectedOpportunity.CustomerCode ||
-                      selectedOpportunity.customerCode ||
-                      '-'}
-                  </p>
-                </div>
-
-                <button
-                  onClick={openEditOpportunity}
-                  className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-                >
-                  編輯案件
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
-                <div className="rounded bg-gray-50 p-3">
-                  <div className="text-xs text-gray-500">目前階段</div>
-                  <div className="mt-1 font-medium">
-                    {stageLabel[
-                      selectedOpportunity.Stage || selectedOpportunity.stage
-                    ] ||
-                      selectedOpportunity.Stage ||
-                      selectedOpportunity.stage ||
-                      '-'}
-                  </div>
-                </div>
-
-                <div className="rounded bg-gray-50 p-3">
-                  <div className="text-xs text-gray-500">預估金額</div>
-                  <div className="mt-1 font-medium">
-                    $
-                    {Number(
-                      selectedOpportunity.EstimatedAmount ||
-                        selectedOpportunity.estimatedAmount ||
-                        0
-                    ).toLocaleString()}
-                  </div>
-                </div>
-
-                <div className="rounded bg-gray-50 p-3">
-                  <div className="text-xs text-gray-500">下次追蹤日</div>
-                  <div className="mt-1 font-medium">
-                    {formatDateForInput(
-                      selectedOpportunity.NextFollowUpDate ||
-                        selectedOpportunity.nextFollowUpDate
-                    ) || '-'}
-                  </div>
-                </div>
-              </div>
-
-              {(selectedOpportunity.Description ||
-                selectedOpportunity.description) && (
-                <div>
-                  <h4 className="mb-2 font-semibold text-gray-700">案件說明</h4>
-                  <div className="whitespace-pre-wrap rounded border bg-gray-50 p-3 text-sm text-gray-700">
-                    {selectedOpportunity.Description ||
-                      selectedOpportunity.description}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t pt-5">
-                <h4 className="mb-3 font-semibold text-gray-700">
-                  新增追蹤紀錄
-                </h4>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <select
-                    value={followUpForm.followUpType}
-                    onChange={(event) =>
-                      setFollowUpForm((prev) => ({
-                        ...prev,
-                        followUpType: event.target.value,
-                      }))
-                    }
-                    className="rounded border p-2"
-                  >
-                    <option value="PHONE">電話</option>
-                    <option value="MEETING">拜訪／會議</option>
-                    <option value="EMAIL">Email</option>
-                    <option value="LINE">LINE</option>
-                    <option value="OTHER">其他</option>
-                  </select>
-
-                  <input
-                    value={followUpForm.contactName}
-                    onChange={(event) =>
-                      setFollowUpForm((prev) => ({
-                        ...prev,
-                        contactName: event.target.value,
-                      }))
-                    }
-                    placeholder="聯絡人"
-                    className="rounded border p-2"
-                  />
-
-                  <input
-                    value={followUpForm.contactMethod}
-                    onChange={(event) =>
-                      setFollowUpForm((prev) => ({
-                        ...prev,
-                        contactMethod: event.target.value,
-                      }))
-                    }
-                    placeholder="聯絡方式"
-                    className="rounded border p-2"
-                  />
-
-                  <input
-                    type="date"
-                    value={followUpForm.nextFollowUpDate}
-                    onChange={(event) =>
-                      setFollowUpForm((prev) => ({
-                        ...prev,
-                        nextFollowUpDate: event.target.value,
-                      }))
-                    }
-                    className="rounded border p-2"
-                  />
-
-                  <textarea
-                    value={followUpForm.content}
-                    onChange={(event) =>
-                      setFollowUpForm((prev) => ({
-                        ...prev,
-                        content: event.target.value,
-                      }))
-                    }
-                    placeholder="請輸入本次追蹤內容"
-                    rows="3"
-                    className="rounded border p-2 md:col-span-2"
-                  />
-                </div>
-
-                <div className="mt-3 text-right">
-                  <button
-                    onClick={saveFollowUp}
-                    disabled={followUpSaving}
-                    className="rounded bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400"
-                  >
-                    {followUpSaving ? '儲存中...' : '儲存追蹤紀錄'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t pt-5">
-                <h4 className="mb-3 font-semibold text-gray-700">
-                  歷史追蹤紀錄
-                </h4>
-
-                {followUpList.length === 0 ? (
-                  <div className="rounded bg-gray-50 p-4 text-sm text-gray-400">
-                    尚無追蹤紀錄
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {followUpList.map((item, index) => (
-                      <div
-                        key={item.FollowUpId || item.followUpId || index}
-                        className="rounded border border-gray-200 p-4"
-                      >
-                        <div className="flex flex-col gap-1 text-sm md:flex-row md:items-center md:justify-between">
-                          <div className="font-medium text-gray-700">
-                            {item.FollowUpType || item.followUpType || '追蹤'}
-                            {item.ContactName || item.contactName
-                              ? `｜${item.ContactName || item.contactName}`
-                              : ''}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {formatDateForInput(
-                              item.FollowUpDate || item.followUpDate
-                            )}
-                            {'　'}
-                            {item.CreatedByName || item.createdByName || ''}
-                          </div>
-                        </div>
-
-                        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
-                          {item.Content || item.content}
-                        </div>
-
-                        {(item.NextFollowUpDate || item.nextFollowUpDate) && (
-                          <div className="mt-2 text-xs text-blue-600">
-                            下次追蹤：
-                            {formatDateForInput(
-                              item.NextFollowUpDate || item.nextFollowUpDate
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="overflow-hidden rounded-lg border bg-white shadow-sm xl:col-span-2"><div className="border-b bg-gray-50 px-4 py-3"><h3 className="font-bold text-gray-700">案件清單</h3></div><div className="max-h-[680px] overflow-y-auto">
+          {opportunityLoading ? <div className="p-8 text-center text-gray-400">案件讀取中...</div> : filteredOpportunities.length===0 ? <div className="p-8 text-center text-gray-400">尚無符合條件的案件</div> : filteredOpportunities.map(item=>{const id=item.OpportunityId||item.opportunityId, stage=item.Stage||item.stage, grade=item.CustomerGrade||item.customerGrade||'B'; return <button key={id} onClick={()=>loadOpportunityDetail(id)} className={`w-full border-b p-4 text-left ${Number(id)===Number(selectedId)?'border-l-4 border-l-blue-600 bg-blue-50':'hover:bg-gray-50'}`}><div className="flex justify-between gap-2"><b>{item.OpportunityName||item.opportunityName}</b><span className={`rounded-full px-2 py-1 text-xs font-bold ${grade==='S'?'bg-orange-100 text-orange-700':grade==='A'?'bg-lime-100 text-lime-700':grade==='B'?'bg-amber-100 text-amber-700':'bg-sky-100 text-sky-700'}`}>{grade}</span></div><div className="mt-1 text-sm text-gray-600">{item.CustomerName||item.customerName||item.CustomerCode||'-'}</div><div className="mt-2 flex justify-between text-xs text-gray-500"><span>填單日：{itemDate(item)||'-'}</span><span>{stageLabel[stage]||stage||'-'}</span></div><div className="mt-1 text-right text-xs text-gray-500">{intentLabel[grade]||grade} · ${Number(item.EstimatedAmount||item.estimatedAmount||0).toLocaleString()}</div></button>})}
+        </div></div>
+        <div className="rounded-lg border bg-white p-6 shadow-sm xl:col-span-3">
+          {!selectedOpportunity ? <div className="flex min-h-[450px] items-center justify-center text-gray-400">請從左側選擇案件</div> : <div className="space-y-6">
+            <div className="flex justify-between border-b pb-4"><div><h3 className="text-xl font-bold">{selectedOpportunity.OpportunityName||selectedOpportunity.opportunityName}</h3><p className="mt-1 text-sm text-gray-500">客戶：{selectedOpportunity.CustomerName||selectedOpportunity.customerName||'-'}</p></div><button onClick={openEditOpportunity} className="rounded-lg border border-blue-600 px-4 py-2 text-sm text-blue-600">編輯案件</button></div>
+            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4"><div className="rounded bg-gray-50 p-3"><small>目前階段</small><b className="mt-1 block">{stageLabel[selectedOpportunity.Stage||selectedOpportunity.stage]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>購買意願</small><b className="mt-1 block">{intentLabel[selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>預估金額</small><b className="mt-1 block">${Number(selectedOpportunity.EstimatedAmount||selectedOpportunity.estimatedAmount||0).toLocaleString()}</b></div><div className="rounded bg-gray-50 p-3"><small>下次追蹤日</small><b className="mt-1 block">{dateValue(selectedOpportunity.NextFollowUpDate||selectedOpportunity.nextFollowUpDate)||'-'}</b></div></div>
+            <div className="border-t pt-5"><h4 className="mb-3 font-semibold">新增追蹤紀錄</h4><div className="grid grid-cols-1 gap-3 md:grid-cols-3"><label className="text-sm">聯絡方式<select value={followUpForm.contactMethod} onChange={e=>updateFollowUp('contactMethod',e.target.value)} className="mt-1 w-full rounded border p-2"><option>電話</option><option>會面</option><option>電子郵件</option><option>LINE</option><option>其他</option></select></label><label className="text-sm">接洽人員<input value={followUpForm.contactName} onChange={e=>updateFollowUp('contactName',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">追蹤日期<input type="date" value={followUpForm.followUpDate} onChange={e=>updateFollowUp('followUpDate',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">銷售階段<select value={followUpForm.stage||selectedOpportunity.Stage||selectedOpportunity.stage||''} onChange={e=>updateFollowUp('stage',e.target.value)} className="mt-1 w-full rounded border p-2">{stageOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">購買意願<select value={followUpForm.customerGrade||selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade||'B'} onChange={e=>updateFollowUp('customerGrade',e.target.value)} className="mt-1 w-full rounded border p-2">{intentOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">下次追蹤日<input type="date" value={followUpForm.nextFollowUpDate} onChange={e=>updateFollowUp('nextFollowUpDate',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm md:col-span-3">洽談內容<textarea value={followUpForm.content} onChange={e=>updateFollowUp('content',e.target.value)} rows="3" className="mt-1 w-full rounded border p-2" placeholder="請輸入本次追蹤內容" /></label></div><div className="mt-3 text-right"><button onClick={saveFollowUp} disabled={followUpSaving} className="rounded bg-green-600 px-5 py-2 text-sm text-white">{followUpSaving?'儲存中...':'儲存追蹤紀錄'}</button></div></div>
+            <div className="border-t pt-5"><h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>{followUpList.length===0?<div className="rounded bg-gray-50 p-4 text-sm text-gray-400">尚無追蹤紀錄</div>:<div className="space-y-3">{followUpList.map((item,i)=><div key={item.FollowUpId||i} className="rounded border p-4"><div className="flex justify-between"><b>{contactLabel[item.ContactMethod||item.contactMethod]||'其他'} {item.ContactName||item.contactName||''}</b><span className="text-xs text-gray-500">{dateValue(item.FollowUpDate||item.followUpDate)}</span></div><div className="mt-1 text-xs text-gray-500">{stageLabel[item.Stage||item.stage]||''}　{intentLabel[item.CustomerGrade||item.customerGrade]||''}</div><p className="mt-2 text-sm">{item.Content||item.content}</p>{(item.NextFollowUpDate||item.nextFollowUpDate)&&<div className="mt-2 text-xs text-blue-600">下次追蹤：{dateValue(item.NextFollowUpDate||item.nextFollowUpDate)}</div>}</div>)}</div>}</div>
+          </div>}
         </div>
       </div>
-
-      {showOpportunityForm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onMouseDown={() => setShowOpportunityForm(false)}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
-                {opportunityForm.opportunityId ? '編輯案件' : '新增案件'}
-              </h3>
-              <button
-                onClick={() => setShowOpportunityForm(false)}
-                className="text-2xl leading-none text-gray-400 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  客戶 <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={opportunityForm.customerId}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      customerId: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                >
-                  <option value="">請選擇客戶</option>
-                  {customerList.map((customer) => (
-                    <option
-                      key={customer.CustomerId}
-                      value={customer.CustomerId}
-                    >
-                      {customer.Code}　{customer.Name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  案件名稱 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  value={opportunityForm.opportunityName}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      opportunityName: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  銷售階段
-                </label>
-                <select
-                  value={opportunityForm.stage}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      stage: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                >
-                  <option value="INITIAL_CONTACT">初步接洽</option>
-                  <option value="REQUIREMENT_CONFIRMED">需求確認</option>
-                  <option value="QUOTED">已報價</option>
-                  <option value="DEMO_COMPLETED">Demo 完成</option>
-                  <option value="NEGOTIATION">商務洽談</option>
-                  <option value="WON">成交</option>
-                  <option value="LOST">失單</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  客戶等級
-                </label>
-                <select
-                  value={opportunityForm.customerGrade}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      customerGrade: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                >
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  預估金額
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={opportunityForm.estimatedAmount}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      estimatedAmount: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  預計成交日
-                </label>
-                <input
-                  type="date"
-                  value={opportunityForm.expectedCloseDate}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      expectedCloseDate: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  下次追蹤日
-                </label>
-                <input
-                  type="date"
-                  value={opportunityForm.nextFollowUpDate}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      nextFollowUpDate: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-600">
-                  案件說明
-                </label>
-                <textarea
-                  rows="4"
-                  value={opportunityForm.description}
-                  onChange={(event) =>
-                    setOpportunityForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded border p-2"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowOpportunityForm(false)}
-                className="rounded border px-5 py-2 hover:bg-gray-50"
-              >
-                取消
-              </button>
-
-              <button
-                onClick={saveOpportunity}
-                disabled={opportunitySaving}
-                className="rounded bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {opportunitySaving ? '儲存中...' : '儲存案件'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showOpportunityForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={()=>setShowOpportunityForm(false)}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6" onMouseDown={e=>e.stopPropagation()}><div className="mb-5 flex justify-between"><h3 className="text-xl font-bold">{opportunityForm.opportunityId?'編輯案件':'新增案件'}</h3><button onClick={()=>setShowOpportunityForm(false)}>×</button></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><label className="md:col-span-2 text-sm">客戶 <span className="text-red-500">*</span><div className="mt-1 flex gap-2"><input readOnly value={selectedCustomer?`${selectedCustomer.Code}－${selectedCustomer.Name}`:''} placeholder="請點選選擇客戶" className="w-full rounded border bg-gray-50 p-2"/><button type="button" onClick={()=>setShowOpportunityCustomerPicker(true)} className="rounded border border-blue-600 px-4 text-blue-600">搜尋／選擇</button></div></label><label className="md:col-span-2 text-sm">案件名稱<input value={opportunityForm.opportunityName} onChange={e=>setOpportunityForm(p=>({...p,opportunityName:e.target.value}))} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">填單日<input type="date" value={opportunityForm.createdAt} onChange={e=>setOpportunityForm(p=>({...p,createdAt:e.target.value}))} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">銷售階段<select value={opportunityForm.stage} onChange={e=>setOpportunityForm(p=>({...p,stage:e.target.value}))} className="mt-1 w-full rounded border p-2">{stageOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">購買意願<select value={opportunityForm.customerGrade} onChange={e=>setOpportunityForm(p=>({...p,customerGrade:e.target.value}))} className="mt-1 w-full rounded border p-2">{intentOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">預估金額<input type="number" min="0" value={opportunityForm.estimatedAmount} onChange={e=>setOpportunityForm(p=>({...p,estimatedAmount:e.target.value}))} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">預計成交日<input type="date" value={opportunityForm.expectedCloseDate} onChange={e=>setOpportunityForm(p=>({...p,expectedCloseDate:e.target.value}))} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">下次追蹤日<input type="date" value={opportunityForm.nextFollowUpDate} onChange={e=>setOpportunityForm(p=>({...p,nextFollowUpDate:e.target.value}))} className="mt-1 w-full rounded border p-2" /></label><label className="md:col-span-2 text-sm">案件說明<textarea value={opportunityForm.description} onChange={e=>setOpportunityForm(p=>({...p,description:e.target.value}))} rows="4" className="mt-1 w-full rounded border p-2" /></label></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setShowOpportunityForm(false)} className="rounded border px-5 py-2">取消</button><button onClick={saveOpportunity} className="rounded bg-blue-600 px-5 py-2 text-white">儲存案件</button></div></div></div>}
+      {showOpportunityCustomerPicker && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-xl rounded-xl bg-white p-6"><div className="flex justify-between"><h3 className="text-lg font-bold">搜尋並選擇客戶</h3><button onClick={()=>setShowOpportunityCustomerPicker(false)}>×</button></div><input autoFocus value={opportunityCustomerSearch} onChange={e=>setOpportunityCustomerSearch(e.target.value)} placeholder="輸入客戶代號或名稱" className="mt-4 w-full rounded border p-2"/><div className="mt-3 max-h-80 overflow-y-auto border rounded">{pickerCustomers.map(c=><button key={c.CustomerId||c.Code} onClick={()=>{setOpportunityForm(p=>({...p,customerId:String(c.CustomerId)}));setShowOpportunityCustomerPicker(false);setOpportunityCustomerSearch('')}} className="block w-full border-b p-3 text-left hover:bg-blue-50"><b>{c.Code}</b>　{c.Name}</button>)}</div></div></div>}
     </div>
   );
 };
 
-  // 4. 客戶合約資料專區
   const renderContracts = () => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-bold mb-4 text-gray-800">4. 客戶合約資料專區</h2>
