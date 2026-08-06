@@ -1376,15 +1376,10 @@ const renderUserManagement = () => (
           {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
           {activeTab === 'usermanagement' && (
             <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-800">
-                🔐 權限設定
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-500">
-                僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。
-              </p>
-            </div>
-          )}
+              <h2 className="text-xl font-bold text-gray-800">🔐 權限設定</h2>
+              <p className="mt-2 text-sm text-gray-500">僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。</p>
+           </div>
+           )}
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
