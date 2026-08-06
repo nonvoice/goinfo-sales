@@ -149,24 +149,8 @@ function SalesLoginPage({ onLoginSuccess }) {
 }
 
 export default function App() {
-const initialUserForm = {
-  userId: '',
-  loginAccount: '',
-  displayName: '',
-  password: '',
-  roleCode: 'SALES',
-  isActive: true,
-  mustChangePassword: true,
-  canViewCustomer: true,
-  canViewQuote: false,
-  canViewSalesTrack: true,
-  canViewContracts: false,
-  canViewSystemSettings: false,
-  canManageUsers: false,
-};
 const [appUsers, setAppUsers] = useState([]);
 const [appUsersLoading, setAppUsersLoading] = useState(false);
-const [userForm, setUserForm] = useState(initialUserForm);
 const [userSaving, setUserSaving] = useState(false);
 const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
