@@ -1347,7 +1347,7 @@ const renderUserManagement = () => (
     </>
   )}
 
-{salesUser?.role === 'ROOT' && (
+{(salesUser?.role || salesUser?.Role) === 'ROOT' && (
   <>
     <div className="my-3 border-t border-red-700" />
 
@@ -1374,7 +1374,17 @@ const renderUserManagement = () => (
           {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'salestrack' && renderSalesTracking()}
           {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
-          {activeTab === 'usermanagement' && salesUser?.role === 'ROOT' && renderUserManagement()}
+          {activeTab === 'usermanagement' && (
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-800">
+                🔐 權限設定
+              </h2>
+
+              <p className="mt-2 text-sm text-gray-500">
+                僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。
+              </p>
+            </div>
+          )}
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
