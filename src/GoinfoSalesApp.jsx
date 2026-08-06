@@ -1805,33 +1805,53 @@ const renderUserManagement = () => {
         <nav className="flex gap-2 overflow-x-auto p-3 md:block md:space-y-2 md:overflow-y-auto md:p-4">
 {(() => {
   const currentRole = String(
-    salesUser?.role ||
-    salesUser?.Role ||
-    salesUser?.RoleCode ||
-    ''
-  ).toUpperCase();
+  salesUser?.role ||
+  salesUser?.Role ||
+  salesUser?.RoleCode ||
+  salesUser?.UserRole ||
+  ''
+).toUpperCase();
 
-  const isRoot = currentRole === 'ROOT';
+const isRoot = currentRole === 'ROOT';
 
-  const permissions = salesUser?.permissions || {};
+const hasPermission = (camelName, pascalName) => {
+  const value =
+    salesUser?.permissions?.[camelName] ??
+    salesUser?.[camelName] ??
+    salesUser?.[pascalName];
 
-  const canViewCustomer =
-    isRoot || Boolean(permissions.canViewCustomer);
+  return isRoot || value === true || value === 1 || value === '1';
+};
 
-  const canViewQuote =
-    isRoot || Boolean(permissions.canViewQuote);
+const canViewCustomer = hasPermission(
+  'canViewCustomer',
+  'CanViewCustomer'
+);
 
-  const canViewSalesTrack =
-    isRoot || Boolean(permissions.canViewSalesTrack);
+const canViewQuote = hasPermission(
+  'canViewQuote',
+  'CanViewQuote'
+);
 
-  const canViewContracts =
-    isRoot || Boolean(permissions.canViewContracts);
+const canViewSalesTrack = hasPermission(
+  'canViewSalesTrack',
+  'CanViewSalesTrack'
+);
 
-  const canViewSystemSettings =
-    isRoot || Boolean(permissions.canViewSystemSettings);
+const canViewContracts = hasPermission(
+  'canViewContracts',
+  'CanViewContracts'
+);
 
-  const canManageUsers =
-    isRoot || Boolean(permissions.canManageUsers);
+const canViewSystemSettings = hasPermission(
+  'canViewSystemSettings',
+  'CanViewSystemSettings'
+);
+
+const canManageUsers = hasPermission(
+  'canManageUsers',
+  'CanManageUsers'
+);
 
   return (
     <>
