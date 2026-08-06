@@ -711,6 +711,7 @@ const saveFollowUp = async () => {
       body: JSON.stringify(payload),
     });
   };
+
   const saveSystem = async () => {
   if (!systemForm.SystemCode.trim() || !systemForm.SystemName.trim()) {
     alert('請填寫系統代號及系統名稱');
@@ -718,29 +719,24 @@ const saveFollowUp = async () => {
   }
 
   try {
-    const response = await authorizedPost('save-system-product', {
+    const result = await authorizedPost('save-system-product', {
       ...systemForm,
       IsActive: Boolean(systemForm.IsActive),
     });
 
-    const result = await response.json().catch(() => ({}));
-
-    if (!response.ok || result.success === false) {
-      throw new Error(
-        result.message ||
-        `系統資料儲存失敗，HTTP ${response.status}`
-      );
+    if (result?.success === false) {
+      throw new Error(result.message || '系統資料儲存失敗');
     }
 
     await loadSystemSettings();
     setSystemForm(initialSystemForm);
 
-    alert(result.message || '系統資料已儲存');
+    alert(result?.message || '系統資料已儲存');
   } catch (error) {
     console.error('saveSystem error:', error);
     alert(error.message || '系統資料儲存失敗');
   }
-};  
+};
 
   const saveRule = async () => { if (!ruleForm.SystemId || ruleForm.FirstUserPrice === '' || ruleForm.AdditionalUserPrice === '') return alert('請填寫系統、首位價格及增購單價'); try { const r=await authorizedPost('save-pricing-rule', {...ruleForm, SystemId:Number(ruleForm.SystemId), VersionNo:Number(ruleForm.VersionNo)||1, FirstUserPrice:Number(ruleForm.FirstUserPrice), AdditionalUserPrice:Number(ruleForm.AdditionalUserPrice), MinimumUsers:Number(ruleForm.MinimumUsers)||1, IsActive:!!ruleForm.IsActive, EffectiveEndDate:ruleForm.EffectiveEndDate||null}); if(!r.ok) throw new Error(); await loadSystemSettings(); setRuleForm(initialRuleForm); alert('價格規則已儲存'); } catch(e){ alert('價格規則儲存失敗'); } };
 
