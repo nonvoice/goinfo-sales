@@ -738,7 +738,41 @@ const saveFollowUp = async () => {
   }
 };
 
-  const saveRule = async () => { if (!ruleForm.SystemId || ruleForm.FirstUserPrice === '' || ruleForm.AdditionalUserPrice === '') return alert('請填寫系統、首位價格及增購單價'); try { const r=await authorizedPost('save-pricing-rule', {...ruleForm, SystemId:Number(ruleForm.SystemId), VersionNo:Number(ruleForm.VersionNo)||1, FirstUserPrice:Number(ruleForm.FirstUserPrice), AdditionalUserPrice:Number(ruleForm.AdditionalUserPrice), MinimumUsers:Number(ruleForm.MinimumUsers)||1, IsActive:!!ruleForm.IsActive, EffectiveEndDate:ruleForm.EffectiveEndDate||null}); if(!r.ok) throw new Error(); await loadSystemSettings(); setRuleForm(initialRuleForm); alert('價格規則已儲存'); } catch(e){ alert('價格規則儲存失敗'); } };
+  const saveRule = async () => {
+  if (
+    !ruleForm.SystemId ||
+    ruleForm.FirstUserPrice === '' ||
+    ruleForm.AdditionalUserPrice === ''
+  ) {
+    alert('請填寫系統、首位價格及增購單價');
+    return;
+  }
+
+  try {
+    const result = await authorizedPost('save-pricing-rule', {
+      ...ruleForm,
+      SystemId: Number(ruleForm.SystemId),
+      VersionNo: Number(ruleForm.VersionNo) || 1,
+      FirstUserPrice: Number(ruleForm.FirstUserPrice),
+      AdditionalUserPrice: Number(ruleForm.AdditionalUserPrice),
+      MinimumUsers: Number(ruleForm.MinimumUsers) || 1,
+      IsActive: Boolean(ruleForm.IsActive),
+      EffectiveEndDate: ruleForm.EffectiveEndDate || null,
+    });
+
+    if (result?.success === false) {
+      throw new Error(result.message || '價格規則儲存失敗');
+    }
+
+    await loadSystemSettings();
+    setRuleForm(initialRuleForm);
+
+    alert(result?.message || '價格規則已儲存');
+  } catch (error) {
+    console.error('saveRule error:', error);
+    alert(error.message || '價格規則儲存失敗');
+  }
+};
 
   const addItem = (itemType='NEW_LICENSE') => setQuoteItems(p => [...p, { id:`${Date.now()}-${Math.random()}`, systemId:'', itemType, userCount:1, discountRate:100, specialPrice:'' }]);
   const updateItem = (id, field, value) => setQuoteItems(p => p.map(x => x.id===id ? {...x,[field]:value} : x));
