@@ -1229,26 +1229,108 @@ const renderSalesTracking = () => {
   </button>
 </div>
         <nav className="flex gap-2 overflow-x-auto p-3 md:block md:space-y-2 md:overflow-y-auto md:p-4">
-          <button onClick={() => setActiveTab('customer')} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'customer' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            1. (潛在)客戶資料建檔
-          </button>
-          <button onClick={() => {setActiveTab('quotenew'); setQuoteItems([]); setCustomerCode('');}} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'quotenew' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            2. 營建系統報價建檔
-          </button>
-          <button onClick={() => setActiveTab('salestrack')} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'salestrack' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            3. 業務銷售追蹤專區
-          </button>
-          <button onClick={() => setActiveTab('contracts')} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'contracts' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            4. 客戶合約資料專區
-          </button>
-          <button onClick={() => {setActiveTab('quoteadd'); setQuoteItems([]); setCustomerCode('');}} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'quoteadd' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            5. 增設授權報價建檔
-          </button>
-          <button onClick={() => {setActiveTab('quotemaint'); setQuoteItems([]); setCustomerCode('');}} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'quotemaint' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-            6. 維護合約報價建檔
-          </button>
-          {isAdminLoggedIn && <><div className="border-t border-gray-700 my-3"/><button onClick={()=>setActiveTab('systemsettings')} className="shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${activeTab === 'systemsettings' ? 'bg-amber-500 text-white' : 'text-amber-300 hover:bg-gray-800'}`}>⚙ 系統設定：軟體與價格</button><button onClick={handleAdminLogout} className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800">登出後台</button></>}
-        </nav>
+  <button
+    onClick={() => setActiveTab('customer')}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'customer'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    1. (潛在)客戶資料建檔
+  </button>
+
+  <button
+    onClick={() => {
+      setActiveTab('quotenew');
+      setQuoteItems([]);
+      setCustomerCode('');
+    }}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'quotenew'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    2. 營建系統報價建檔
+  </button>
+
+  <button
+    onClick={() => setActiveTab('salestrack')}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'salestrack'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    3. 業務銷售追蹤專區
+  </button>
+
+  <button
+    onClick={() => setActiveTab('contracts')}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'contracts'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    4. 客戶合約資料專區
+  </button>
+
+  <button
+    onClick={() => {
+      setActiveTab('quoteadd');
+      setQuoteItems([]);
+      setCustomerCode('');
+    }}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'quoteadd'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    5. 增設授權報價建檔
+  </button>
+
+  <button
+    onClick={() => {
+      setActiveTab('quotemaint');
+      setQuoteItems([]);
+      setCustomerCode('');
+    }}
+    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+      activeTab === 'quotemaint'
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800'
+    }`}
+  >
+    6. 維護合約報價建檔
+  </button>
+
+  {isAdminLoggedIn && (
+    <>
+      <div className="my-3 border-t border-gray-700" />
+
+      <button
+        onClick={() => setActiveTab('systemsettings')}
+        className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+          activeTab === 'systemsettings'
+            ? 'bg-amber-500 text-white'
+            : 'text-amber-300 hover:bg-gray-800'
+        }`}
+      >
+        ⚙ 系統設定：軟體與價格
+      </button>
+
+      <button
+        onClick={handleAdminLogout}
+        className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800"
+      >
+        登出後台
+      </button>
+    </>
+  )}
+</nav>
       </div>
 
       {/* 右側主內容區 */}
