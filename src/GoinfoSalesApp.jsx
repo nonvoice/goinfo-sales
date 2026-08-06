@@ -256,11 +256,6 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
     canViewSystemSettings: false,
     canManageUsers: false,
   };
-const [appUsers, setAppUsers] = useState([]);
-const [appUsersLoading, setAppUsersLoading] = useState(false);
-const [userForm, setUserForm] = useState(initialUserForm);
-const [userSaving, setUserSaving] = useState(false);
-const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
 
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
