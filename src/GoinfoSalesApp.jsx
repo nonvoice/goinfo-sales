@@ -149,6 +149,26 @@ function SalesLoginPage({ onLoginSuccess }) {
 }
 
 export default function App() {
+const initialUserForm = {
+  userId: '',
+  loginAccount: '',
+  displayName: '',
+  password: '',
+  roleCode: 'SALES',
+  isActive: true,
+  mustChangePassword: true,
+  canViewCustomer: true,
+  canViewQuote: false,
+  canViewSalesTrack: true,
+  canViewContracts: false,
+  canViewSystemSettings: false,
+  canManageUsers: false,
+};
+const [appUsers, setAppUsers] = useState([]);
+const [appUsersLoading, setAppUsersLoading] = useState(false);
+const [userForm, setUserForm] = useState(initialUserForm);
+const [userSaving, setUserSaving] = useState(false);
+const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
   const [salesUser, setSalesUser] = useState(() => {
   try {
@@ -276,6 +296,75 @@ export default function App() {
         Authorization: `Bearer ${token}`,
       },
     });
+
+const loadAppUsers = async () => {
+  setAppUsersLoading(true);
+
+  try {
+    const result = await salesApiFetch('get-app-users');
+    setAppUsers(result.users || result.data || result.rows || []);
+  } catch (error) {
+    alert(error.message || '讀取使用者清單失敗');
+  } finally {
+    setAppUsersLoading(false);
+  }
+};
+
+const saveAppUser = async () => {
+  if (!userForm.loginAccount.trim()) {
+    alert('請輸入登入帳號');
+    return;
+  }
+
+  if (!userForm.displayName.trim()) {
+    alert('請輸入顯示名稱');
+    return;
+  }
+
+  if (!userForm.userId && !userForm.password) {
+    alert('新增使用者時必須設定初始密碼');
+    return;
+  }
+
+  if (userForm.roleCode === 'ROOT' && userForm.userId) {
+    alert('ROOT 帳號不可由此畫面變更角色');
+    return;
+  }
+
+  setUserSaving(true);
+
+  try {
+    await salesApiFetch('save-app-user', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: userForm.userId ? 'update' : 'create',
+        userId: userForm.userId ? Number(userForm.userId) : null,
+        loginAccount: userForm.loginAccount.trim(),
+        displayName: userForm.displayName.trim(),
+        password: userForm.password || null,
+        roleCode: userForm.roleCode,
+        isActive: Boolean(userForm.isActive),
+        mustChangePassword: Boolean(userForm.mustChangePassword),
+        canViewCustomer: Boolean(userForm.canViewCustomer),
+        canViewQuote: Boolean(userForm.canViewQuote),
+        canViewSalesTrack: Boolean(userForm.canViewSalesTrack),
+        canViewContracts: Boolean(userForm.canViewContracts),
+        canViewSystemSettings: Boolean(userForm.canViewSystemSettings),
+        canManageUsers: Boolean(userForm.canManageUsers),
+      }),
+    });
+
+    setUserForm(initialUserForm);
+    setSelectedManagedUserId(null);
+    await loadAppUsers();
+
+    alert('使用者資料已儲存');
+  } catch (error) {
+    alert(error.message || '儲存使用者失敗');
+  } finally {
+    setUserSaving(false);
+  }
+};
 
     const data = await response.json().catch(() => ({}));
 
@@ -562,6 +651,15 @@ const saveFollowUp = async () => {
       loadOpportunities();
     }
   }, [salesUser, activeTab]);
+
+  useEffect(() => {
+    if (
+      activeTab === 'usermanagement' &&
+      (salesUser?.role || salesUser?.Role || '').toUpperCase() === 'ROOT'
+    ) {
+      loadAppUsers();
+    }
+  }, [activeTab, salesUser]);
 
   const formatDateForInput = (v) => toIsoDate(v);
   const handleCustomerChange = (e) => setCustomerForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -1173,21 +1271,363 @@ const renderSalesTracking = () => {
   );
 };
 
-const renderUserManagement = () => (
-  <div className="rounded-lg border bg-white p-6 shadow-sm">
-    <h2 className="text-xl font-bold text-gray-800">
-      🔐 權限設定
-    </h2>
+const renderUserManagement = () => {
+  const updateUserForm = (field, value) => {
+    setUserForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
-    <p className="mt-2 text-sm text-gray-500">
-      僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。
-    </p>
+  const openEditUser = (user) => {
+    const roleCode = user.RoleCode || user.roleCode || 'SALES';
 
-    <div className="mt-6 rounded border border-dashed border-red-300 bg-red-50 p-5 text-sm text-red-700">
-      使用者管理功能尚未串接。下一步會加入使用者清單、新增帳號、停用帳號與權限勾選功能。
+    setSelectedManagedUserId(user.UserId);
+
+    setUserForm({
+      userId: user.UserId,
+      loginAccount: user.LoginAccount || '',
+      displayName: user.DisplayName || '',
+      password: '',
+      roleCode,
+      isActive: Boolean(user.IsActive),
+      mustChangePassword: Boolean(user.MustChangePassword),
+      canViewCustomer: Boolean(user.CanViewCustomer),
+      canViewQuote: Boolean(user.CanViewQuote),
+      canViewSalesTrack: Boolean(user.CanViewSalesTrack),
+      canViewContracts: Boolean(user.CanViewContracts),
+      canViewSystemSettings: Boolean(user.CanViewSystemSettings),
+      canManageUsers: Boolean(user.CanManageUsers),
+    });
+  };
+
+  const applyRolePreset = (roleCode) => {
+    const presets = {
+      ROOT: {
+        canViewCustomer: true,
+        canViewQuote: true,
+        canViewSalesTrack: true,
+        canViewContracts: true,
+        canViewSystemSettings: true,
+        canManageUsers: true,
+      },
+      ADMIN: {
+        canViewCustomer: true,
+        canViewQuote: true,
+        canViewSalesTrack: true,
+        canViewContracts: true,
+        canViewSystemSettings: true,
+        canManageUsers: false,
+      },
+      MANAGER: {
+        canViewCustomer: true,
+        canViewQuote: true,
+        canViewSalesTrack: true,
+        canViewContracts: true,
+        canViewSystemSettings: false,
+        canManageUsers: false,
+      },
+      SALES: {
+        canViewCustomer: true,
+        canViewQuote: false,
+        canViewSalesTrack: true,
+        canViewContracts: false,
+        canViewSystemSettings: false,
+        canManageUsers: false,
+      },
+    };
+
+    setUserForm((prev) => ({
+      ...prev,
+      roleCode,
+      ...presets[roleCode],
+    }));
+  };
+
+  const permissions = [
+    ['canViewCustomer', '客戶資料'],
+    ['canViewQuote', '報價建檔'],
+    ['canViewSalesTrack', '銷售案件追蹤'],
+    ['canViewContracts', '客戶合約'],
+    ['canViewSystemSettings', '系統設定'],
+    ['canManageUsers', '使用者／權限設定'],
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-5">
+        <h2 className="text-xl font-bold text-red-800">
+          🔐 權限設定
+        </h2>
+
+        <p className="mt-1 text-sm text-red-700">
+          僅 ROOT 可新增、編輯、停用使用者及設定功能權限。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+        <div className="rounded-lg border bg-white p-5 shadow-sm xl:col-span-2">
+          <div className="mb-5 flex items-center justify-between">
+            <h3 className="font-bold text-gray-800">
+              {userForm.userId ? '編輯使用者' : '新增使用者'}
+            </h3>
+
+            {userForm.userId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUserForm(initialUserForm);
+                  setSelectedManagedUserId(null);
+                }}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                新增使用者
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <label className="block text-sm">
+              登入帳號 <span className="text-red-500">*</span>
+              <input
+                value={userForm.loginAccount}
+                disabled={Boolean(userForm.userId)}
+                onChange={(e) =>
+                  updateUserForm('loginAccount', e.target.value)
+                }
+                className="mt-1 w-full rounded border p-2 disabled:bg-gray-100"
+                placeholder="例如：wang.sales"
+              />
+            </label>
+
+            <label className="block text-sm">
+              顯示名稱 <span className="text-red-500">*</span>
+              <input
+                value={userForm.displayName}
+                onChange={(e) =>
+                  updateUserForm('displayName', e.target.value)
+                }
+                className="mt-1 w-full rounded border p-2"
+                placeholder="例如：王小明"
+              />
+            </label>
+
+            {!userForm.userId && (
+              <label className="block text-sm">
+                初始密碼 <span className="text-red-500">*</span>
+                <input
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) =>
+                    updateUserForm('password', e.target.value)
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                  placeholder="首次登入密碼"
+                />
+              </label>
+            )}
+
+            <label className="block text-sm">
+              角色
+              <select
+                value={userForm.roleCode}
+                disabled={userForm.roleCode === 'ROOT'}
+                onChange={(e) => applyRolePreset(e.target.value)}
+                className="mt-1 w-full rounded border p-2 disabled:bg-gray-100"
+              >
+                <option value="SALES">SALES－業務</option>
+                <option value="MANAGER">MANAGER－主管</option>
+                <option value="ADMIN">ADMIN－系統管理員</option>
+                <option value="ROOT">ROOT－最高權限</option>
+              </select>
+            </label>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={userForm.isActive}
+                  disabled={userForm.roleCode === 'ROOT'}
+                  onChange={(e) =>
+                    updateUserForm('isActive', e.target.checked)
+                  }
+                />
+                帳號啟用
+              </label>
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={userForm.mustChangePassword}
+                  onChange={(e) =>
+                    updateUserForm(
+                      'mustChangePassword',
+                      e.target.checked
+                    )
+                  }
+                />
+                下次登入強制改密碼
+              </label>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                功能權限
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {permissions.map(([field, label]) => (
+                  <label
+                    key={field}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={userForm[field]}
+                      disabled={userForm.roleCode === 'ROOT'}
+                      onChange={(e) =>
+                        updateUserForm(field, e.target.checked)
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={userSaving}
+              onClick={saveAppUser}
+              className="w-full rounded bg-red-600 px-4 py-2.5 font-medium text-white hover:bg-red-700 disabled:bg-gray-400"
+            >
+              {userSaving ? '儲存中...' : '儲存使用者'}
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border bg-white shadow-sm xl:col-span-3">
+          <div className="flex items-center justify-between border-b bg-gray-50 px-5 py-4">
+            <div>
+              <h3 className="font-bold text-gray-800">使用者清單</h3>
+              <p className="mt-1 text-xs text-gray-500">
+                點選使用者可編輯權限；ROOT 不可停用或降權。
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={loadAppUsers}
+              className="rounded border px-3 py-2 text-sm hover:bg-white"
+            >
+              重新整理
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="bg-gray-100 text-gray-600">
+                <tr>
+                  <th className="px-4 py-3">帳號</th>
+                  <th className="px-4 py-3">姓名</th>
+                  <th className="px-4 py-3">角色</th>
+                  <th className="px-4 py-3">狀態</th>
+                  <th className="px-4 py-3">功能</th>
+                  <th className="px-4 py-3 text-center">操作</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {appUsersLoading ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-4 py-10 text-center text-gray-400"
+                    >
+                      使用者資料讀取中...
+                    </td>
+                  </tr>
+                ) : appUsers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-4 py-10 text-center text-gray-400"
+                    >
+                      尚無使用者資料
+                    </td>
+                  </tr>
+                ) : (
+                  appUsers.map((user) => {
+                    const isRoot =
+                      String(user.RoleCode || user.roleCode).toUpperCase() ===
+                      'ROOT';
+
+                    const featureCount = [
+                      user.CanViewCustomer,
+                      user.CanViewQuote,
+                      user.CanViewSalesTrack,
+                      user.CanViewContracts,
+                      user.CanViewSystemSettings,
+                      user.CanManageUsers,
+                    ].filter(Boolean).length;
+
+                    return (
+                      <tr
+                        key={user.UserId}
+                        className={`border-b hover:bg-red-50 ${
+                          selectedManagedUserId === user.UserId
+                            ? 'bg-red-50'
+                            : ''
+                        }`}
+                      >
+                        <td className="px-4 py-3 font-medium">
+                          {user.LoginAccount}
+                        </td>
+                        <td className="px-4 py-3">
+                          {user.DisplayName}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`rounded px-2 py-1 text-xs font-medium ${
+                              isRoot
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}
+                          >
+                            {user.RoleCode || user.roleCode}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {user.IsActive ? (
+                            <span className="text-green-700">啟用</span>
+                          ) : (
+                            <span className="text-gray-400">停用</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {featureCount} 項
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => openEditUser(user)}
+                            className="text-blue-600 hover:underline"
+                          >
+                            編輯
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
   const renderContracts = () => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -1245,107 +1685,173 @@ const renderUserManagement = () => (
   </button>
 </div>
         <nav className="flex gap-2 overflow-x-auto p-3 md:block md:space-y-2 md:overflow-y-auto md:p-4">
-  <button
-    onClick={() => setActiveTab('customer')}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'customer'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    1. (潛在)客戶資料建檔
-  </button>
+{(() => {
+  const currentRole = String(
+    salesUser?.role ||
+    salesUser?.Role ||
+    salesUser?.RoleCode ||
+    ''
+  ).toUpperCase();
 
-  <button
-    onClick={() => {
-      setActiveTab('quotenew');
-      setQuoteItems([]);
-      setCustomerCode('');
-    }}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'quotenew'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    2. 營建系統報價建檔
-  </button>
+  const isRoot = currentRole === 'ROOT';
 
-  <button
-    onClick={() => setActiveTab('salestrack')}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'salestrack'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    3. 業務銷售追蹤專區
-  </button>
+  const permissions = salesUser?.permissions || {};
 
-  <button
-    onClick={() => setActiveTab('contracts')}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'contracts'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    4. 客戶合約資料專區
-  </button>
+  const canViewCustomer =
+    isRoot || Boolean(permissions.canViewCustomer);
 
-  <button
-    onClick={() => {
-      setActiveTab('quoteadd');
-      setQuoteItems([]);
-      setCustomerCode('');
-    }}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'quoteadd'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    5. 增設授權報價建檔
-  </button>
+  const canViewQuote =
+    isRoot || Boolean(permissions.canViewQuote);
 
-  <button
-    onClick={() => {
-      setActiveTab('quotemaint');
-      setQuoteItems([]);
-      setCustomerCode('');
-    }}
-    className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-      activeTab === 'quotemaint'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-300 hover:bg-gray-800'
-    }`}
-  >
-    6. 維護合約報價建檔
-  </button>
+  const canViewSalesTrack =
+    isRoot || Boolean(permissions.canViewSalesTrack);
 
-  {isAdminLoggedIn && (
+  const canViewContracts =
+    isRoot || Boolean(permissions.canViewContracts);
+
+  const canViewSystemSettings =
+    isRoot || Boolean(permissions.canViewSystemSettings);
+
+  const canManageUsers =
+    isRoot || Boolean(permissions.canManageUsers);
+
+  return (
     <>
-      <div className="my-3 border-t border-gray-700" />
+      {canViewCustomer && (
+        <button
+          onClick={() => setActiveTab('customer')}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'customer'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          1. (潛在)客戶資料建檔
+        </button>
+      )}
 
-      <button
-        onClick={() => setActiveTab('systemsettings')}
-        className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-          activeTab === 'systemsettings'
-            ? 'bg-amber-500 text-white'
-            : 'text-amber-300 hover:bg-gray-800'
-        }`}
-      >
-        ⚙ 系統設定：軟體與價格
-      </button>
+      {canViewQuote && (
+        <button
+          onClick={() => {
+            setActiveTab('quotenew');
+            setQuoteItems([]);
+            setCustomerCode('');
+          }}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'quotenew'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          2. 營建系統報價建檔
+        </button>
+      )}
 
-      <button
-        onClick={handleAdminLogout}
-        className="w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800"
-      >
-        登出後台
-      </button>
+      {canViewSalesTrack && (
+        <button
+          onClick={() => setActiveTab('salestrack')}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'salestrack'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          3. 業務銷售追蹤專區
+        </button>
+      )}
+
+      {canViewContracts && (
+        <button
+          onClick={() => setActiveTab('contracts')}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'contracts'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          4. 客戶合約資料專區
+        </button>
+      )}
+
+      {canViewQuote && (
+        <button
+          onClick={() => {
+            setActiveTab('quoteadd');
+            setQuoteItems([]);
+            setCustomerCode('');
+          }}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'quoteadd'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          5. 增設授權報價建檔
+        </button>
+      )}
+
+      {canViewQuote && (
+        <button
+          onClick={() => {
+            setActiveTab('quotemaint');
+            setQuoteItems([]);
+            setCustomerCode('');
+          }}
+          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+            activeTab === 'quotemaint'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          6. 維護合約報價建檔
+        </button>
+      )}
+
+      {canViewSystemSettings && (
+        <>
+          <div className="my-3 border-t border-amber-700" />
+
+          <button
+            onClick={() => setActiveTab('systemsettings')}
+            className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+              activeTab === 'systemsettings'
+                ? 'bg-amber-500 text-white'
+                : 'text-amber-300 hover:bg-gray-800'
+            }`}
+          >
+            ⚙ 系統設定：軟體與價格
+          </button>
+        </>
+      )}
+
+      {canManageUsers && (
+        <>
+          <div className="my-3 border-t border-red-700" />
+
+          <button
+            onClick={() => setActiveTab('usermanagement')}
+            className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+              activeTab === 'usermanagement'
+                ? 'bg-red-600 text-white'
+                : 'text-red-300 hover:bg-gray-800'
+            }`}
+          >
+            🔐 權限設定
+          </button>
+        </>
+      )}
+
+      {isAdminLoggedIn && (
+        <button
+          onClick={handleAdminLogout}
+          className="shrink-0 w-auto md:w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800"
+        >
+          登出後台
+        </button>
+      )}
     </>
-  )}
+  );
+})()}
 
 {(salesUser?.role || salesUser?.Role) === 'ROOT' && (
   <>
