@@ -1704,7 +1704,7 @@ const renderUserManagement = () => {
       
       {/* 左側 Sidebar 導覽列 */}
       <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0 z-20">
-        <div className="p-6 bg-gray-950 border-b border-gray-800"><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div><div className="text-[10px] text-gray-600 mt-2">右鍵／長按進入系統設定</div></div>
+        <div className="p-6 bg-gray-950 border-b border-gray-800"><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div>
 <div className="border-b border-gray-800 px-6 py-4">
   <div className="text-sm font-medium text-white">
     {salesUser?.displayName || salesUser?.DisplayName}
