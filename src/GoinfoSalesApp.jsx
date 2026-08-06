@@ -257,6 +257,26 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [quoteListLoading, setQuoteListLoading] = useState(false);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
+  const initialUserForm = {
+    userId: '',
+    loginAccount: '',
+    displayName: '',
+    password: '',
+    roleCode: 'SALES',
+    isActive: true,
+    mustChangePassword: true,
+    canViewCustomer: true,
+    canViewQuote: false,
+    canViewSalesTrack: true,
+    canViewContracts: false,
+    canViewSystemSettings: false,
+    canManageUsers: false,
+  };
+const [appUsers, setAppUsers] = useState([]);
+const [appUsersLoading, setAppUsersLoading] = useState(false);
+const [userForm, setUserForm] = useState(initialUserForm);
+const [userSaving, setUserSaving] = useState(false);
+const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
 
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
@@ -390,6 +410,103 @@ const saveAppUser = async () => {
     if (Array.isArray(data?.rows)) return data.rows;
     return [];
   };
+
+const loadAppUsers = async () => {
+  setAppUsersLoading(true);
+
+  try {
+    const result = await salesApiFetch('get-app-users');
+
+    const users =
+      result?.users ||
+      result?.data ||
+      result?.rows ||
+      (Array.isArray(result) ? result : []);
+
+    setAppUsers(Array.isArray(users) ? users : []);
+  } catch (error) {
+    console.error('loadAppUsers error:', error);
+    alert(error.message || '讀取使用者清單失敗');
+    setAppUsers([]);
+  } finally {
+    setAppUsersLoading(false);
+  }
+};
+
+const saveAppUser = async () => {
+  const currentRole = String(
+    salesUser?.role ||
+    salesUser?.Role ||
+    salesUser?.RoleCode ||
+    ''
+  ).toUpperCase();
+
+  if (currentRole !== 'ROOT') {
+    alert('僅 ROOT 可管理使用者');
+    return;
+  }
+
+  if (!userForm.loginAccount.trim()) {
+    alert('請輸入登入帳號');
+    return;
+  }
+
+  if (!userForm.displayName.trim()) {
+    alert('請輸入顯示名稱');
+    return;
+  }
+
+  if (!userForm.userId && !userForm.password) {
+    alert('新增使用者時必須設定初始密碼');
+    return;
+  }
+
+  if (!userForm.userId && userForm.password.length < 8) {
+    alert('初始密碼至少需要 8 個字元');
+    return;
+  }
+
+  if (String(userForm.roleCode).toUpperCase() === 'ROOT') {
+    alert('不可從此畫面新增或修改 ROOT 帳號');
+    return;
+  }
+
+  setUserSaving(true);
+
+  try {
+    await salesApiFetch('save-app-user', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: userForm.userId ? 'update' : 'create',
+        userId: userForm.userId ? Number(userForm.userId) : null,
+        loginAccount: userForm.loginAccount.trim(),
+        displayName: userForm.displayName.trim(),
+        password: userForm.password || null,
+        roleCode: userForm.roleCode,
+        isActive: Boolean(userForm.isActive),
+        mustChangePassword: Boolean(userForm.mustChangePassword),
+        canViewCustomer: Boolean(userForm.canViewCustomer),
+        canViewQuote: Boolean(userForm.canViewQuote),
+        canViewSalesTrack: Boolean(userForm.canViewSalesTrack),
+        canViewContracts: Boolean(userForm.canViewContracts),
+        canViewSystemSettings: Boolean(userForm.canViewSystemSettings),
+        canManageUsers: Boolean(userForm.canManageUsers),
+      }),
+    });
+
+    setUserForm(initialUserForm);
+    setSelectedManagedUserId(null);
+
+    await loadAppUsers();
+
+    alert(userForm.userId ? '使用者資料已更新' : '使用者已新增');
+  } catch (error) {
+    console.error('saveAppUser error:', error);
+    alert(error.message || '儲存使用者失敗');
+  } finally {
+    setUserSaving(false);
+  }
+};
 
 const loadOpportunities = async () => {
   setOpportunityLoading(true);
@@ -653,10 +770,14 @@ const saveFollowUp = async () => {
   }, [salesUser, activeTab]);
 
   useEffect(() => {
-    if (
-      activeTab === 'usermanagement' &&
-      (salesUser?.role || salesUser?.Role || '').toUpperCase() === 'ROOT'
-    ) {
+    const currentRole = String(
+      salesUser?.role ||
+      salesUser?.Role ||
+      salesUser?.RoleCode ||
+      ''
+    ).toUpperCase();
+
+    if (activeTab === 'usermanagement' && currentRole === 'ROOT') {
       loadAppUsers();
     }
   }, [activeTab, salesUser]);
