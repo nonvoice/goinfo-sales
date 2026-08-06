@@ -151,7 +151,6 @@ function SalesLoginPage({ onLoginSuccess }) {
 export default function App() {
 const [appUsers, setAppUsers] = useState([]);
 const [appUsersLoading, setAppUsersLoading] = useState(false);
-const [userForm, setUserForm] = useState(initialUserForm);
 const [userSaving, setUserSaving] = useState(false);
 const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
@@ -258,6 +257,7 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
     canManageUsers: false,
   };
 
+  const [userForm, setUserForm] = useState(initialUserForm);
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.data)) return data.data;
