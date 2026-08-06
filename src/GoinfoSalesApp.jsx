@@ -1173,6 +1173,22 @@ const renderSalesTracking = () => {
   );
 };
 
+const renderUserManagement = () => (
+  <div className="rounded-lg border bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-bold text-gray-800">
+      🔐 權限設定
+    </h2>
+
+    <p className="mt-2 text-sm text-gray-500">
+      僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。
+    </p>
+
+    <div className="mt-6 rounded border border-dashed border-red-300 bg-red-50 p-5 text-sm text-red-700">
+      使用者管理功能尚未串接。下一步會加入使用者清單、新增帳號、停用帳號與權限勾選功能。
+    </div>
+  </div>
+);
+
   const renderContracts = () => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-bold mb-4 text-gray-800">4. 客戶合約資料專區</h2>
@@ -1330,6 +1346,24 @@ const renderSalesTracking = () => {
       </button>
     </>
   )}
+
+{salesUser?.role === 'ROOT' && (
+  <>
+    <div className="my-3 border-t border-red-700" />
+
+    <button
+      onClick={() => setActiveTab('usermanagement')}
+      className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
+        activeTab === 'usermanagement'
+          ? 'bg-red-600 text-white'
+          : 'text-red-300 hover:bg-gray-800'
+      }`}
+    >
+      🔐 權限設定
+    </button>
+  </>
+)}
+
 </nav>
       </div>
 
@@ -1340,6 +1374,7 @@ const renderSalesTracking = () => {
           {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'salestrack' && renderSalesTracking()}
           {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
+          {activeTab === 'usermanagement' && salesUser?.role === 'ROOT' && renderUserManagement()}
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
