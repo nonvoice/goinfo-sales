@@ -7,6 +7,21 @@ const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', 
 
 const toIsoDate = (value) => {
   if (!value) return '';
+  const raw = String(value).trim();
+  const matched = raw.match(/^(\d{4})[-/]?(\d{2})[-/]?(\d{2})/);
+
+  if (matched) {
+    return `${matched[1]}-${matched[2]}-${matched[3]}`;
+  }
+
+  const date = new Date(raw);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
 const formatAmountInput = (value) => {
   const digits = String(value ?? '').replace(/[^\d]/g, '');
@@ -23,21 +38,6 @@ const parseAmountInput = (value) => {
   return digits ? Number(digits) : 0;
 };
 
-  const raw = String(value).trim();
-  const matched = raw.match(/^(\d{4})[-/]?(\d{2})[-/]?(\d{2})/);
-
-  if (matched) {
-    return `${matched[1]}-${matched[2]}-${matched[3]}`;
-  }
-
-  const date = new Date(raw);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
 
 const isIsoDate = (value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
