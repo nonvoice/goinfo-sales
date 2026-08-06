@@ -151,6 +151,7 @@ function SalesLoginPage({ onLoginSuccess }) {
 export default function App() {
 const [appUsers, setAppUsers] = useState([]);
 const [appUsersLoading, setAppUsersLoading] = useState(false);
+const [userForm, setUserForm] = useState(initialUserForm);
 const [userSaving, setUserSaving] = useState(false);
 const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
