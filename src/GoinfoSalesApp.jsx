@@ -164,20 +164,28 @@ export default function App() {
     canViewSystemSettings: false,
     canManageUsers: false,
   };
-const [appUsers, setAppUsers] = useState([]);
-const [appUsersLoading, setAppUsersLoading] = useState(false);
-const [userForm, setUserForm] = useState(initialUserForm);
-const [userSaving, setUserSaving] = useState(false);
-const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
+  const [appUsers, setAppUsers] = useState([]);
+  const [appUsersLoading, setAppUsersLoading] = useState(false);
+  const [userForm, setUserForm] = useState(initialUserForm);
+  const [userSaving, setUserSaving] = useState(false);
+  const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
   const [salesUser, setSalesUser] = useState(() => {
-  try {
-    const raw = sessionStorage.getItem('salesUser');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-});
+    try {
+      const raw = sessionStorage.getItem('salesUser');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const currentRole = String(
+    salesUser?.role ||
+    salesUser?.Role ||
+    salesUser?.RoleCode ||
+    ''
+  ).toUpperCase();
+
+  const isRoot = currentRole === 'ROOT';
 
   const [salesAuthReady, setSalesAuthReady] = useState(false);
 
@@ -235,12 +243,6 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [pricingRuleList, setPricingRuleList] = useState([]);
   const [systemForm, setSystemForm] = useState(initialSystemForm);
   const [ruleForm, setRuleForm] = useState(initialRuleForm);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(sessionStorage.getItem('goinfo_admin_token') !== null);
-  const [adminToken, setAdminToken] = useState(sessionStorage.getItem('goinfo_admin_token') || '');
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminLoginForm, setAdminLoginForm] = useState({ username: 'admin', password: '' });
-  const [adminLoginError, setAdminLoginError] = useState('');
-  const [pressTimer, setPressTimer] = useState(null);
 
   const initialCustomerForm = { Code: '', Name: '', Ucode: '', Boss: '', Contacter: '', Tel: '', Fax: '', Phone: '', Addr1: '', Addr2: '', Email: '', PayM: '0', State: '1', demoT: '', ContT: '', SetupT: '', Note: '', StateReason: '', PayMDetail: '' };
   const [customerForm, setCustomerForm] = useState(initialCustomerForm);
@@ -699,9 +701,16 @@ const saveFollowUp = async () => {
   const handleSelectCustomer = (customer) => { setCustomerForm({ ...initialCustomerForm, ...customer, PayM: String(customer.PayM ?? 0), State: String(customer.State ?? 1), demoT: formatDateForInput(customer.demoT), ContT: formatDateForInput(customer.ContT), SetupT: formatDateForInput(customer.SetupT) }); setSelectedCustomerCode(customer.Code); };
   const saveCustomer = async () => { if (!customerForm.Code?.trim()) return alert('請輸入客戶代號'); const payload = { ...customerForm, Code: customerForm.Code.trim(), Name: customerForm.Name?.trim() || '', PayM: Number(customerForm.PayM) || 0, State: Number(customerForm.State) || 1, demoT: customerForm.demoT || null, ContT: customerForm.ContT || null, SetupT: customerForm.SetupT || null }; try { const res = await fetch(`${API_BASE}/save-customer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(await res.text()); setCustomerList(prev => { const i=prev.findIndex(c=>c.Code===payload.Code); return i < 0 ? [payload,...prev] : prev.map((c,n)=>n===i?payload:c); }); setSelectedCustomerCode(payload.Code); alert('客戶資料已成功存入資料庫！'); } catch (e) { console.error(e); alert('儲存客戶失敗。'); } };
 
-  const handleAdminLogin = async (e) => { e.preventDefault(); setAdminLoginError(''); try { const res = await fetch(`${API_BASE}/admin-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(adminLoginForm) }); const data = await res.json(); if (!res.ok || !data?.success) return setAdminLoginError(data?.message || '帳號或密碼錯誤'); const token=data.token || `admin-${Date.now()}`; sessionStorage.setItem('goinfo_admin_token', token); setAdminToken(token); setIsAdminLoggedIn(true); setShowAdminLogin(false); setAdminLoginForm({username:'admin',password:''}); setActiveTab('systemsettings'); } catch(e) { setAdminLoginError('無法連線至後台驗證服務'); } };
-  const handleAdminLogout = () => { sessionStorage.removeItem('goinfo_admin_token'); setAdminToken(''); setIsAdminLoggedIn(false); setActiveTab('customer'); };
-  const authorizedPost = async (path, payload) => fetch(`${API_BASE}/${path}`, { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${adminToken}`}, body:JSON.stringify(payload) });
+   const authorizedPost = async (path, payload) => {
+    if (!isRoot) {
+      throw new Error('僅 ROOT 可修改系統設定');
+    }
+
+    return salesApiFetch(path, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  };
   const saveSystem = async () => { if (!systemForm.SystemCode.trim() || !systemForm.SystemName.trim()) return alert('請填寫系統代號及系統名稱'); try { const r=await authorizedPost('save-system-product', {...systemForm, IsActive:!!systemForm.IsActive}); if(!r.ok) throw new Error(); await loadSystemSettings(); setSystemForm(initialSystemForm); alert('系統資料已儲存'); } catch(e){ alert('系統資料儲存失敗'); } };
   const saveRule = async () => { if (!ruleForm.SystemId || ruleForm.FirstUserPrice === '' || ruleForm.AdditionalUserPrice === '') return alert('請填寫系統、首位價格及增購單價'); try { const r=await authorizedPost('save-pricing-rule', {...ruleForm, SystemId:Number(ruleForm.SystemId), VersionNo:Number(ruleForm.VersionNo)||1, FirstUserPrice:Number(ruleForm.FirstUserPrice), AdditionalUserPrice:Number(ruleForm.AdditionalUserPrice), MinimumUsers:Number(ruleForm.MinimumUsers)||1, IsActive:!!ruleForm.IsActive, EffectiveEndDate:ruleForm.EffectiveEndDate||null}); if(!r.ok) throw new Error(); await loadSystemSettings(); setRuleForm(initialRuleForm); alert('價格規則已儲存'); } catch(e){ alert('價格規則儲存失敗'); } };
 
@@ -1695,7 +1704,7 @@ const renderUserManagement = () => {
       
       {/* 左側 Sidebar 導覽列 */}
       <div className="w-full md:w-64 bg-gray-900 text-white shadow-lg flex-shrink-0 z-20">
-        <div className="p-6 bg-gray-950 border-b border-gray-800 select-none" onContextMenu={e=>{e.preventDefault();setAdminLoginError('');setShowAdminLogin(true);}} onTouchStart={()=>setPressTimer(setTimeout(()=>{setAdminLoginError('');setShowAdminLogin(true);},700))} onTouchEnd={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}} onTouchMove={()=>{if(pressTimer) clearTimeout(pressTimer);setPressTimer(null);}}><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div><div className="text-[10px] text-gray-600 mt-2">右鍵／長按進入系統設定</div></div>
+        <div className="p-6 bg-gray-950 border-b border-gray-800"><h1 className="text-xl font-bold text-blue-400 cursor-pointer">高益營建軟體</h1><div className="text-xs text-gray-400 mt-1">業務整合系統 v2</div><div className="text-[10px] text-gray-600 mt-2">右鍵／長按進入系統設定</div></div>
 <div className="border-b border-gray-800 px-6 py-4">
   <div className="text-sm font-medium text-white">
     {salesUser?.displayName || salesUser?.DisplayName}
@@ -1839,7 +1848,7 @@ const renderUserManagement = () => {
         </button>
       )}
 
-      {canViewSystemSettings && (
+      {isRoot && (
         <>
           <div className="my-3 border-t border-amber-700" />
 
@@ -1856,7 +1865,7 @@ const renderUserManagement = () => {
         </>
       )}
 
-      {canManageUsers && (
+      {isRoot && (
         <>
           <div className="my-3 border-t border-red-700" />
 
@@ -1872,15 +1881,6 @@ const renderUserManagement = () => {
           </button>
         </>
       )}
-
-      {isAdminLoggedIn && (
-        <button
-          onClick={handleAdminLogout}
-          className="shrink-0 w-auto md:w-full text-left px-4 py-2 rounded text-sm text-gray-400 hover:bg-gray-800"
-        >
-          登出後台
-        </button>
-      )}
     </>
   );
 })()}
@@ -1894,7 +1894,7 @@ const renderUserManagement = () => {
           {activeTab === 'customer' && renderCustomerForm()}
           {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'salestrack' && renderSalesTracking()}
-          {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
+          {activeTab === 'systemsettings' && isRoot && renderSystemSettings()}
           {activeTab === 'usermanagement' && renderUserManagement()}         
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
@@ -1925,7 +1925,6 @@ const renderUserManagement = () => {
         </div>
       )}
       {showCustomerPicker && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onMouseDown={()=>setShowCustomerPicker(false)}><div className="w-full max-w-2xl max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col" onMouseDown={e=>e.stopPropagation()}><div className="flex items-center justify-between p-5 border-b"><h2 className="text-xl font-bold text-gray-800">選擇</h2><button type="button" onClick={()=>setShowCustomerPicker(false)} className="text-2xl text-gray-400 hover:text-gray-700">×</button></div><div className="p-4 border-b"><div className="relative"><input autoFocus type="text" value={customerPickerTerm} onChange={e=>setCustomerPickerTerm(e.target.value)} placeholder="搜尋客戶代號或名稱關鍵字..." className="w-full border border-blue-400 rounded-lg py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-blue-300"/><span className="absolute left-3 top-2.5 text-gray-400">⌕</span></div></div><div className="overflow-y-auto flex-1">{pickerCustomers.length ? pickerCustomers.map(c=><button type="button" key={c.CustomerId || c.Code} onClick={()=>selectQuoteCustomer(c)} className="w-full grid grid-cols-[140px_1fr] gap-4 text-left px-5 py-4 border-b hover:bg-blue-50 transition"><span className="font-medium text-blue-700">{c.Code}</span><span className="text-gray-800">{c.Name}</span></button>) : <div className="py-10 text-center text-gray-400">找不到符合的客戶</div>}</div><div className="p-4 border-t text-right"><button type="button" onClick={()=>setShowCustomerPicker(false)} className="px-4 py-2 border rounded-lg">取消</button></div></div></div>}
-      {showAdminLogin && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><form onSubmit={handleAdminLogin} className="w-full max-w-sm bg-white rounded-xl shadow-2xl p-6"><h2 className="text-xl font-bold text-gray-800">系統設定登入</h2><p className="text-sm text-gray-500 mt-1 mb-5">請輸入管理者帳號與密碼</p><label className="block text-sm font-medium text-gray-700 mb-1">帳號</label><input value={adminLoginForm.username} onChange={e=>setAdminLoginForm(p=>({...p,username:e.target.value}))} className="w-full border rounded-lg p-2 mb-4" required/><label className="block text-sm font-medium text-gray-700 mb-1">密碼</label><input type="password" value={adminLoginForm.password} onChange={e=>setAdminLoginForm(p=>({...p,password:e.target.value}))} className="w-full border rounded-lg p-2" autoFocus required/>{adminLoginError&&<div className="mt-3 rounded bg-red-50 p-2 text-sm text-red-600">{adminLoginError}</div>}<div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setShowAdminLogin(false)} className="px-4 py-2 rounded-lg border">取消</button><button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white">登入設定</button></div></form></div>}
     </div>
   );
 }
