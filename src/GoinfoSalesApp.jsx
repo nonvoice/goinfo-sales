@@ -149,8 +149,24 @@ function SalesLoginPage({ onLoginSuccess }) {
 }
 
 export default function App() {
+  const initialUserForm = {
+    userId: '',
+    loginAccount: '',
+    displayName: '',
+    password: '',
+    roleCode: 'SALES',
+    isActive: true,
+    mustChangePassword: true,
+    canViewCustomer: true,
+    canViewQuote: false,
+    canViewSalesTrack: true,
+    canViewContracts: false,
+    canViewSystemSettings: false,
+    canManageUsers: false,
+  };
 const [appUsers, setAppUsers] = useState([]);
 const [appUsersLoading, setAppUsersLoading] = useState(false);
+const [userForm, setUserForm] = useState(initialUserForm);
 const [userSaving, setUserSaving] = useState(false);
 const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [activeTab, setActiveTab] = useState('salestrack');
@@ -241,23 +257,7 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
   const [quoteListLoading, setQuoteListLoading] = useState(false);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
-  const initialUserForm = {
-    userId: '',
-    loginAccount: '',
-    displayName: '',
-    password: '',
-    roleCode: 'SALES',
-    isActive: true,
-    mustChangePassword: true,
-    canViewCustomer: true,
-    canViewQuote: false,
-    canViewSalesTrack: true,
-    canViewContracts: false,
-    canViewSystemSettings: false,
-    canManageUsers: false,
-  };
 
-  const [userForm, setUserForm] = useState(initialUserForm);
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.data)) return data.data;
@@ -296,75 +296,6 @@ const [selectedManagedUserId, setSelectedManagedUserId] = useState(null);
         Authorization: `Bearer ${token}`,
       },
     });
-
-const loadAppUsers = async () => {
-  setAppUsersLoading(true);
-
-  try {
-    const result = await salesApiFetch('get-app-users');
-    setAppUsers(result.users || result.data || result.rows || []);
-  } catch (error) {
-    alert(error.message || '讀取使用者清單失敗');
-  } finally {
-    setAppUsersLoading(false);
-  }
-};
-
-const saveAppUser = async () => {
-  if (!userForm.loginAccount.trim()) {
-    alert('請輸入登入帳號');
-    return;
-  }
-
-  if (!userForm.displayName.trim()) {
-    alert('請輸入顯示名稱');
-    return;
-  }
-
-  if (!userForm.userId && !userForm.password) {
-    alert('新增使用者時必須設定初始密碼');
-    return;
-  }
-
-  if (userForm.roleCode === 'ROOT' && userForm.userId) {
-    alert('ROOT 帳號不可由此畫面變更角色');
-    return;
-  }
-
-  setUserSaving(true);
-
-  try {
-    await salesApiFetch('save-app-user', {
-      method: 'POST',
-      body: JSON.stringify({
-        action: userForm.userId ? 'update' : 'create',
-        userId: userForm.userId ? Number(userForm.userId) : null,
-        loginAccount: userForm.loginAccount.trim(),
-        displayName: userForm.displayName.trim(),
-        password: userForm.password || null,
-        roleCode: userForm.roleCode,
-        isActive: Boolean(userForm.isActive),
-        mustChangePassword: Boolean(userForm.mustChangePassword),
-        canViewCustomer: Boolean(userForm.canViewCustomer),
-        canViewQuote: Boolean(userForm.canViewQuote),
-        canViewSalesTrack: Boolean(userForm.canViewSalesTrack),
-        canViewContracts: Boolean(userForm.canViewContracts),
-        canViewSystemSettings: Boolean(userForm.canViewSystemSettings),
-        canManageUsers: Boolean(userForm.canManageUsers),
-      }),
-    });
-
-    setUserForm(initialUserForm);
-    setSelectedManagedUserId(null);
-    await loadAppUsers();
-
-    alert('使用者資料已儲存');
-  } catch (error) {
-    alert(error.message || '儲存使用者失敗');
-  } finally {
-    setUserSaving(false);
-  }
-};
 
     const data = await response.json().catch(() => ({}));
 
@@ -1954,23 +1885,6 @@ const renderUserManagement = () => {
   );
 })()}
 
-{(salesUser?.role || salesUser?.Role) === 'ROOT' && (
-  <>
-    <div className="my-3 border-t border-red-700" />
-
-    <button
-      onClick={() => setActiveTab('usermanagement')}
-      className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-        activeTab === 'usermanagement'
-          ? 'bg-red-600 text-white'
-          : 'text-red-300 hover:bg-gray-800'
-      }`}
-    >
-      🔐 權限設定
-    </button>
-  </>
-)}
-
 </nav>
       </div>
 
@@ -1981,12 +1895,7 @@ const renderUserManagement = () => {
           {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'salestrack' && renderSalesTracking()}
           {activeTab === 'systemsettings' && isAdminLoggedIn && renderSystemSettings()}
-          {activeTab === 'usermanagement' && (
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-800">🔐 權限設定</h2>
-              <p className="mt-2 text-sm text-gray-500">僅 ROOT 可檢視與管理使用者帳號、密碼及功能權限。</p>
-           </div>
-           )}
+          {activeTab === 'usermanagement' && renderUserManagement()}         
           {activeTab === 'contracts' && renderContracts()}
           {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
