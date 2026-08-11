@@ -2134,9 +2134,9 @@ const canManageUsers = hasPermission(
 
   return (
     <>
-      {canViewCustomer && (
-        <button
-          onClick={() => setActiveTab('customer')}
+      {can('CUSTOMER', 'canQuery') && (
+  <button
+    onClick={() => setActiveTab('customer')}
           className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
             activeTab === 'customer'
               ? 'bg-blue-600 text-white'
@@ -2147,13 +2147,13 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      {canViewQuote && (
-        <button
-          onClick={() => {
-            setActiveTab('quotenew');
-            setQuoteItems([]);
-            setCustomerCode('');
-          }}
+      {can('QUOTE', 'canQuery') && (
+  <button
+    onClick={() => {
+      setActiveTab('quotenew');
+      setQuoteItems([]);
+      setCustomerCode('');
+    }}
           className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
             activeTab === 'quotenew'
               ? 'bg-blue-600 text-white'
@@ -2164,9 +2164,9 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      {canViewSalesTrack && (
-        <button
-          onClick={() => setActiveTab('salestrack')}
+      {can('SALES_TRACK', 'canQuery') && (
+  <button
+    onClick={() => setActiveTab('salestrack')}
           className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
             activeTab === 'salestrack'
               ? 'bg-blue-600 text-white'
@@ -2177,7 +2177,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      {canViewContracts && (
+      can('CONTRACT', 'canQuery') && (
         <button
           onClick={() => setActiveTab('contracts')}
           className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
@@ -2190,7 +2190,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      {canViewQuote && (
+      can('ADD_USER_QUOTE', 'canQuery') && (
         <button
           onClick={() => {
             setActiveTab('quoteadd');
@@ -2207,7 +2207,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      {canViewQuote && (
+      can('MAINTENANCE_QUOTE', 'canQuery') && (
         <button
           onClick={() => {
             setActiveTab('quotemaint');
