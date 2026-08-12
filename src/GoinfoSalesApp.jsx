@@ -214,12 +214,49 @@ export default function App() {
   const isRoot = currentRole === 'ROOT';
 
   const can = (functionCode, action) => {
-    if (isRoot) return true;
+  if (isRoot) return true;
 
-    return Boolean(
-      salesUser?.permissions?.[functionCode]?.[action]
-    );
+  const newPermission = salesUser?.permissions?.[functionCode]?.[action];
+
+  if (newPermission !== undefined) {
+    return Boolean(newPermission);
+  }
+
+  if (action !== 'canQuery') {
+    return false;
+  }
+
+  const legacyPermissions = salesUser?.permissions || salesUser || {};
+
+  const legacyFieldMap = {
+    CUSTOMER: 'canViewCustomer',
+    QUOTE: 'canViewQuote',
+    SALES_TRACK: 'canViewSalesTrack',
+    CONTRACT: 'canViewContracts',
+    ADD_USER_QUOTE: 'canViewQuote',
+    MAINTENANCE_QUOTE: 'canViewQuote',
+    SYSTEM_SETTINGS: 'canViewSystemSettings',
+    USER_PERMISSION: 'canManageUsers',
   };
+
+  const fieldName = legacyFieldMap[functionCode];
+
+  if (!fieldName) {
+    return false;
+  }
+
+  const value =
+    legacyPermissions?.[fieldName] ??
+    legacyPermissions?.[
+      fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
+    ] ??
+    salesUser?.[fieldName] ??
+    salesUser?.[
+      fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
+    ];
+
+  return value === true || value === 1 || value === '1';
+};
 
   const [salesAuthReady, setSalesAuthReady] = useState(false);
 
