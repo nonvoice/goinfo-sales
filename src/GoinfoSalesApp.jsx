@@ -2177,7 +2177,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      can('CONTRACT', 'canQuery') && (
+      {can('CONTRACT', 'canQuery') && (
         <button
           onClick={() => setActiveTab('contracts')}
           className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
@@ -2190,7 +2190,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      can('ADD_USER_QUOTE', 'canQuery') && (
+      {can('ADD_USER_QUOTE', 'canQuery') && (
         <button
           onClick={() => {
             setActiveTab('quoteadd');
@@ -2207,7 +2207,7 @@ const canManageUsers = hasPermission(
         </button>
       )}
 
-      can('MAINTENANCE_QUOTE', 'canQuery') && (
+      {can('MAINTENANCE_QUOTE', 'canQuery') && (
         <button
           onClick={() => {
             setActiveTab('quotemaint');
