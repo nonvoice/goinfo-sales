@@ -16,6 +16,15 @@ const permissionFunctions = [
   { code: 'USER_PERMISSION', label: '權限設定' },
 ];
 
+const createDefaultPermissionRows = () =>
+  permissionFunctions.map((item) => ({
+    functionCode: item.code,
+    canQuery: false,
+    canCreate: false,
+    canUpdate: false,
+    canDelete: false,
+  }));
+
 const toIsoDate = (value) => {
   if (!value) return '';
   const raw = String(value).trim();
@@ -189,6 +198,7 @@ export default function App() {
     canViewContracts: false,
     canViewSystemSettings: false,
     canManageUsers: false,
+    permissions: createDefaultPermissionRows(),
   };
   const [appUsers, setAppUsers] = useState([]);
   const [appUsersLoading, setAppUsersLoading] = useState(false);
@@ -419,6 +429,35 @@ const loadAppUsers = async () => {
     setAppUsers([]);
   } finally {
     setAppUsersLoading(false);
+  }
+};
+
+const loadUserPermissionRows = async (userId) => {
+  try {
+    const result = await salesApiFetch(
+      `get-app-user-permissions?userId=${encodeURIComponent(userId)}`
+    );
+
+    const rows = Array.isArray(result)
+      ? result
+      : result?.rows || result?.data || [];
+
+    return permissionFunctions.map((item) => {
+      const found = rows.find(
+        (row) => row.FunctionCode === item.code
+      );
+
+      return {
+        functionCode: item.code,
+        canQuery: Boolean(found?.CanQuery),
+        canCreate: Boolean(found?.CanCreate),
+        canUpdate: Boolean(found?.CanUpdate),
+        canDelete: Boolean(found?.CanDelete),
+      };
+    });
+  } catch (error) {
+    console.error('loadUserPermissionRows error:', error);
+    return createDefaultPermissionRows();
   }
 };
 
@@ -1046,12 +1085,14 @@ const loadSalesUserOptions = async () => {
           <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col gap-3">
              <div className="flex justify-between items-center">
                 <h3 className="font-bold text-gray-700">客戶清單</h3>
-                <button 
-                  onClick={handleNewCustomer}
-                  className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-md shadow-sm transition"
-                >
-                  + 新增客戶
-                </button>
+                {can('CUSTOMER', 'canCreate') && (
+                   <button
+                       onClick={handleNewCustomer}
+                       className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-md shadow-sm transition"
+                   >
+                       新增客戶
+                   </button>
+                )}
              </div>
              
              {/* 搜尋列 */}
@@ -1108,12 +1149,16 @@ const loadSalesUserOptions = async () => {
               </h2>
               <p className="text-gray-500 text-sm mt-1">對應資料表：<code>dbo.Customer</code></p>
             </div>
-            <button 
-              onClick={saveCustomer}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium shadow transition whitespace-nowrap"
-            >
-              儲存客戶資料
-            </button>
+            {(selectedCustomerCode
+               ? can('CUSTOMER', 'canUpdate')
+               : can('CUSTOMER', 'canCreate')) && (
+               <button
+                   onClick={saveCustomer}
+                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium shadow transition whitespace-nowrap"
+               >
+                   儲存客戶
+               </button>
+            )}
           </div>
 
           <div className="space-y-8">
@@ -1524,7 +1569,16 @@ const renderSalesTracking = () => {
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div><h2 className="text-xl font-bold text-gray-800">3. 銷售案件追蹤</h2><p className="mt-1 text-sm text-gray-500">可依填單日期、客戶名稱篩選並管理業務案件。</p></div>
-          <div className="flex gap-2"><button onClick={loadOpportunities} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">重新整理</button><button onClick={openNewOpportunity} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ 新增案件</button></div>
+          <div className="flex gap-2"><button onClick={loadOpportunities} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">重新整理</button>  
+  {can('SALES_TRACK', 'canCreate') && (
+     <button
+         onClick={openNewOpportunity}
+         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+     >
+        ＋ 新增案件
+     </button>
+  )}
+  </div>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
           <label className="text-sm text-gray-600">填單日篩選<input type="date" value={opportunityDateFrom} onChange={e=>setOpportunityDateFrom(e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
@@ -1566,9 +1620,28 @@ const renderSalesTracking = () => {
         </div></div>
         <div className="rounded-lg border bg-white p-6 shadow-sm xl:col-span-3">
           {!selectedOpportunity ? <div className="flex min-h-[450px] items-center justify-center text-gray-400">請從左側選擇案件</div> : <div className="space-y-6">
-            <div className="flex justify-between border-b pb-4"><div><h3 className="text-xl font-bold">{selectedOpportunity.OpportunityName||selectedOpportunity.opportunityName}</h3><p className="mt-1 text-sm text-gray-500">客戶：{selectedOpportunity.CustomerName||selectedOpportunity.customerName||'-'}</p></div><button onClick={openEditOpportunity} className="rounded-lg border border-blue-600 px-4 py-2 text-sm text-blue-600">編輯案件</button></div>
+            <div className="flex justify-between border-b pb-4"><div><h3 className="text-xl font-bold">{selectedOpportunity.OpportunityName||selectedOpportunity.opportunityName}</h3><p className="mt-1 text-sm text-gray-500">客戶：{selectedOpportunity.CustomerName||selectedOpportunity.customerName||'-'}</p></div>
+  {can('SALES_TRACK', 'canUpdate') && (
+    <button
+      onClick={openEditOpportunity}
+      className="rounded-lg border border-blue-600 px-4 py-2 text-sm text-blue-600"
+    >
+      編輯案件
+    </button>
+  )}
+  </div>
             <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4"><div className="rounded bg-gray-50 p-3"><small>目前階段</small><b className="mt-1 block">{stageLabel[selectedOpportunity.Stage||selectedOpportunity.stage]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>購買意願</small><b className="mt-1 block">{intentLabel[selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>預估金額</small><b className="mt-1 block">${Number(selectedOpportunity.EstimatedAmount||selectedOpportunity.estimatedAmount||0).toLocaleString()}</b></div><div className="rounded bg-gray-50 p-3"><small>下次追蹤日</small><b className="mt-1 block">{dateValue(selectedOpportunity.NextFollowUpDate||selectedOpportunity.nextFollowUpDate)||'-'}</b></div></div>
-            <div className="border-t pt-5"><h4 className="mb-3 font-semibold">新增追蹤紀錄</h4><div className="grid grid-cols-1 gap-3 md:grid-cols-3"><label className="text-sm">聯絡方式<select value={followUpForm.contactMethod} onChange={e=>updateFollowUp('contactMethod',e.target.value)} className="mt-1 w-full rounded border p-2"><option>電話</option><option>會面</option><option>電子郵件</option><option>LINE</option><option>其他</option></select></label><label className="text-sm">接洽人員<input value={followUpForm.contactName} onChange={e=>updateFollowUp('contactName',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">追蹤日期<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.followUpDate} onChange={(e) => updateFollowUp('followUpDate', e.target.value)} onBlur={(e) => updateFollowUp('followUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label><label className="text-sm">銷售階段<select value={followUpForm.stage||selectedOpportunity.Stage||selectedOpportunity.stage||''} onChange={e=>updateFollowUp('stage',e.target.value)} className="mt-1 w-full rounded border p-2">{stageOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">購買意願<select value={followUpForm.customerGrade||selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade||'B'} onChange={e=>updateFollowUp('customerGrade',e.target.value)} className="mt-1 w-full rounded border p-2">{intentOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">下次追蹤日<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.nextFollowUpDate} onChange={(e) => updateFollowUp('nextFollowUpDate', e.target.value)} onBlur={(e) => updateFollowUp('nextFollowUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label><label className="text-sm md:col-span-3">洽談內容<textarea value={followUpForm.content} onChange={e=>updateFollowUp('content',e.target.value)} rows="3" className="mt-1 w-full rounded border p-2" placeholder="請輸入本次追蹤內容" /></label></div><div className="mt-3 text-right"><button onClick={saveFollowUp} disabled={followUpSaving} className="rounded bg-green-600 px-5 py-2 text-sm text-white">{followUpSaving?'儲存中...':'儲存追蹤紀錄'}</button></div></div>
+            <div className="border-t pt-5"><h4 className="mb-3 font-semibold">新增追蹤紀錄</h4><div className="grid grid-cols-1 gap-3 md:grid-cols-3"><label className="text-sm">聯絡方式<select value={followUpForm.contactMethod} onChange={e=>updateFollowUp('contactMethod',e.target.value)} className="mt-1 w-full rounded border p-2"><option>電話</option><option>會面</option><option>電子郵件</option><option>LINE</option><option>其他</option></select></label><label className="text-sm">接洽人員<input value={followUpForm.contactName} onChange={e=>updateFollowUp('contactName',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">追蹤日期<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.followUpDate} onChange={(e) => updateFollowUp('followUpDate', e.target.value)} onBlur={(e) => updateFollowUp('followUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label><label className="text-sm">銷售階段<select value={followUpForm.stage||selectedOpportunity.Stage||selectedOpportunity.stage||''} onChange={e=>updateFollowUp('stage',e.target.value)} className="mt-1 w-full rounded border p-2">{stageOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">購買意願<select value={followUpForm.customerGrade||selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade||'B'} onChange={e=>updateFollowUp('customerGrade',e.target.value)} className="mt-1 w-full rounded border p-2">{intentOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">下次追蹤日<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.nextFollowUpDate} onChange={(e) => updateFollowUp('nextFollowUpDate', e.target.value)} onBlur={(e) => updateFollowUp('nextFollowUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label><label className="text-sm md:col-span-3">洽談內容<textarea value={followUpForm.content} onChange={e=>updateFollowUp('content',e.target.value)} rows="3" className="mt-1 w-full rounded border p-2" placeholder="請輸入本次追蹤內容" /></label></div><div className="mt-3 text-right">
+  {can('SALES_TRACK', 'canUpdate') && (
+    <button
+      onClick={saveFollowUp}
+      disabled={followUpSaving}
+      className="rounded bg-green-600 px-5 py-2 text-sm text-white disabled:bg-gray-400"
+    >
+      {followUpSaving ? '儲存中...' : '新增追蹤紀錄'}
+    </button>
+  )}
+  </div></div>
             <div className="border-t pt-5"><h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>{followUpList.length===0?<div className="rounded bg-gray-50 p-4 text-sm text-gray-400">尚無追蹤紀錄</div>:<div className="space-y-3">{followUpList.map((item,i)=><div key={item.FollowUpId||i} className="rounded border p-4"><div className="flex justify-between"><b>{contactLabel[item.ContactMethod||item.contactMethod]||'其他'} {item.ContactName||item.contactName||''}</b><span className="text-xs text-gray-500">{dateValue(item.FollowUpDate||item.followUpDate)}</span></div><div className="mt-1 text-xs text-gray-500">{stageLabel[item.Stage||item.stage]||''}　{intentLabel[item.CustomerGrade||item.customerGrade]||''}</div><p className="mt-2 text-sm">{item.Content||item.content}</p>{(item.NextFollowUpDate||item.nextFollowUpDate)&&<div className="mt-2 text-xs text-blue-600">下次追蹤：{dateValue(item.NextFollowUpDate||item.nextFollowUpDate)}</div>}</div>)}</div>}</div>
           </div>}
         </div>
@@ -1712,10 +1785,15 @@ const renderUserManagement = () => {
     }));
   };
 
-  const openEditUser = (user) => {
+  const openEditUser = async (user) => {
     const roleCode = user.RoleCode || user.roleCode || 'SALES';
 
     setSelectedManagedUserId(user.UserId);
+
+  const permissions =
+    String(user.RoleCode || user.roleCode).toUpperCase() === 'ROOT'
+      ? createDefaultPermissionRows()
+      : await loadUserPermissionRows(user.UserId);
 
     setUserForm({
       userId: user.UserId,
@@ -1731,6 +1809,7 @@ const renderUserManagement = () => {
       canViewContracts: Boolean(user.CanViewContracts),
       canViewSystemSettings: Boolean(user.CanViewSystemSettings),
       canManageUsers: Boolean(user.CanManageUsers),
+      permissions,
     });
   };
 
@@ -1904,30 +1983,120 @@ const renderUserManagement = () => {
               </label>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                功能權限
-              </div>
+            {String(userForm.roleCode).toUpperCase() === 'ROOT' ? (
+  <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+    ROOT 為系統管理員，永遠擁有全部功能及查詢、新增、修改、刪除權限，
+    不需要設定個別權限。
+  </div>
+) : (
+  <div className="border-t pt-4">
+    <div className="mb-3 text-sm font-semibold text-gray-700">
+      功能權限
+    </div>
 
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {permissions.map(([field, label]) => (
-                  <label
+    <div className="overflow-x-auto rounded border">
+      <table className="w-full min-w-[680px] text-sm">
+        <thead className="bg-gray-100 text-gray-700">
+          <tr>
+            <th className="px-3 py-2 text-left">功能名稱</th>
+            <th className="px-3 py-2 text-center">查詢</th>
+            <th className="px-3 py-2 text-center">新增</th>
+            <th className="px-3 py-2 text-center">修改</th>
+            <th className="px-3 py-2 text-center">刪除</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {permissionFunctions.map((item) => {
+            const row =
+              userForm.permissions?.find(
+                (permission) =>
+                  permission.functionCode === item.code
+              ) || {
+                functionCode: item.code,
+                canQuery: false,
+                canCreate: false,
+                canUpdate: false,
+                canDelete: false,
+              };
+
+            const updatePermission = (field, checked) => {
+              setUserForm((previous) => {
+                const permissions = [
+                  ...(previous.permissions || []),
+                ];
+
+                const index = permissions.findIndex(
+                  (permission) =>
+                    permission.functionCode === item.code
+                );
+
+                const nextRow = {
+                  ...row,
+                  [field]: checked,
+                };
+
+                // 勾選「新增、修改、刪除」時，自動勾選「查詢」
+                if (field !== 'canQuery' && checked) {
+                  nextRow.canQuery = true;
+                }
+
+                // 取消「查詢」時，其他三個操作權限也一併取消
+                if (field === 'canQuery' && !checked) {
+                  nextRow.canCreate = false;
+                  nextRow.canUpdate = false;
+                  nextRow.canDelete = false;
+                }
+
+                if (index >= 0) {
+                  permissions[index] = nextRow;
+                } else {
+                  permissions.push(nextRow);
+                }
+
+                return {
+                  ...previous,
+                  permissions,
+                };
+              });
+            };
+
+            return (
+              <tr key={item.code} className="border-t">
+                <td className="px-3 py-2 font-medium">
+                  {item.label}
+                </td>
+
+                {[
+                  'canQuery',
+                  'canCreate',
+                  'canUpdate',
+                  'canDelete',
+                ].map((field) => (
+                  <td
                     key={field}
-                    className="flex items-center gap-2 text-sm"
+                    className="px-3 py-2 text-center"
                   >
                     <input
                       type="checkbox"
-                      checked={userForm[field]}
-                      disabled={userForm.roleCode === 'ROOT'}
-                      onChange={(e) =>
-                        updateUserForm(field, e.target.checked)
+                      checked={Boolean(row[field])}
+                      onChange={(event) =>
+                        updatePermission(
+                          field,
+                          event.target.checked
+                        )
                       }
                     />
-                    {label}
-                  </label>
+                  </td>
                 ))}
-              </div>
-            </div>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
             <button
               type="button"
