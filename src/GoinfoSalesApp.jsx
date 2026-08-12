@@ -1785,8 +1785,50 @@ const renderUserManagement = () => {
     }));
   };
 
+const loadUserPermissionRows = async (userId) => {
+  try {
+    const result = await salesApiFetch(
+      `get-app-user-permissions?userId=${encodeURIComponent(userId)}`
+    );
+
+    const rows = Array.isArray(result)
+      ? result
+      : result?.rows || result?.data || [];
+
+    const toBoolean = (value) =>
+      value === true ||
+      value === 1 ||
+      value === '1';
+
+    return permissionFunctions.map((item) => {
+      const found = rows.find(
+        (row) => row.FunctionCode === item.code
+      );
+
+      return {
+        functionCode: item.code,
+        canQuery: toBoolean(found?.CanQuery),
+        canCreate: toBoolean(found?.CanCreate),
+        canUpdate: toBoolean(found?.CanUpdate),
+        canDelete: toBoolean(found?.CanDelete),
+      };
+    });
+  } catch (error) {
+    console.error('loadUserPermissionRows error:', error);
+    alert('讀取使用者功能權限失敗：' + error.message);
+
+    return createDefaultPermissionRows();
+  }
+};
+
   const openEditUser = async (user) => {
     const roleCode = user.RoleCode || user.roleCode || 'SALES';
+    const normalizedRole = String(roleCode).toUpperCase();
+
+    const permissionRows =
+      normalizedRole === 'ROOT'
+        ? createDefaultPermissionRows()
+        : await loadUserPermissionRows(user.UserId);
 
     setSelectedManagedUserId(user.UserId);
 
@@ -1809,7 +1851,7 @@ const renderUserManagement = () => {
       canViewContracts: Boolean(user.CanViewContracts),
       canViewSystemSettings: Boolean(user.CanViewSystemSettings),
       canManageUsers: Boolean(user.CanManageUsers),
-      permissions,
+      permissions: permissionRows,
     });
   };
 
