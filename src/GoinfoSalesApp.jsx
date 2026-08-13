@@ -1066,8 +1066,27 @@ const loadSalesUserOptions = async () => {
         };
       })
     };
-    try { const r = await salesApiFetch('save-quote', {method: 'POST', body: JSON.stringify(payload), }); if(!r.ok) throw new Error(); alert(`[${action}] 報價單已成功存入資料庫！`); setQuoteItems([]); await loadQuotes(); } catch(e) { alert('報價單儲存失敗，請檢查網路狀態。'); }
-  };
+
+   try {
+  await salesApiFetch('save-quote', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+} catch (error) {
+  console.error('save-quote error:', error);
+  alert('報價單儲存失敗：' + error.message);
+  return;
+}
+
+setQuoteItems([]);
+setCustomerCode('');
+alert('報價單已成功儲存');
+
+try {
+  await loadQuotes();
+} catch (error) {
+  console.error('get-quotes refresh error:', error);
+}
 
   // 1. (潛在)客戶資料建檔 - Master/Detail 版面
   const renderCustomerForm = () => {
