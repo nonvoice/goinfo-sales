@@ -1074,7 +1074,7 @@ const loadSalesUserOptions = async () => {
 
   setQuoteItems([]);
   setCustomerCode('');
-  alert(`[${action}] 報價單已成功存入資料庫！`);
+  alert('報價單已成功存入資料庫！');
 
   try {
     await loadQuotes();
