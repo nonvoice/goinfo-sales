@@ -911,6 +911,7 @@ const saveFollowUp = async () => {
 
   const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; const annualMaintenanceAmount = quoteItems.reduce((sum, item) => { const rule = getMaintenanceRule(item.systemId); const n = Math.max(Number(item.userCount) || 0, 0); return sum + (rule && n ? Number(rule.FirstUserPrice || 0) + Math.max(n - 1, 0) * Number(rule.AdditionalUserPrice || 0) : 0); }, 0); return {listAmount,taxIncludedListAmount,discountAmount,taxExcludedAmount,taxAmount,taxIncludedAmount,annualMaintenanceAmount}; }, [quoteItems, pricingRuleList]);
   const loadQuotes = async () => {
+
   setQuoteListLoading(true);
 
   try {
@@ -1415,8 +1416,9 @@ const loadSalesUserOptions = async () => {
           <th className="p-3">報價單號</th>
           <th className="p-3">報價日期</th>
           <th className="p-3">客戶名稱</th>
-          <th className="p-3 text-right">未稅金額</th>
-          <th className="p-3 text-right">優惠金額（含稅）</th>
+          <th className="p-3">報價系統</th>
+          <th className="p-3 text-right">報價金額</th>
+          <th className="p-3">報價業務</th>
           <th className="p-3">狀態</th>
           <th className="p-3 text-center">操作</th>
         </tr>
@@ -1447,24 +1449,21 @@ const loadSalesUserOptions = async () => {
                 {q.CustomerName || q.CustomerCode || '－'}
               </td>
 
-              <td className="p-3 text-right">
-                ${Number(
-                  q.ListAmount ?? q.SubtotalAmount ?? 0
-                ).toLocaleString()}
+              <td className="p-3">
+                {q.QuoteSystemCodes || '－'}
               </td>
 
               <td className="p-3 text-right font-medium">
-                ${Number(
-                  q.DiscountAmount ??
-                  q.FinalAmount ??
-                  q.TotalAmount ??
-                  0
-                ).toLocaleString()}
+                ${Number(q.QuoteAmount ?? 0).toLocaleString()}
+              </td>
+
+              <td className="p-3">
+                {q.CreatedByName || q.CreatedByAccount || '－'}
               </td>
 
               <td className="p-3">
                 <span
-                  className={`rounded px-2 py-1 text-xs ${
+                  className={`px-2 py-1 rounded text-xs ${
                     q.Status === 'VOID'
                       ? 'bg-red-100 text-red-700'
                       : 'bg-blue-100 text-blue-700'
@@ -1475,7 +1474,7 @@ const loadSalesUserOptions = async () => {
               </td>
 
               <td className="p-3">
-                <div className="flex justify-center gap-2">
+                <div className="flex gap-2 justify-center">
                   <button
                     onClick={() => previewQuoteById(q.QuotationId)}
                     className="text-blue-600 hover:underline"
@@ -1503,7 +1502,7 @@ const loadSalesUserOptions = async () => {
           ))
         ) : (
           <tr>
-            <td colSpan="7" className="p-8 text-center text-gray-400">
+            <td colSpan="8" className="p-8 text-center text-gray-400">
               尚無已建立的報價單
             </td>
           </tr>
