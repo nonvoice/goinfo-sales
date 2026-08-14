@@ -3130,12 +3130,120 @@ const canManageUsers = hasPermission(
     </tr>
   </tbody>
 </table>
-              <div className="border-t border-black mt-2 pt-1 compact">說明：1. 本報價單以上金額含稅，有效期至 {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，100%（30日到期票）。</div>
-             <div className="no-print mt-4 flex justify-end gap-3"><button onClick={()=>window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-lg">列印</button><button onClick={()=>editQuote(previewQuote.quote)} className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg">帶入修改</button><button onClick={()=>setShowQuotePreview(false)} className="px-4 py-2 border rounded-lg">關閉</button></div>
+            <div className="border-t border-black mt-2 pt-1 compact">
+              說明：1. 本報價單以上金額含稅，有效期至{' '}
+              {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
+              100%（30日到期票）。
+            </div>
+
+            <div className="no-print mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                列印
+              </button>
+
+              <button
+                type="button"
+                onClick={() => editQuote(previewQuote.quote)}
+                className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg"
+              >
+                帶入修改
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowQuotePreview(false)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                關閉
+              </button>
+            </div>
           </div>
         </div>
       )}
-      {showCustomerPicker && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onMouseDown={()=>setShowCustomerPicker(false)}><div className="w-full max-w-2xl max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col" onMouseDown={e=>e.stopPropagation()}><div className="flex items-center justify-between p-5 border-b"><h2 className="text-xl font-bold text-gray-800">選擇</h2><button type="button" onClick={()=>setShowCustomerPicker(false)} className="text-2xl text-gray-400 hover:text-gray-700">×</button></div><div className="p-4 border-b"><div className="relative"><input autoFocus type="text" value={customerPickerTerm} onChange={e=>setCustomerPickerTerm(e.target.value)} placeholder="搜尋客戶代號或名稱關鍵字..." className="w-full border border-blue-400 rounded-lg py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-blue-300"/><span className="absolute left-3 top-2.5 text-gray-400">⌕</span></div></div><div className="overflow-y-auto flex-1">{pickerCustomers.length ? pickerCustomers.map(c=><button type="button" key={c.CustomerId || c.Code} onClick={()=>selectQuoteCustomer(c)} className="w-full grid grid-cols-[140px_1fr] gap-4 text-left px-5 py-4 border-b hover:bg-blue-50 transition"><span className="font-medium text-blue-700">{c.Code}</span><span className="text-gray-800">{c.Name}</span></button>) : <div className="py-10 text-center text-gray-400">找不到符合的客戶</div>}</div><div className="p-4 border-t text-right"><button type="button" onClick={()=>setShowCustomerPicker(false)} className="px-4 py-2 border rounded-lg">取消</button></div></div></div>}
+
+      {showCustomerPicker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onMouseDown={() => setShowCustomerPicker(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b">
+              <h2 className="text-xl font-bold text-gray-800">
+                選擇客戶
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setShowCustomerPicker(false)}
+                className="text-2xl text-gray-400 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-4 border-b">
+              <div className="relative">
+                <input
+                  autoFocus
+                  type="text"
+                  value={customerPickerTerm}
+                  onChange={(event) =>
+                    setCustomerPickerTerm(event.target.value)
+                  }
+                  placeholder="搜尋客戶代號或名稱關鍵字..."
+                  className="w-full border border-blue-400 rounded-lg py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-blue-300"
+                />
+
+                <span className="absolute left-3 top-2.5 text-gray-400">
+                  ⌕
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1">
+              {pickerCustomers.length > 0 ? (
+                pickerCustomers.map((customer) => (
+                  <button
+                    type="button"
+                    key={customer.CustomerId || customer.Code}
+                    onClick={() => selectQuoteCustomer(customer)}
+                    className="w-full grid grid-cols-[140px_1fr] gap-4 text-left px-5 py-4 border-b hover:bg-blue-50 transition"
+                  >
+                    <span className="font-medium text-blue-700">
+                      {customer.Code}
+                    </span>
+
+                    <span className="text-gray-800">
+                      {customer.Name}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="py-10 text-center text-gray-400">
+                  找不到符合的客戶
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t text-right">
+              <button
+                type="button"
+                onClick={() => setShowCustomerPicker(false)}
+                className="px-4 py-2 border rounded-lg"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
