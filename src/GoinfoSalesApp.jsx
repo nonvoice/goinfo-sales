@@ -2587,7 +2587,7 @@ const canManageUsers = hasPermission(
     </>
   )}
 </td>
-              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><tbody><tr><td></td><td className="text-right whitespace-nowrap">未稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Number(previewQuote.quote.SubtotalAmount||0).toLocaleString()}</td><td></td></tr><tr><td></td><td className="text-right whitespace-nowrap">含稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Math.round(Number(previewQuote.quote.SubtotalAmount||0)*1.05).toLocaleString()}</td><td></td></tr><tr><td></td><tr>
+              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><tbody><tr><td></td><td className="text-right whitespace-nowrap">未稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Number(previewQuote.quote.SubtotalAmount||0).toLocaleString()}</td><td></td></tr><tr><td></td><td className="text-right whitespace-nowrap">含稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Math.round(Number(previewQuote.quote.SubtotalAmount||0)*1.05).toLocaleString()}</td><td></td></tr><tr>
   <td></td>
   <td className="text-right whitespace-nowrap font-bold">
     優惠金額（含稅）
