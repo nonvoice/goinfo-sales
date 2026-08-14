@@ -909,19 +909,61 @@ const saveFollowUp = async () => {
     return pricingRuleList.filter(r => Number(r.SystemId) === Number(systemId) && String(r.RuleType).toUpperCase() === 'MAINTENANCE' && (r.IsActive === true || r.IsActive === 1 || r.IsActive === 'true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10) <= today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10) >= today)).sort((a,b) => String(b.EffectiveStartDate || '').localeCompare(String(a.EffectiveStartDate || '')))[0];
   };
 
-  const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; const annualMaintenanceAmount = quoteItems.reduce((sum, item) => { const rule = getMaintenanceRule(item.systemId); const n = Math.max(Number(item.userCount) || 0, 0); return sum + (rule && n ? Number(rule.FirstUserPrice || 0) + Math.max(n - 1, 0) * Number(rule.AdditionalUserPrice || 0) : 0); }, 0); return {
-  listAmount,
-  taxIncludedListAmount,
-  discountAmount,
-  taxExcludedAmount,
-  taxAmount,
-  taxIncludedAmount,
-  annualMaintenanceAmount,
+  const quoteSummary = useMemo(() => {
+  const listAmount = quoteItems.reduce(
+    (sum, item) => sum + calculateListAmount(item),
+    0
+  );
 
-  discountTaxIncludedAmount: discountAmount,
-  hasManualFinalPrice: quoteItems.some(hasFinalAmount),
-  finalOfferTaxIncludedAmount: taxIncludedAmount,
-};
+  const taxIncludedListAmount = quoteItems.reduce(
+    (sum, item) => sum + calculateTaxIncludedListAmount(item),
+    0
+  );
+
+  const discountAmount = quoteItems.reduce(
+    (sum, item) => sum + calculateDiscountAmount(item),
+    0
+  );
+
+  const taxIncludedAmount = quoteItems.reduce(
+    (sum, item) => sum + calculateFinalTaxIncludedAmount(item),
+    0
+  );
+
+  const taxExcludedAmount = Math.round(taxIncludedAmount / 1.05);
+
+  const taxAmount = taxIncludedAmount - taxExcludedAmount;
+
+  const annualMaintenanceAmount = quoteItems.reduce((sum, item) => {
+    const rule = getMaintenanceRule(item.systemId);
+    const users = Math.max(Number(item.userCount) || 0, 0);
+
+    if (!rule || !users) {
+      return sum;
+    }
+
+    return (
+      sum +
+      Number(rule.FirstUserPrice || 0) +
+      Math.max(users - 1, 0) *
+        Number(rule.AdditionalUserPrice || 0)
+    );
+  }, 0);
+
+  return {
+    listAmount,
+    taxIncludedListAmount,
+    discountAmount,
+    taxExcludedAmount,
+    taxAmount,
+    taxIncludedAmount,
+    annualMaintenanceAmount,
+
+    discountTaxIncludedAmount: discountAmount,
+    hasManualFinalPrice: quoteItems.some(hasFinalAmount),
+    finalOfferTaxIncludedAmount: taxIncludedAmount,
+  };
+}, [quoteItems, pricingRuleList]);
   const loadQuotes = async () => {
 
   setQuoteListLoading(true);
