@@ -333,7 +333,7 @@ export default function App() {
   const [selectedCustomerCode, setSelectedCustomerCode] = useState(null);
   const [customerCode, setCustomerCode] = useState('');
   const [quoteItems, setQuoteItems] = useState([]);
-  const [warrantyMonths, setWarrantyMonths] = useState(18);
+  const [warrantyMonths, setWarrantyMonths] = useState(12);
   const [maintenanceDiscountAmount, setMaintenanceDiscountAmount] = useState('');
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [customerPickerTerm, setCustomerPickerTerm] = useState('');
@@ -909,7 +909,19 @@ const saveFollowUp = async () => {
     return pricingRuleList.filter(r => Number(r.SystemId) === Number(systemId) && String(r.RuleType).toUpperCase() === 'MAINTENANCE' && (r.IsActive === true || r.IsActive === 1 || r.IsActive === 'true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10) <= today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10) >= today)).sort((a,b) => String(b.EffectiveStartDate || '').localeCompare(String(a.EffectiveStartDate || '')))[0];
   };
 
-  const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; const annualMaintenanceAmount = quoteItems.reduce((sum, item) => { const rule = getMaintenanceRule(item.systemId); const n = Math.max(Number(item.userCount) || 0, 0); return sum + (rule && n ? Number(rule.FirstUserPrice || 0) + Math.max(n - 1, 0) * Number(rule.AdditionalUserPrice || 0) : 0); }, 0); return {listAmount,taxIncludedListAmount,discountAmount,taxExcludedAmount,taxAmount,taxIncludedAmount,annualMaintenanceAmount}; }, [quoteItems, pricingRuleList]);
+  const quoteSummary = useMemo(() => { const listAmount=quoteItems.reduce((s,x)=>s+calculateListAmount(x),0), taxIncludedListAmount=quoteItems.reduce((s,x)=>s+calculateTaxIncludedListAmount(x),0), discountAmount=quoteItems.reduce((s,x)=>s+calculateDiscountAmount(x),0), taxIncludedAmount=quoteItems.reduce((s,x)=>s+calculateFinalTaxIncludedAmount(x),0), taxExcludedAmount=Math.round(taxIncludedAmount/1.05), taxAmount=taxIncludedAmount-taxExcludedAmount; const annualMaintenanceAmount = quoteItems.reduce((sum, item) => { const rule = getMaintenanceRule(item.systemId); const n = Math.max(Number(item.userCount) || 0, 0); return sum + (rule && n ? Number(rule.FirstUserPrice || 0) + Math.max(n - 1, 0) * Number(rule.AdditionalUserPrice || 0) : 0); }, 0); return {
+  listAmount,
+  taxIncludedListAmount,
+  discountAmount,
+  taxExcludedAmount,
+  taxAmount,
+  taxIncludedAmount,
+  annualMaintenanceAmount,
+
+  discountTaxIncludedAmount,
+  hasManualFinalPrice,
+  finalOfferTaxIncludedAmount,
+};
   const loadQuotes = async () => {
 
   setQuoteListLoading(true);
@@ -1041,11 +1053,12 @@ const loadSalesUserOptions = async () => {
       annualMaintenanceAmount: quoteSummary.annualMaintenanceAmount,
       maintenanceDiscountAmount: maintenanceDiscountAmount === '' ? null : Number(maintenanceDiscountAmount),
       listAmount: quoteSummary.listAmount,
-      discountAmount: quoteSummary.discountAmount,
+      discountAmount: quoteSummary.discountTaxIncludedAmount,
       taxExcludedAmount: quoteSummary.taxExcludedAmount,
       taxAmount: quoteSummary.taxAmount,
-      taxIncludedAmount: quoteSummary.taxIncludedAmount,
-      totalAmount: quoteSummary.taxIncludedAmount,
+      taxIncludedAmount: quoteSummary.finalOfferTaxIncludedAmount,
+      totalAmount: quoteSummary.finalOfferTaxIncludedAmount,
+      hasManualFinalPrice: quoteSummary.hasManualFinalPrice,
       items: quoteItems.map((x, index) => {
         const rule = getEffectivePricingRule(x.systemId, x.itemType);
         return {
@@ -1336,9 +1349,9 @@ const loadSalesUserOptions = async () => {
       <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
       <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">選擇客戶</label><div className="flex gap-2"><input type="text" readOnly value={selectedQuoteCustomer ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}` : ''} placeholder="請點選右側按鈕選擇客戶" className="flex-1 border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-700"/><button type="button" onClick={()=>setShowCustomerPicker(true)} className="px-4 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium whitespace-nowrap">選擇客戶</button></div></div>
       <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800">報價明細</h3><button onClick={()=>addItem(defaultItemType)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">+ 新增模組</button></div>
-      <div className="space-y-4 mb-6">{quoteItems.length===0 && <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">尚無項目</div>}{quoteItems.map(item=><div key={item.id} className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"><div className="lg:col-span-3"><label className="text-xs text-gray-500">系統</label><select className="w-full border p-2 rounded" value={item.systemId} onChange={e=>updateItem(item.id,'systemId',e.target.value)}><option value="">選擇系統</option>{systemList.filter(s=>s.IsActive!==false && s.IsActive!==0).map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">報價類型</label><select className="w-full border p-2 rounded" value={item.itemType} onChange={e=>updateItem(item.id,'itemType',e.target.value)}><option value="NEW_LICENSE">新購授權</option><option value="ADD_USER">增設授權</option><option value="MAINTENANCE">維護費</option></select></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">人數</label><input type="number" min="1" className="w-full border p-2 rounded text-right" value={item.userCount} onChange={e=>updateItem(item.id,'userCount',e.target.value)}/></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">牌價</label><div className="border bg-white p-2 rounded text-right">${calculateListAmount(item).toLocaleString()}</div></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折數（80＝8折）</label><input type="number" min="0" max="100" step="1" className="w-full border p-2 rounded text-right" value={item.discountRate} onChange={e=>updateItem(item.id,'discountRate',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">最終優惠價</label><input type="number" min="0" placeholder="選填" className="w-full border p-2 rounded text-right" value={item.specialPrice} onChange={e=>updateItem(item.id,'specialPrice',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折後金額（含稅）</label><div className="font-bold text-blue-600 text-right p-2">${calculateFinalTaxIncludedAmount(item).toLocaleString()}</div></div><button type="button" onClick={()=>removeItem(item.id)} className="lg:col-span-1 text-red-500 hover:text-red-700 p-2">刪除</button></div>)}</div>
-      {quoteItems.length>0 && <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-5 items-start"><div className="text-left space-y-3 border-l-4 border-blue-500 pl-4"><div className="font-semibold text-gray-700">保固與維護設定</div><label className="block text-sm">免費保固年限：<input type="number" min="0" step="1" value={warrantyMonths} onChange={e=>setWarrantyMonths(e.target.value)} className="ml-2 w-20 border rounded p-1 text-right"/> 個月　<span className="text-gray-500">（{Number(warrantyMonths)%12 === 0 ? `${Math.floor(Number(warrantyMonths)/12)} 年` : `${Number(warrantyMonths)||0} 個月`}）</span></label><div className="text-sm">每年維護費用：<b>NT${quoteSummary.annualMaintenanceAmount.toLocaleString()}（含稅）</b></div><label className="block text-sm">維護費優惠金額：NT$ <input type="number" min="0" placeholder="選填" value={maintenanceDiscountAmount} onChange={e=>setMaintenanceDiscountAmount(e.target.value)} className="ml-1 w-32 border rounded p-1 text-right"/> <span className="text-gray-500">（含稅）</span></label></div><div className="text-right space-y-1"><div className="text-gray-500">原始牌價（未稅）：${quoteSummary.listAmount.toLocaleString()}</div><div className="text-gray-500">原始牌價（含稅）：${quoteSummary.taxIncludedListAmount.toLocaleString()}</div><div>優惠總計（未稅）：${quoteSummary.taxExcludedAmount.toLocaleString()}</div><div>營業稅（5%）：${quoteSummary.taxAmount.toLocaleString()}</div><div className="text-xl font-bold">優惠總計（含稅）：${quoteSummary.taxIncludedAmount.toLocaleString()}</div><div className="text-orange-600">最終議價（含稅）：-${(quoteSummary.discountAmount - quoteSummary.taxIncludedAmount).toLocaleString()}</div><button onClick={()=>handleSubmit(actionType)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow">產生並存檔</button></div></div>}
-    </div>
+      <div className="space-y-4 mb-6">{quoteItems.length===0 && <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">尚無項目</div>}{quoteItems.map(item=><div key={item.id} className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"><div className="lg:col-span-3"><label className="text-xs text-gray-500">系統</label><select className="w-full border p-2 rounded" value={item.systemId} onChange={e=>updateItem(item.id,'systemId',e.target.value)}><option value="">選擇系統</option>{systemList.filter(s=>s.IsActive!==false && s.IsActive!==0).map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">報價類型</label><select className="w-full border p-2 rounded" value={item.itemType} onChange={e=>updateItem(item.id,'itemType',e.target.value)}><option value="NEW_LICENSE">新購授權</option><option value="ADD_USER">增設授權</option><option value="MAINTENANCE">維護費</option></select></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">人數</label><input type="number" min="1" className="w-full border p-2 rounded text-right" value={item.userCount} onChange={e=>updateItem(item.id,'userCount',e.target.value)}/></div><div className="lg:col-span-2"><label className="text-xs text-gray-500">牌價</label><div className="border bg-white p-2 rounded text-right">${calculateListAmount(item).toLocaleString()}</div></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折數（80＝8折）</label><input type="number" min="0" max="100" step="1" className="w-full border p-2 rounded text-right" value={item.discountRate} onChange={e=>updateItem(item.id,'discountRate',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">最終優惠價（含稅）</label><input type="number" min="0" placeholder="選填" className="w-full border p-2 rounded text-right" value={item.specialPrice} onChange={e=>updateItem(item.id,'specialPrice',e.target.value)}/></div><div className="lg:col-span-1"><label className="text-xs text-gray-500">折後金額（含稅）</label><div className="font-bold text-blue-600 text-right p-2">${calculateFinalTaxIncludedAmount(item).toLocaleString()}</div></div><button type="button" onClick={()=>removeItem(item.id)} className="lg:col-span-1 text-red-500 hover:text-red-700 p-2">刪除</button></div>)}</div>
+      {quoteItems.length>0 && <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-5 items-start"><div className="text-left space-y-3 border-l-4 border-blue-500 pl-4"><div className="font-semibold text-gray-700">保固與維護設定</div><label className="block text-sm">免費保固年限：<input type="number" min="0" step="1" value={warrantyMonths} onChange={e=>setWarrantyMonths(e.target.value)} className="ml-2 w-20 border rounded p-1 text-right"/> 個月　<span className="text-gray-500">（{Number(warrantyMonths)%12 === 0 ? `${Math.floor(Number(warrantyMonths)/12)} 年` : `${Number(warrantyMonths)||0} 個月`}）</span></label><div className="text-sm">每年維護費用：<b>NT${quoteSummary.annualMaintenanceAmount.toLocaleString()}（含稅）</b></div><label className="block text-sm">維護費優惠金額：NT$ <input type="number" min="0" placeholder="選填" value={maintenanceDiscountAmount} onChange={e=>setMaintenanceDiscountAmount(e.target.value)} className="ml-1 w-32 border rounded p-1 text-right"/> <span className="text-gray-500">（含稅）</span></label></div><div className="text-right space-y-1"><div className="text-gray-500">原始牌價（未稅）：${quoteSummary.listAmount.toLocaleString()}</div><div className="text-gray-500">原始牌價（含稅）：${quoteSummary.taxIncludedListAmount.toLocaleString()}</div><div>優惠總計（未稅）：${quoteSummary.taxExcludedAmount.toLocaleString()}</div><div>營業稅（5%）：${quoteSummary.taxAmount.toLocaleString()}</div><div className="text-xl font-bold">優惠總計（含稅）：${quoteSummary.taxIncludedAmount.toLocaleString()}</div><div className="text-xl font-bold text-red-600"> 最終優惠（含稅）： ${quoteSummary.finalOfferTaxIncludedAmount.toLocaleString()}
+</div><button onClick={()=>handleSubmit(actionType)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow">產生並存檔</button></div></div>}</div>
 
     <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
   <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
@@ -2555,8 +2568,73 @@ const canManageUsers = hasPermission(
                 <h1 className="text-center text-xl font-bold mt-1">軟體買賣報價單</h1><div className="text-center font-semibold">QUOTATION</div>
               </header>
               <table className="mb-2"><tbody><tr><td>報價單號：{previewQuote.quote.QuotationNo}（類型：{quoteStatusLabel(previewQuote.quote.Status)}）</td><td>報價日期：{formatDateForInput(previewQuote.quote.QuoteDate)}</td></tr><tr><td>客戶代號：{previewQuote.quote.CustomerCode || '－'}</td><td>客戶電話：{previewQuote.quote.Tel || previewQuote.quote.CustomerTel || '－'}</td></tr><tr><td>客戶名稱：{previewQuote.quote.CustomerName || '－'}　{previewQuote.quote.ContactName || previewQuote.quote.Contacter || ''}</td><td>客戶傳真：{previewQuote.quote.Fax || previewQuote.quote.CustomerFax || '－'}</td></tr></tbody></table>
-              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><thead><tr className="text-center bg-gray-100"><th>品名</th><th className="whitespace-nowrap">定價（未稅）</th><th>數量</th><th className="whitespace-nowrap">小計（未稅）</th><th>備註</th></tr></thead><tbody>{previewQuote.items.map(item=><tr key={item.QuotationItemId || item.SystemId}><td>{item.SystemCode && item.SystemName ? `${item.SystemCode}－${item.SystemName}` : (item.SystemName || item.SystemCode || '－')}（網路 {item.UserCount} 人版）</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td className="text-center">1</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td>折數 {item.Discount ?? 100}%<br/>優惠含稅 NT${Number(item.DiscountAmount||0).toLocaleString()}</td></tr>)}</tbody></table>
-              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><tbody><tr><td></td><td className="text-right whitespace-nowrap">未稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Number(previewQuote.quote.SubtotalAmount||0).toLocaleString()}</td><td></td></tr><tr><td></td><td className="text-right whitespace-nowrap">含稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Math.round(Number(previewQuote.quote.SubtotalAmount||0)*1.05).toLocaleString()}</td><td></td></tr><tr><td></td><td className="text-right whitespace-nowrap font-bold">優惠金額（含稅）</td><td></td><td className="text-right whitespace-nowrap font-bold">NT${Number(previewQuote.quote.DiscountAmount ?? previewQuote.quote.FinalAmount ?? previewQuote.quote.TotalAmount ?? 0).toLocaleString()}</td><td></td></tr></tbody></table>
+              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><thead><tr className="text-center bg-gray-100"><th>品名</th><th className="whitespace-nowrap">定價（未稅）</th><th>數量</th><th className="whitespace-nowrap">小計（未稅）</th><th>備註</th></tr></thead><tbody>{previewQuote.items.map(item=><tr key={item.QuotationItemId || item.SystemId}><td>{item.SystemCode && item.SystemName ? `${item.SystemCode}－${item.SystemName}` : (item.SystemName || item.SystemCode || '－')}（網路 {item.UserCount} 人版）</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td className="text-center">1</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td>
+  折數 {item.Discount ?? 100}%<br />
+
+  <span className={item.FinalAmount !== null && item.FinalAmount !== undefined
+    ? 'line-through text-red-600'
+    : ''
+  }>
+    優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
+  </span>
+
+  {item.FinalAmount !== null && item.FinalAmount !== undefined && (
+    <>
+      <br />
+      <span className="font-semibold text-red-600">
+        → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
+      </span>
+    </>
+  )}
+</td>
+              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><tbody><tr><td></td><td className="text-right whitespace-nowrap">未稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Number(previewQuote.quote.SubtotalAmount||0).toLocaleString()}</td><td></td></tr><tr><td></td><td className="text-right whitespace-nowrap">含稅金額</td><td></td><td className="text-right whitespace-nowrap">NT${Math.round(Number(previewQuote.quote.SubtotalAmount||0)*1.05).toLocaleString()}</td><td></td></tr><tr><td></td><tr>
+  <td></td>
+  <td className="text-right whitespace-nowrap font-bold">
+    優惠金額（含稅）
+  </td>
+  <td></td>
+  <td
+    className={`text-right whitespace-nowrap font-bold ${
+      previewQuote.items.some(
+        (item) =>
+          item.FinalAmount !== null &&
+          item.FinalAmount !== undefined
+      )
+        ? 'line-through text-red-600'
+        : ''
+    }`}
+  >
+    NT${Number(
+      previewQuote.items.reduce(
+        (sum, item) => sum + Number(item.DiscountAmount || 0),
+        0
+      )
+    ).toLocaleString()}
+  </td>
+  <td>
+    {previewQuote.items.some(
+      (item) =>
+        item.FinalAmount !== null &&
+        item.FinalAmount !== undefined
+    ) && (
+      <span className="font-semibold text-red-600 whitespace-nowrap">
+        → NT${Number(
+          previewQuote.items.reduce(
+            (sum, item) =>
+              sum +
+              Number(
+                item.FinalAmount !== null &&
+                item.FinalAmount !== undefined
+                  ? item.FinalAmount
+                  : item.DiscountAmount || 0
+              ),
+            0
+          )
+        ).toLocaleString()}
+      </span>
+    )}
+  </td>
+</tr><td></td></tr></tbody></table>
               {previewQuote.isNewPurchase && <section className="mt-3 compact"><h2 className="font-bold text-sm border-b-2 border-black">系統說明</h2>{previewQuote.items.map(item=><div key={`note-${item.SystemId}`} className="mt-1"><b className="block">{item.SystemCode}－{item.SystemName}：</b><span className="block whitespace-pre-wrap">{item.Note || '尚未設定系統內容說明'}</span></div>)}<h2 className="font-bold text-sm border-b-2 border-black mt-3">維護說明</h2><ol className="list-decimal pl-5"><li>軟體系統自簽約日起 {previewQuote.warrantyMonths % 12 === 0 ? `${previewQuote.warrantyMonths / 12} 年` : `${previewQuote.warrantyMonths} 個月`} 免費提供教育訓練及維護修復。保固期滿後年度維護費為 NT${previewQuote.maintenanceTotal.toLocaleString()}（含稅）{previewQuote.maintenanceDiscountAmount !== null && previewQuote.maintenanceDiscountAmount !== '' ? `，優惠金額為 NT$${Number(previewQuote.maintenanceDiscountAmount).toLocaleString()}（含稅）` : ''}。日後若新增授權人數，各系統每增加一使用者維護費：{previewQuote.items.filter(item => Number(item.addUserMaintenanceTaxIncluded || 0) > 0).map((item,i)=><span key={`m-${item.SystemId}`}>{i?'；':''}{item.SystemCode} NT${Number(item.addUserMaintenanceTaxIncluded||0).toLocaleString()}（含稅）</span>)}。</li><li>網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：{previewQuote.items.filter(item => Number(item.licenseAddUserTaxIncluded || 0) > 0).map((item,i)=><span key={`l-${item.SystemId}`}>{i?'；':''}{item.SystemCode} NT${Number(item.licenseAddUserTaxIncluded||0).toLocaleString()}</span>)}。</li></ol></section>}
               <table className="mt-3"><tbody><tr><th className="w-[34%] text-center">客戶確認簽章</th><th className="w-[30%] text-center">報價專用章</th><th className="w-[36%] text-center">承辦人資料</th></tr><tr className="h-32"><td></td><td className="text-center"><img src="/seal.JPG" alt="報價專用章" className="h-28 mx-auto object-contain"/></td><td className="p-0"><table className="h-full"><tbody><tr><td className="w-16">承辦人</td><td>產品規劃部副理　鐘廷睿</td></tr><tr><td>電話</td><td>(04)2298-1378#20</td></tr><tr><td>傳真</td><td>(04)2298-1328</td></tr><tr><td>承辦人簽名</td><td><img src="/sign.jpg" alt="承辦人簽名" className="h-7 object-contain"/></td></tr></tbody></table></td></tr></tbody></table>
               <div className="border-t border-black mt-2 pt-1 compact">說明：1. 本報價單以上金額含稅，有效期至 {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，100%（30日到期票）。</div>
