@@ -1438,89 +1438,89 @@ const loadSalesUserOptions = async () => {
       </thead>
 
       <tbody>
-        {quoteListLoading ? (
-          <tr>
-            <td colSpan="7" className="p-8 text-center text-gray-400">
-              讀取中...
-            </td>
-          </tr>
-        ) : quoteList.length ? (
-          quoteList.map((q) => (
-            <tr
-              key={q.QuotationId}
-              className="border-b hover:bg-blue-50"
+  {quoteListLoading ? (
+    <tr>
+      <td colSpan={8} className="p-8 text-center text-gray-400">
+        載入中...
+      </td>
+    </tr>
+  ) : quoteList.length ? (
+    quoteList.map((q) => (
+      <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
+        <td className="p-3 font-medium">
+          {q.QuotationNo}
+        </td>
+
+        <td className="p-3">
+          {formatDateForInput(q.QuoteDate)}
+        </td>
+
+        <td className="p-3">
+          {q.CustomerName || q.CustomerCode || '－'}
+        </td>
+
+        <td className="p-3">
+          {q.QuoteSystemCodes || '－'}
+        </td>
+
+        <td className="p-3 text-right font-medium">
+          ${Number(q.QuoteAmount ?? 0).toLocaleString()}
+        </td>
+
+        <td className="p-3">
+          {q.CreatedByName || q.CreatedByAccount || '－'}
+        </td>
+
+        <td className="p-3">
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              q.Status === 'VOID'
+                ? 'bg-red-100 text-red-700'
+                : 'bg-blue-100 text-blue-700'
+            }`}
+          >
+            {quoteStatusLabel(q.Status)}
+          </span>
+        </td>
+
+        <td className="p-3">
+          <div className="flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => previewQuoteById(q.QuotationId)}
+              className="text-blue-600 hover:underline"
             >
-              <td className="p-3 font-medium">
-                {q.QuotationNo}
-              </td>
+              預覽
+            </button>
 
-              <td className="p-3">
-                {formatDateForInput(q.QuoteDate)}
-              </td>
+            <button
+              type="button"
+              onClick={() => editQuote(q)}
+              className="text-amber-600 hover:underline"
+            >
+              修改
+            </button>
 
-              <td className="p-3">
-                {q.CustomerName || q.CustomerCode || '－'}
-              </td>
-
-              <td className="p-3">
-                {q.QuoteSystemCodes || '－'}
-              </td>
-
-              <td className="p-3 text-right font-medium">
-                ${Number(q.QuoteAmount ?? 0).toLocaleString()}
-              </td>
-
-              <td className="p-3">
-                {q.CreatedByName || q.CreatedByAccount || '－'}
-              </td>
-
-              <td className="p-3">
-                <span
-                  className={`px-2 py-1 rounded text-xs ${
-                    q.Status === 'VOID'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}
-                >
-                  {quoteStatusLabel(q.Status)}
-                </span>
-              </td>
-
-              <td className="p-3">
-                <div className="flex gap-2 justify-center">
-                  <button
-                    onClick={() => previewQuoteById(q.QuotationId)}
-                    className="text-blue-600 hover:underline"
-                  >
-                    預覽
-                  </button>
-
-                  <button
-                    onClick={() => editQuote(q)}
-                    className="text-amber-600 hover:underline"
-                  >
-                    修改
-                  </button>
-
-                  <button
-                    onClick={() => voidQuote(q)}
-                    disabled={q.Status === 'VOID'}
-                    className="text-red-600 hover:underline disabled:text-gray-300"
-                  >
-                    作廢
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="8" className="p-8 text-center text-gray-400">
-              尚無已建立的報價單
-            </td>
-          </tr>
-        )}
-      </tbody>
+            <button
+              type="button"
+              onClick={() => voidQuote(q)}
+              disabled={q.Status === 'VOID'}
+              className="text-red-600 hover:underline disabled:text-gray-300"
+            >
+              作廢
+            </button>
+          </div>
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan={8} className="p-8 text-center text-gray-400">
+        查無符合條件的報價單
+      </td>
+    </tr>
+  )}
+</tbody>
     </table>
   </div>
 </div>
