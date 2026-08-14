@@ -1423,105 +1423,105 @@ const loadSalesUserOptions = async () => {
   </div>
 
   <div className="mt-5 overflow-x-auto">
-    <table className="w-full text-left text-sm">
-      <thead className="bg-gray-100 text-gray-600">
-        <tr>
-          <th className="p-3">報價單號</th>
-          <th className="p-3">報價日期</th>
-          <th className="p-3">客戶名稱</th>
-          <th className="p-3">報價系統</th>
-          <th className="p-3 text-right">報價金額</th>
-          <th className="p-3">報價業務</th>
-          <th className="p-3">狀態</th>
-          <th className="p-3 text-center">操作</th>
-        </tr>
-      </thead>
-
-      <tbody>
-  {quoteListLoading ? (
+    <table className="w-full text-sm text-left">
+  <thead className="bg-gray-100 text-gray-600">
     <tr>
-      <td colSpan={8} className="p-8 text-center text-gray-400">
-        載入中...
-      </td>
+      <th className="p-3">報價單號</th>
+      <th className="p-3">報價日期</th>
+      <th className="p-3">客戶名稱</th>
+      <th className="p-3">報價系統</th>
+      <th className="p-3 text-right">報價金額</th>
+      <th className="p-3">報價業務</th>
+      <th className="p-3">狀態</th>
+      <th className="p-3 text-center">操作</th>
     </tr>
-  ) : quoteList.length ? (
-    quoteList.map((q) => (
-      <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
-        <td className="p-3 font-medium">
-          {q.QuotationNo}
-        </td>
+  </thead>
 
-        <td className="p-3">
-          {formatDateForInput(q.QuoteDate)}
-        </td>
-
-        <td className="p-3">
-          {q.CustomerName || q.CustomerCode || '－'}
-        </td>
-
-        <td className="p-3">
-          {q.QuoteSystemCodes || '－'}
-        </td>
-
-        <td className="p-3 text-right font-medium">
-          ${Number(q.QuoteAmount ?? 0).toLocaleString()}
-        </td>
-
-        <td className="p-3">
-          {q.CreatedByName || q.CreatedByAccount || '－'}
-        </td>
-
-        <td className="p-3">
-          <span
-            className={`px-2 py-1 rounded text-xs ${
-              q.Status === 'VOID'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-blue-100 text-blue-700'
-            }`}
-          >
-            {quoteStatusLabel(q.Status)}
-          </span>
-        </td>
-
-        <td className="p-3">
-          <div className="flex justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => previewQuoteById(q.QuotationId)}
-              className="text-blue-600 hover:underline"
-            >
-              預覽
-            </button>
-
-            <button
-              type="button"
-              onClick={() => editQuote(q)}
-              className="text-amber-600 hover:underline"
-            >
-              修改
-            </button>
-
-            <button
-              type="button"
-              onClick={() => voidQuote(q)}
-              disabled={q.Status === 'VOID'}
-              className="text-red-600 hover:underline disabled:text-gray-300"
-            >
-              作廢
-            </button>
-          </div>
+  <tbody>
+    {quoteListLoading ? (
+      <tr>
+        <td colSpan={8} className="p-8 text-center text-gray-400">
+          載入中...
         </td>
       </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan={8} className="p-8 text-center text-gray-400">
-        查無符合條件的報價單
-      </td>
-    </tr>
-  )}
-</tbody>
-    </table>
+    ) : quoteList.length > 0 ? (
+      quoteList.map((q) => (
+        <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
+          <td className="p-3 font-medium">
+            {q.QuotationNo}
+          </td>
+
+          <td className="p-3">
+            {formatDateForInput(q.QuoteDate)}
+          </td>
+
+          <td className="p-3">
+            {q.CustomerName || q.CustomerCode || '－'}
+          </td>
+
+          <td className="p-3">
+            {q.QuoteSystemCodes || '－'}
+          </td>
+
+          <td className="p-3 text-right font-medium">
+            ${Number(q.QuoteAmount ?? 0).toLocaleString()}
+          </td>
+
+          <td className="p-3">
+            {q.CreatedByName || q.CreatedByAccount || '－'}
+          </td>
+
+          <td className="p-3">
+            <span
+              className={`px-2 py-1 rounded text-xs ${
+                q.Status === 'VOID'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}
+            >
+              {quoteStatusLabel(q.Status)}
+            </span>
+          </td>
+
+          <td className="p-3">
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => previewQuoteById(q.QuotationId)}
+                className="text-blue-600 hover:underline"
+              >
+                預覽
+              </button>
+
+              <button
+                type="button"
+                onClick={() => editQuote(q)}
+                className="text-amber-600 hover:underline"
+              >
+                修改
+              </button>
+
+              <button
+                type="button"
+                onClick={() => voidQuote(q)}
+                disabled={q.Status === 'VOID'}
+                className="text-red-600 hover:underline disabled:text-gray-300"
+              >
+                作廢
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan={8} className="p-8 text-center text-gray-400">
+          查無符合條件的報價單
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
   </div>
 </div>
 </>
