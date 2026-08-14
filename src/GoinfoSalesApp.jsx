@@ -918,9 +918,9 @@ const saveFollowUp = async () => {
   taxIncludedAmount,
   annualMaintenanceAmount,
 
-  discountTaxIncludedAmount,
-  hasManualFinalPrice,
-  finalOfferTaxIncludedAmount,
+  discountTaxIncludedAmount: discountAmount,
+  hasManualFinalPrice: quoteItems.some(hasFinalAmount),
+  finalOfferTaxIncludedAmount: taxIncludedAmount,
 };
   const loadQuotes = async () => {
 
@@ -2568,27 +2568,79 @@ const canManageUsers = hasPermission(
                 <h1 className="text-center text-xl font-bold mt-1">軟體買賣報價單</h1><div className="text-center font-semibold">QUOTATION</div>
               </header>
               <table className="mb-2"><tbody><tr><td>報價單號：{previewQuote.quote.QuotationNo}（類型：{quoteStatusLabel(previewQuote.quote.Status)}）</td><td>報價日期：{formatDateForInput(previewQuote.quote.QuoteDate)}</td></tr><tr><td>客戶代號：{previewQuote.quote.CustomerCode || '－'}</td><td>客戶電話：{previewQuote.quote.Tel || previewQuote.quote.CustomerTel || '－'}</td></tr><tr><td>客戶名稱：{previewQuote.quote.CustomerName || '－'}　{previewQuote.quote.ContactName || previewQuote.quote.Contacter || ''}</td><td>客戶傳真：{previewQuote.quote.Fax || previewQuote.quote.CustomerFax || '－'}</td></tr></tbody></table>
-              <table><colgroup><col className="w-[47%]"/><col className="w-[16%]"/><col className="w-[7%]"/><col className="w-[13%]"/><col className="w-[17%]"/></colgroup><thead><tr className="text-center bg-gray-100"><th>品名</th><th className="whitespace-nowrap">定價（未稅）</th><th>數量</th><th className="whitespace-nowrap">小計（未稅）</th><th>備註</th></tr></thead><tbody>{previewQuote.items.map(item=><tr key={item.QuotationItemId || item.SystemId}><td>{item.SystemCode && item.SystemName ? `${item.SystemCode}－${item.SystemName}` : (item.SystemName || item.SystemCode || '－')}（網路 {item.UserCount} 人版）</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td className="text-center">1</td><td className="text-right whitespace-nowrap">NT${Number(item.LineAmount||0).toLocaleString()}</td><td>
-  折數 {item.Discount ?? 100}%<br />
+<table className="w-full">
+  <colgroup>
+    <col className="w-[47%]" />
+    <col className="w-[16%]" />
+    <col className="w-[7%]" />
+    <col className="w-[13%]" />
+    <col className="w-[17%]" />
+  </colgroup>
 
-  <span className={item.FinalAmount !== null && item.FinalAmount !== undefined
-    ? 'line-through text-red-600'
-    : ''
-  }>
-    優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
-  </span>
+  <thead>
+    <tr className="text-center bg-gray-100">
+      <th>品名</th>
+      <th className="whitespace-nowrap">定價（未稅）</th>
+      <th>數量</th>
+      <th className="whitespace-nowrap">小計（未稅）</th>
+      <th>備註</th>
+    </tr>
+  </thead>
 
-  {item.FinalAmount !== null && item.FinalAmount !== undefined && (
-    <>
-      <br />
-      <span className="font-semibold text-red-600">
-        → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
-      </span>
-    </>
-  )}
-</td>
+  <tbody>
+    {previewQuote.items.map((item) => (
+      <tr key={item.QuotationItemId || item.SystemId}>
+        <td>
+          {item.SystemCode && item.SystemName
+            ? `${item.SystemCode}－${item.SystemName}`
+            : item.SystemName || item.SystemCode || '－'}
+          （網路 {item.UserCount} 人版）
+        </td>
 
-<table>
+        <td className="text-right whitespace-nowrap">
+          NT${Number(item.LineAmount || 0).toLocaleString()}
+        </td>
+
+        <td className="text-center">1</td>
+
+        <td className="text-right whitespace-nowrap">
+          NT${Number(item.LineAmount || 0).toLocaleString()}
+        </td>
+
+        <td>
+          折數 {item.Discount ?? 100}%
+          <br />
+
+          <span
+            className={
+              item.FinalAmount !== null &&
+              item.FinalAmount !== undefined
+                ? 'line-through text-red-600'
+                : ''
+            }
+          >
+            優惠含稅 NT$
+            {Number(item.DiscountAmount || 0).toLocaleString()}
+          </span>
+
+          {item.FinalAmount !== null &&
+            item.FinalAmount !== undefined && (
+              <>
+                <br />
+
+                <span className="font-semibold text-red-600">
+                  → 最終優惠含稅 NT$
+                  {Number(item.FinalAmount).toLocaleString()}
+                </span>
+              </>
+            )}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<table className="mt-3 w-full">
   <colgroup>
     <col className="w-[47%]" />
     <col className="w-[16%]" />
@@ -2600,9 +2652,7 @@ const canManageUsers = hasPermission(
   <tbody>
     <tr>
       <td></td>
-      <td className="text-right whitespace-nowrap">
-        未稅金額
-      </td>
+      <td className="text-right whitespace-nowrap">未稅金額</td>
       <td></td>
       <td className="text-right whitespace-nowrap">
         NT${Number(previewQuote.quote.SubtotalAmount || 0).toLocaleString()}
@@ -2612,9 +2662,7 @@ const canManageUsers = hasPermission(
 
     <tr>
       <td></td>
-      <td className="text-right whitespace-nowrap">
-        含稅金額
-      </td>
+      <td className="text-right whitespace-nowrap">含稅金額</td>
       <td></td>
       <td className="text-right whitespace-nowrap">
         NT$
@@ -2627,24 +2675,11 @@ const canManageUsers = hasPermission(
 
     <tr>
       <td></td>
-
       <td className="text-right whitespace-nowrap font-bold">
         優惠金額（含稅）
       </td>
-
       <td></td>
-
-      <td
-        className={`text-right whitespace-nowrap font-bold ${
-          previewQuote.items.some(
-            (item) =>
-              item.FinalAmount !== null &&
-              item.FinalAmount !== undefined
-          )
-            ? 'line-through text-red-600'
-            : ''
-        }`}
-      >
+      <td className="text-right whitespace-nowrap font-bold">
         NT$
         {Number(
           previewQuote.items.reduce(
@@ -2653,7 +2688,6 @@ const canManageUsers = hasPermission(
           )
         ).toLocaleString()}
       </td>
-
       <td>
         {previewQuote.items.some(
           (item) =>
@@ -2682,21 +2716,47 @@ const canManageUsers = hasPermission(
   </tbody>
 </table>
 
-{previewQuote.isNewPurchase && <section className="mt-3 compact"><h2 className="font-bold text-sm border-b-2 border-black">系統說明</h2>{previewQuote.items.map(item=><div key={`note-${item.SystemId}`} className="mt-1"><b className="block">{item.SystemCode}－{item.SystemName}：</b><span className="block whitespace-pre-wrap">{item.Note || '尚未設定系統內容說明'}</span></div>)}<h2 className="font-bold text-sm border-b-2 border-black mt-3">維護說明</h2><ol className="list-decimal pl-5"><li>軟體系統自簽約日起 {previewQuote.warrantyMonths % 12 === 0 ? `${previewQuote.warrantyMonths / 12} 年` : `${previewQuote.warrantyMonths} 個月`} 免費提供教育訓練及維護修復。保固期滿後年度維護費為 NT${previewQuote.maintenanceTotal.toLocaleString()}（含稅）{previewQuote.maintenanceDiscountAmount !== null && previewQuote.maintenanceDiscountAmount !== '' ? `，優惠金額為 NT$${Number(previewQuote.maintenanceDiscountAmount).toLocaleString()}（含稅）` : ''}。日後若新增授權人數，各系統每增加一使用者維護費：{previewQuote.items.filter(item => Number(item.addUserMaintenanceTaxIncluded || 0) > 0).map((item,i)=><span key={`m-${item.SystemId}`}>{i?'；':''}{item.SystemCode} NT${Number(item.addUserMaintenanceTaxIncluded||0).toLocaleString()}（含稅）</span>)}。</li><li>網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：{previewQuote.items.filter(item => Number(item.licenseAddUserTaxIncluded || 0) > 0).map((item,i)=><span key={`l-${item.SystemId}`}>{i?'；':''}{item.SystemCode} NT${Number(item.licenseAddUserTaxIncluded||0).toLocaleString()}</span>)}。</li></ol></section>}
-              <table className="mt-3 w-full">
+{previewQuote.isNewPurchase && (
+  <section className="mt-3 compact">
+    <h2 className="font-bold text-sm border-b-2 border-black">
+      系統說明
+    </h2>
+
+    {previewQuote.items.map((item) => (
+      <div key={`note-${item.SystemId}`} className="mt-1">
+        <b className="block">
+          {item.SystemCode}－{item.SystemName}：
+        </b>
+
+        <span className="block whitespace-pre-wrap">
+          {item.Note || '尚未設定系統內容說明'}
+        </span>
+      </div>
+    ))}
+
+    <h2 className="font-bold text-sm border-b-2 border-black mt-3">
+      維護說明
+    </h2>
+
+    <ol className="list-decimal pl-5">
+      <li>
+        軟體系統自簽約日起
+        {previewQuote.warrantyMonths % 12 === 0
+          ? ` ${previewQuote.warrantyMonths / 12} 年`
+          : ` ${previewQuote.warrantyMonths} 個月`}
+        免費提供教育訓練及維護修復。保固期滿後年度維護費為 NT$
+        {previewQuote.maintenanceTotal.toLocaleString()}（含稅）。
+      </li>
+    </ol>
+  </section>
+)}
+
+<table className="mt-3 w-full">
   <tbody>
     <tr>
-      <th className="w-[34%] text-center">
-        客戶確認簽章
-      </th>
-
-      <th className="w-[30%] text-center">
-        報價專用章
-      </th>
-
-      <th className="w-[36%] text-center">
-        承辦人資料
-      </th>
+      <th className="w-[34%] text-center">客戶確認簽章</th>
+      <th className="w-[30%] text-center">報價專用章</th>
+      <th className="w-[36%] text-center">承辦人資料</th>
     </tr>
 
     <tr className="h-32">
