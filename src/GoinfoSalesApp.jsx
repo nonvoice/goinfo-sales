@@ -2877,53 +2877,50 @@ const renderUserManagement = () => {
       `${item.SystemId}-${item.ItemType || 'item'}-${index}`
     }
   >
-        <td>
-          {item.SystemCode && item.SystemName
-            ? `${item.SystemCode}－${item.SystemName}`
-            : item.SystemName || item.SystemCode || '－'}
-          （網路 {item.UserCount} 人版）
-        </td>
+    <td>
+      {item.SystemCode && item.SystemName
+        ? `${item.SystemCode}－${item.SystemName}`
+        : item.SystemName || item.SystemCode || '－'}
+      （網路 {item.UserCount} 人版）
+    </td>
 
-        <td className="text-right whitespace-nowrap">
-          NT${Number(item.LineAmount || 0).toLocaleString()}
-        </td>
+    <td className="text-right whitespace-nowrap">
+      NT${Number(item.LineAmount || 0).toLocaleString()}
+    </td>
 
-        <td className="text-center">1</td>
+    <td className="text-center">1</td>
 
-        <td className="text-right whitespace-nowrap">
-          NT${Number(item.LineAmount || 0).toLocaleString()}
-        </td>
+    <td className="text-right whitespace-nowrap">
+      NT${Number(item.LineAmount || 0).toLocaleString()}
+    </td>
 
-        <td>
-          折數 {item.Discount ?? 100}%
-          <br />
+    <td>
+      折數 {item.Discount ?? 100}%
+      <br />
 
-          <span
-            className={
-              item.FinalAmount !== null &&
-              item.FinalAmount !== undefined
-                ? 'line-through text-red-600'
-                : ''
-            }
-          >
-            優惠含稅 NT$
-            {Number(item.DiscountAmount || 0).toLocaleString()}
-          </span>
+      <span
+        className={
+          item.FinalAmount !== null &&
+          item.FinalAmount !== undefined
+            ? 'line-through text-red-600'
+            : ''
+        }
+      >
+        優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
+      </span>
 
-          {item.FinalAmount !== null &&
-            item.FinalAmount !== undefined && (
-              <>
-                <br />
-
-                <span className="font-semibold text-red-600">
-                  → 最終優惠含稅 NT$
-                  {Number(item.FinalAmount).toLocaleString()}
-                </span>
-              </>
-            )}
-        </td>
-      </tr>
-    ))}
+      {item.FinalAmount !== null &&
+        item.FinalAmount !== undefined && (
+          <>
+            <br />
+            <span className="font-semibold text-red-600">
+              → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
+            </span>
+          </>
+        )}
+    </td>
+  </tr>
+))}
   </tbody>
 </table>
 
@@ -3130,7 +3127,6 @@ const renderUserManagement = () => {
       </div>
       )}
 
-      {showCustomerPicker && (
       {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
