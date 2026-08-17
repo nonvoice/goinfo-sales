@@ -2652,12 +2652,27 @@ const renderUserManagement = () => {
   </div>
 
   <div className="mt-1 text-xs text-blue-300">
-    {salesUser?.role === 'ADMIN'
-      ? '系統管理者'
-      : salesUser?.role === 'MANAGER'
-      ? '業務主管'
-      : '業務人員'}
-  </div>
+  {(() => {
+    const roleCode = String(
+      salesUser?.role ||
+        salesUser?.Role ||
+        salesUser?.RoleCode ||
+        salesUser?.UserRole ||
+        ''
+    ).toUpperCase();
+
+    const roleLabelMap = {
+      ROOT: '系統管理員',
+      ADMIN: '系統管理員',
+      PRESIDENT: '高層主管',
+      MANAGER: '業務主管',
+      SALES: '業務人員',
+      SERVICE: '客服人員',
+    };
+
+    return roleLabelMap[roleCode] || '一般使用者';
+  })()}
+</div>
 
   <button
     onClick={handleSalesLogout}
