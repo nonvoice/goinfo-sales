@@ -2674,146 +2674,153 @@ const renderUserManagement = () => {
   </button>
 </div>
         <nav className="flex gap-2 overflow-x-auto p-3 md:block md:space-y-2 md:overflow-y-auto md:p-4">
-{(() => {
-  const currentRole = String(
-  salesUser?.role ||
-  salesUser?.Role ||
-  salesUser?.RoleCode ||
-  salesUser?.UserRole ||
-  ''
-).toUpperCase();
+  {(() => {
+    const currentRole = String(
+      salesUser?.role ||
+        salesUser?.Role ||
+        salesUser?.RoleCode ||
+        salesUser?.UserRole ||
+        ''
+    ).toUpperCase();
 
-const isRoot = currentRole === 'ROOT';
+    const sidebarIsRoot = currentRole === 'ROOT';
 
-  return (
-    <>
-      {can('CUSTOMER', 'canQuery') && (
-  <button
-    onClick={() => setActiveTab('customer')}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'customer'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          1. (潛在)客戶資料建檔
-        </button>
-      )}
-
-      {can('QUOTE', 'canQuery') && (
-  <button
-    onClick={() => {
-      setActiveTab('quotenew');
-      setQuoteItems([]);
-      setCustomerCode('');
-    }}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'quotenew'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          2. 營建系統報價作業
-        </button>
-      )}
-
-      {can('SALES_TRACK', 'canQuery') && (
-  <button
-    onClick={() => setActiveTab('salestrack')}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'salestrack'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          3. 業務銷售追蹤專區
-        </button>
-      )}
-
-      {can('CONTRACT', 'canQuery') && (
-        <button
-          onClick={() => setActiveTab('contracts')}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'contracts'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          4. 客戶合約資料專區
-        </button>
-      )}
-
-      {can('ADD_USER_QUOTE', 'canQuery') && (
-        <button
-          onClick={() => {
-            setActiveTab('quoteadd');
-            setQuoteItems([]);
-            setCustomerCode('');
-          }}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'quoteadd'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          5. 增設授權報價建檔
-        </button>
-      )}
-
-      {can('MAINTENANCE_QUOTE', 'canQuery') && (
-        <button
-          onClick={() => {
-            setActiveTab('quotemaint');
-            setQuoteItems([]);
-            setCustomerCode('');
-          }}
-          className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-            activeTab === 'quotemaint'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          6. 維護合約報價建檔
-        </button>
-      )}
-
-      {isRoot && (
-        <>
-          <div className="my-3 border-t border-amber-700" />
-
+    return (
+      <>
+        {can('CUSTOMER', 'canQuery') && (
           <button
-            onClick={() => setActiveTab('systemsettings')}
-            className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-              activeTab === 'systemsettings'
-                ? 'bg-amber-500 text-white'
-                : 'text-amber-300 hover:bg-gray-800'
+            type="button"
+            onClick={() => setActiveTab('customer')}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'customer'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
             }`}
           >
-            ⚙ 系統設定：軟體與價格
+            1. (潛在)客戶資料建檔
           </button>
-        </>
-      )}
+        )}
 
-      {isRoot && (
-        <>
-          <div className="my-3 border-t border-red-700" />
-
+        {can('QUOTE', 'canQuery') && (
           <button
-            onClick={() => setActiveTab('usermanagement')}
-            className={`shrink-0 w-auto md:w-full text-left px-4 py-3 rounded transition ${
-              activeTab === 'usermanagement'
-                ? 'bg-red-600 text-white'
-                : 'text-red-300 hover:bg-gray-800'
+            type="button"
+            onClick={() => {
+              setActiveTab('quotenew');
+              setQuoteItems([]);
+              setCustomerCode('');
+            }}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'quotenew'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
             }`}
           >
-            🔐 權限設定
+            2. 營建系統報價作業
           </button>
-        </>
-      )}
-    </>
-  );
-})()}
+        )}
 
+        {can('SALES_TRACK', 'canQuery') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('salestrack')}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'salestrack'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            3. 業務銷售追蹤專區
+          </button>
+        )}
+
+        {can('CONTRACT', 'canQuery') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('contracts')}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'contracts'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            4. 客戶合約資料專區
+          </button>
+        )}
+
+        {can('ADD_USER_QUOTE', 'canQuery') && (
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('quoteadd');
+              setQuoteItems([]);
+              setCustomerCode('');
+            }}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'quoteadd'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            5. 增設授權報價建檔
+          </button>
+        )}
+
+        {can('MAINTENANCE_QUOTE', 'canQuery') && (
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('quotemaint');
+              setQuoteItems([]);
+              setCustomerCode('');
+            }}
+            className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+              activeTab === 'quotemaint'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            6. 維護合約報價建檔
+          </button>
+        )}
+
+        {sidebarIsRoot && (
+          <>
+            <div className="my-3 border-t border-amber-700" />
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('systemsettings')}
+              className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+                activeTab === 'systemsettings'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-amber-300 hover:bg-gray-800'
+              }`}
+            >
+              ⚙ 系統設定：軟體與價格
+            </button>
+          </>
+        )}
+
+        {sidebarIsRoot && (
+          <>
+            <div className="my-3 border-t border-red-700" />
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('usermanagement')}
+              className={`shrink-0 w-auto rounded px-4 py-3 text-left transition md:w-full ${
+                activeTab === 'usermanagement'
+                  ? 'bg-red-600 text-white'
+                  : 'text-red-300 hover:bg-gray-800'
+              }`}
+            >
+              🔐 權限設定
+            </button>
+          </>
+        )}
+      </>
+    );
+  })()}
 </nav>
       </div>
 
