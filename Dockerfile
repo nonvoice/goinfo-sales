@@ -20,7 +20,7 @@ RUN npm run build
 
 # 第二階段：【關鍵修復】強制使用 ARM64 (Mac Mini 適用的架構) 的 Caddy 伺服器
 # 這樣可以避免 Zeabur 的雲端建置機台 (通常是 AMD64) 抓錯版本
-FROM --platform=linux/arm64 caddy:alpine
+FROM caddy:2-alpine
 
 # 自訂 Caddy 設定檔，強制監聽 8080 Port 
 # (同時加入 try_files 確保 React 前端路由重新整理時不會 404)
