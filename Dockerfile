@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -11,16 +11,8 @@ COPY . .
 
 RUN npm run build
 
-FROM caddy:2-alpine
-
-COPY --from=builder /app/build /usr/share/caddy
-
-RUN printf '%s\n' \
-    ':8080 {' \
-    '    root * /usr/share/caddy' \
-    '    try_files {path} /index.html' \
-    '    file_server' \
-    '}' \
-    > /etc/caddy/Caddyfile
+RUN npm install --omit=dev serve@14.2.4
 
 EXPOSE 8080
+
+CMD ["sh", "-c", "npx serve -s build -l 8080"]
