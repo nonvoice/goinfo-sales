@@ -12,9 +12,7 @@ const permissionFunctions = [
   { code: 'CONTRACT', label: '客戶合約資料專區' },
   { code: 'ADD_USER_QUOTE', label: '增設授權報價建檔' },
   { code: 'MAINTENANCE_QUOTE', label: '維護合約報價建檔' },
-  { code: 'SYSTEM_SETTINGS', label: '系統設定：軟體與價格' },
-  { code: 'USER_PERMISSION', label: '權限設定' },
-];
+  ];
 
 const createDefaultPermissionRows = () =>
   permissionFunctions.map((item) => ({
