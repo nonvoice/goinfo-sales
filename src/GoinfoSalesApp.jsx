@@ -25,6 +25,12 @@ const createDefaultPermissionRows = () =>
     canDelete: false,
   }));
 
+const toBoolean = (value) =>
+  value === true ||
+  value === 1 ||
+  value === '1' ||
+  value === 'true';
+
 const toIsoDate = (value) => {
   if (!value) return '';
   const raw = String(value).trim();
@@ -448,11 +454,11 @@ const loadUserPermissionRows = async (userId) => {
       );
 
       return {
-        functionCode: item.code,
-        canQuery: Boolean(found?.CanQuery),
-        canCreate: Boolean(found?.CanCreate),
-        canUpdate: Boolean(found?.CanUpdate),
-        canDelete: Boolean(found?.CanDelete),
+         functionCode: item.code,
+         canQuery: toBoolean(found?.CanQuery),
+         canCreate: toBoolean(found?.CanCreate),
+         canUpdate: toBoolean(found?.CanUpdate),
+         canDelete: toBoolean(found?.CanDelete),
       };
     });
   } catch (error) {
@@ -894,7 +900,27 @@ const saveFollowUp = async () => {
   const addItem = (itemType='NEW_LICENSE') => setQuoteItems(p => [...p, { id:`${Date.now()}-${Math.random()}`, systemId:'', itemType, userCount:1, discountRate:100, specialPrice:'' }]);
   const updateItem = (id, field, value) => setQuoteItems(p => p.map(x => x.id===id ? {...x,[field]:value} : x));
   const removeItem = (id) => setQuoteItems(p => p.filter(x => x.id !== id));
-  const getEffectivePricingRule = (systemId, itemType) => { const today=new Date().toISOString().slice(0,10), type=itemType==='MAINTENANCE'?'MAINTENANCE':'LICENSE'; return pricingRuleList.filter(r => Number(r.SystemId)===Number(systemId) && r.RuleType===type && (r.IsActive===true || r.IsActive===1 || r.IsActive==='true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10)<=today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10)>=today)).sort((a,b)=>String(b.EffectiveStartDate||'').localeCompare(String(a.EffectiveStartDate||'')))[0]; };
+  const getEffectivePricingRule = (systemId, itemType) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const type = itemType === 'MAINTENANCE' ? 'MAINTENANCE' : 'LICENSE';
+
+  return pricingRuleList
+    .filter(
+      (rule) =>
+        Number(rule.SystemId) === Number(systemId) &&
+        rule.RuleType === type &&
+        toBoolean(rule.IsActive) &&
+        (!rule.EffectiveStartDate ||
+          String(rule.EffectiveStartDate).slice(0, 10) <= today) &&
+        (!rule.EffectiveEndDate ||
+          String(rule.EffectiveEndDate).slice(0, 10) >= today)
+    )
+    .sort((a, b) =>
+      String(b.EffectiveStartDate || '').localeCompare(
+        String(a.EffectiveStartDate || '')
+      )
+    )[0];
+};
   const calculateListAmount = (item) => { const rule=getEffectivePricingRule(item.systemId,item.itemType); if(!rule) return 0; const users=Math.max(Number(item.userCount)||0,0), first=Number(rule.FirstUserPrice)||0, add=Number(rule.AdditionalUserPrice)||0; return item.itemType==='ADD_USER' ? users*add : users>=1 ? first+(users-1)*add : 0; };
   const getDiscountPercent = (item) => Math.min(Math.max(Number(item.discountRate) || 100, 0), 100);
   const calculateTaxIncludedListAmount = (item) => Math.round(calculateListAmount(item) * 1.05);
@@ -1082,7 +1108,10 @@ const loadSalesUserOptions = async () => {
     if (!customer?.CustomerId) return alert('客戶資料缺少 CustomerId，請先依下方說明更新 get-customers 工作流。');
     const now = new Date();
     const rocYear = now.getFullYear() - 1911;
-    const quoteNo = `Q${rocYear}${String(now.getMonth()+1).padStart(2,'0')}${String(Date.now()).slice(-4)}`;
+   const quoteNo = `Q${rocYear}${String(now.getMonth() + 1).padStart(
+  2,
+  '0'
+)}${String(now.getDate()).padStart(2, '0')}${String(Date.now()).slice(-6)}`;
     const payload = {
       action,
       status: action === 'CreateNewSystemQuote' ? '1' : action === 'CreateAddUserQuote' ? '2' : action === 'CreateMaintenanceQuote' ? '3' : '4',
@@ -2141,42 +2170,6 @@ const renderUserManagement = () => {
     }));
   };
 
-const loadUserPermissionRows = async (userId) => {
-  try {
-    const result = await salesApiFetch(
-      `get-app-user-permissions?userId=${encodeURIComponent(userId)}`
-    );
-
-    const rows = Array.isArray(result)
-      ? result
-      : result?.rows || result?.data || [];
-
-    const toBoolean = (value) =>
-      value === true ||
-      value === 1 ||
-      value === '1';
-
-    return permissionFunctions.map((item) => {
-      const found = rows.find(
-        (row) => row.FunctionCode === item.code
-      );
-
-      return {
-        functionCode: item.code,
-        canQuery: toBoolean(found?.CanQuery),
-        canCreate: toBoolean(found?.CanCreate),
-        canUpdate: toBoolean(found?.CanUpdate),
-        canDelete: toBoolean(found?.CanDelete),
-      };
-    });
-  } catch (error) {
-    console.error('loadUserPermissionRows error:', error);
-    alert('讀取使用者功能權限失敗：' + error.message);
-
-    return createDefaultPermissionRows();
-  }
-};
-
   const openEditUser = async (user) => {
     const roleCode = user.RoleCode || user.roleCode || 'SALES';
     const normalizedRole = String(roleCode).toUpperCase();
@@ -2188,25 +2181,20 @@ const loadUserPermissionRows = async (userId) => {
 
     setSelectedManagedUserId(user.UserId);
 
-  const permissions =
-    String(user.RoleCode || user.roleCode).toUpperCase() === 'ROOT'
-      ? createDefaultPermissionRows()
-      : await loadUserPermissionRows(user.UserId);
-
     setUserForm({
       userId: user.UserId,
       loginAccount: user.LoginAccount || '',
       displayName: user.DisplayName || '',
       password: '',
       roleCode,
-      isActive: Boolean(user.IsActive),
-      mustChangePassword: Boolean(user.MustChangePassword),
-      canViewCustomer: Boolean(user.CanViewCustomer),
-      canViewQuote: Boolean(user.CanViewQuote),
-      canViewSalesTrack: Boolean(user.CanViewSalesTrack),
-      canViewContracts: Boolean(user.CanViewContracts),
-      canViewSystemSettings: Boolean(user.CanViewSystemSettings),
-      canManageUsers: Boolean(user.CanManageUsers),
+      isActive: toBoolean(user.IsActive),
+      mustChangePassword: toBoolean(user.MustChangePassword),
+      canViewCustomer: toBoolean(user.CanViewCustomer),
+      canViewQuote: toBoolean(user.CanViewQuote),
+      canViewSalesTrack: toBoolean(user.CanViewSalesTrack),
+      canViewContracts: toBoolean(user.CanViewContracts),
+      canViewSystemSettings: toBoolean(user.CanViewSystemSettings),
+      canManageUsers: toBoolean(user.CanManageUsers),
       permissions: permissionRows,
     });
   };
@@ -2697,45 +2685,6 @@ const loadUserPermissionRows = async (userId) => {
 
 const isRoot = currentRole === 'ROOT';
 
-const hasPermission = (camelName, pascalName) => {
-  const value =
-    salesUser?.permissions?.[camelName] ??
-    salesUser?.[camelName] ??
-    salesUser?.[pascalName];
-
-  return isRoot || value === true || value === 1 || value === '1';
-};
-
-const canViewCustomer = hasPermission(
-  'canViewCustomer',
-  'CanViewCustomer'
-);
-
-const canViewQuote = hasPermission(
-  'canViewQuote',
-  'CanViewQuote'
-);
-
-const canViewSalesTrack = hasPermission(
-  'canViewSalesTrack',
-  'CanViewSalesTrack'
-);
-
-const canViewContracts = hasPermission(
-  'canViewContracts',
-  'CanViewContracts'
-);
-
-const canViewSystemSettings = hasPermission(
-  'canViewSystemSettings',
-  'CanViewSystemSettings'
-);
-
-const canManageUsers = hasPermission(
-  'canManageUsers',
-  'CanManageUsers'
-);
-
   return (
     <>
       {can('CUSTOMER', 'canQuery') && (
@@ -2872,12 +2821,12 @@ const canManageUsers = hasPermission(
       <div className="flex-1 overflow-y-auto bg-gray-100 p-3 sm:p-4 md:p-6">
         <div className="mx-auto min-h-full max-w-7xl">
           {activeTab === 'customer' && renderCustomerForm()}
-          {activeTab === 'quotenew' && renderQuotationForm('2. 建置系統報價單', 'NEWLICENSE', 'CreateNewSystemQuote')}
+          {activeTab === 'quotenew' && renderQuotationForm( '2. 建置系統報價單', 'NEW_LICENSE', 'CreateNewSystemQuote')}
           {activeTab === 'salestrack' && renderSalesTracking()}
           {activeTab === 'systemsettings' && isRoot && renderSystemSettings()}
-          {activeTab === 'usermanagement' && renderUserManagement()}         
+          {activeTab === 'usermanagement' && isRoot && renderUserManagement()}
           {activeTab === 'contracts' && renderContracts()}
-          {activeTab === 'quoteadd' && renderQuotationForm('5. 增設授權報價單', 'ADDUSER', 'CreateAddUserQuote')}
+          {activeTab === 'quoteadd' && renderQuotationForm( '5. 增設授權報價單', 'ADD_USER', 'CreateAddUserQuote')}
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
          </div>
       </div>
@@ -2914,8 +2863,13 @@ const canManageUsers = hasPermission(
   </thead>
 
   <tbody>
-    {previewQuote.items.map((item) => (
-      <tr key={item.QuotationItemId || item.SystemId}>
+    {previewQuote.items.map((item, index) => (
+  <tr
+    key={
+      item.QuotationItemId ||
+      `${item.SystemId}-${item.ItemType || 'item'}-${index}`
+    }
+  >
         <td>
           {item.SystemCode && item.SystemName
             ? `${item.SystemCode}－${item.SystemName}`
@@ -3048,8 +3002,11 @@ const canManageUsers = hasPermission(
       系統說明
     </h2>
 
-    {previewQuote.items.map((item) => (
-      <div key={`note-${item.SystemId}`} className="mt-1">
+    {previewQuote.items.map((item, index) => (
+  <div
+    key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
+    className="mt-1"
+  >
         <b className="block">
           {item.SystemCode}－{item.SystemName}：
         </b>
