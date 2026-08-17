@@ -2551,14 +2551,7 @@ const renderUserManagement = () => {
                       String(user.RoleCode || user.roleCode).toUpperCase() ===
                       'ROOT';
 
-                    const featureCount = [
-                      user.CanViewCustomer,
-                      user.CanViewQuote,
-                      user.CanViewSalesTrack,
-                      user.CanViewContracts,
-                      user.CanViewSystemSettings,
-                      user.CanManageUsers,
-                    ].filter(Boolean).length;
+                    const featureCount = Number(user.QueryFeatureCount || 0);
 
                     return (
                       <tr
