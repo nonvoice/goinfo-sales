@@ -2585,7 +2585,7 @@ const renderUserManagement = () => {
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {featureCount} 項
+                           {isRoot ? '全部權限' : `${featureCount} 項`}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
