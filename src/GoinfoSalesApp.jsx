@@ -3127,8 +3127,10 @@ const renderUserManagement = () => {
             </div>
           </div>
         </div>
+      </div>
       )}
 
+      {showCustomerPicker && (
       {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
