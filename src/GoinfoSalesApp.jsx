@@ -2207,7 +2207,30 @@ const renderSalesTracking = () => {
   )}
 </div>
 
-      {showOpportunityForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={()=>setShowOpportunityForm(false)}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6" onMouseDown={e=>e.stopPropagation()}><div className="mb-5 flex justify-between"><h3 className="text-xl font-bold">{opportunityForm.opportunityId?'編輯案件':'新增案件'}</h3><button onClick={()=>setShowOpportunityForm(false)}>×</button></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+{showOpportunityForm && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    onMouseDown={() => setShowOpportunityForm(false)}
+  >
+    <div
+      className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <div className="mb-5 flex justify-between">
+        <h3 className="text-xl font-bold">
+          {opportunityForm.opportunityId ? '編輯案件' : '新增案件'}
+        </h3>
+
+        <button
+          type="button"
+          onClick={() => setShowOpportunityForm(false)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
 <label className="md:col-span-2 text-sm">
   客戶 <span className="text-red-500">*</span>
 
