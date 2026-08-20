@@ -2134,10 +2134,59 @@ const renderSalesTracking = () => {
     </button>
   )}
   </div></div>
-            <div className="border-t pt-5"><h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>{followUpList.length===0?<div className="rounded bg-gray-50 p-4 text-sm text-gray-400">尚無追蹤紀錄</div>:<div className="space-y-3">{followUpList.map((item,i)=><div key={item.FollowUpId||i} className="rounded border p-4"><div className="flex justify-between"><b>{contactLabel[item.ContactMethod||item.contactMethod]||'其他'} {item.ContactName||item.contactName||''}</b><span className="text-xs text-gray-500">{dateValue(item.FollowUpDate||item.followUpDate)}</span></div><div className="mt-1 text-xs text-gray-500">{stageLabel[item.Stage||item.stage]||''}　{intentLabel[item.CustomerGrade||item.customerGrade]||''}</div><p className="mt-2 text-sm">{item.Content||item.content}</p>{(item.NextFollowUpDate||item.nextFollowUpDate)&&<div className="mt-2 text-xs text-blue-600">下次追蹤：{dateValue(item.NextFollowUpDate||item.nextFollowUpDate)}</div>}</div>)}</div>}</div>
-          </div>}
+
+            <div className="border-t pt-5">
+  <h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>
+
+  {followUpList.length === 0 ? (
+    <div className="rounded bg-gray-50 p-4 text-sm text-gray-400">
+      尚無追蹤紀錄
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {followUpList.map((item, i) => (
+        <div
+          key={item.FollowUpId || item.followUpId || i}
+          className="rounded border p-4"
+        >
+          <div className="flex justify-between">
+            <b>
+              {contactLabel[item.ContactMethod || item.contactMethod] || '其他'}{' '}
+              {item.ContactName || item.contactName || ''}
+            </b>
+
+            <span className="text-xs text-gray-500">
+              {dateValue(item.FollowUpDate || item.followUpDate)}
+            </span>
+          </div>
+
+          <div className="mt-1 text-xs text-gray-500">
+            {stageLabel[item.Stage || item.stage] || ''}　
+            {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
+          </div>
+
+          <p className="mt-2 text-sm">
+            {item.Content || item.content}
+          </p>
+
+          {(item.QuotationNo || item.quotationNo) && (
+            <div className="mt-1 text-xs text-purple-600">
+              關聯報價：{item.QuotationNo || item.quotationNo}
+            </div>
+          )}
+
+          {(item.NextFollowUpDate || item.nextFollowUpDate) && (
+            <div className="mt-2 text-xs text-blue-600">
+              下次追蹤：
+              {dateValue(item.NextFollowUpDate || item.nextFollowUpDate)}
+            </div>
+          )}
         </div>
-      </div>
+      ))}
+    </div>
+  )}
+</div>
+
       {showOpportunityForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={()=>setShowOpportunityForm(false)}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6" onMouseDown={e=>e.stopPropagation()}><div className="mb-5 flex justify-between"><h3 className="text-xl font-bold">{opportunityForm.opportunityId?'編輯案件':'新增案件'}</h3><button onClick={()=>setShowOpportunityForm(false)}>×</button></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 <label className="md:col-span-2 text-sm">
   客戶 <span className="text-red-500">*</span>
