@@ -1995,7 +1995,17 @@ const renderSalesTracking = () => {
   const stageLabel = Object.fromEntries(stageOptions);
   const intentOptions = [['S','S-意願極高'], ['A','A-意願尚可'], ['B','B-未表明意願'], ['C','C-意願欠佳']];
   const intentLabel = Object.fromEntries(intentOptions);
-  const contactLabel = { PHONE: '電話', MEETING: '會面', EMAIL: '電子郵件', LINE: 'LINE', OTHER: '其他', '電話':'電話', '會面':'會面', '電子郵件':'電子郵件', LINE:'LINE', '其他':'其他' };
+  const contactLabel = {
+    PHONE: '電話',
+    MEETING: '會面',
+    EMAIL: '電子郵件',
+    LINE: 'LINE',
+    OTHER: '其他',
+    電話: '電話',
+    會面: '會面',
+    電子郵件: '電子郵件',
+    其他: '其他',
+  };
   const selectedId = selectedOpportunity?.OpportunityId || selectedOpportunity?.opportunityId;
   const dateValue = (value) => value ? String(value).slice(0, 10) : '';
   const itemDate = (item) => dateValue(item.CreatedAt || item.createdAt || item.FillDate || item.fillDate);
@@ -3658,4 +3668,4 @@ const renderUserManagement = () => {
       )}
     </div>
   );
-}
+};
