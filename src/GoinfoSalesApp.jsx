@@ -619,13 +619,6 @@ const openNewOpportunity = () => {
   setShowOpportunityForm(true);
 };
 
-  loadCustomerQuoteOptions(customerId);
-  setShowOpportunityForm(true);
-};
-
-  setShowOpportunityForm(true);
-};
-
 const saveOpportunity = async () => {
   if (!opportunityForm.customerId) {
     alert('請選擇客戶');
