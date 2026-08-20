@@ -289,7 +289,8 @@ export default function App() {
   const initialOpportunityForm = {
     opportunityId: '',
     customerId: '',
-    quotationId: '',
+    quotationIds: [],
+    primaryQuotationId: '',
     opportunityName: '',
     stage: 'INITIAL_CONTACT',
     customerGrade: 'B',
@@ -305,15 +306,16 @@ export default function App() {
   );
 
   const initialFollowUpForm = {
-    followUpType: 'PHONE',
-    content: '',
-    nextFollowUpDate: '',
-    contactName: '',
-    contactMethod: '電話',
-    stage: '',
-    customerGrade: '',
-    followUpDate: new Date().toISOString().slice(0, 10),
-  };
+  followUpType: 'PHONE',
+  content: '',
+  nextFollowUpDate: '',
+  contactName: '',
+  contactMethod: '電話',
+  stage: '',
+  customerGrade: '',
+  followUpDate: new Date().toISOString().slice(0, 10),
+  quotationId: '',
+};
 
   const [followUpForm, setFollowUpForm] = useState(initialFollowUpForm);
   const [followUpSaving, setFollowUpSaving] = useState(false);
@@ -349,6 +351,8 @@ export default function App() {
   const [salesUserOptions, setSalesUserOptions] = useState([]);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
+  const [customerQuoteOptions, setCustomerQuoteOptions] = useState([]);
+  const [customerQuoteLoading, setCustomerQuoteLoading] = useState(false);
 
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
@@ -510,7 +514,7 @@ const saveAppUser = async () => {
       method: 'POST',
       body: JSON.stringify({
         action: userForm.userId ? 'update' : 'create',
-        userId: userForm.userId ? Number(userForm.userId) : null,
+        quotationId: followUpForm.quotationId ? Number(followUpForm.quotationId) : null,
         loginAccount: userForm.loginAccount.trim(),
         displayName: userForm.displayName.trim(),
         password: userForm.password || null,
@@ -585,11 +589,23 @@ const loadOpportunityDetail = async (opportunityId) => {
       throw new Error('找不到案件，或您沒有檢視此案件的權限');
     }
 
-    setSelectedOpportunity(opportunity);
-    setFollowUpList(Array.isArray(followUps) ? followUps : []);
-    setSelectedOpportunityId(
-      opportunity.OpportunityId || opportunity.opportunityId
-    );
+const linkedQuotations =
+  detail?.linkedQuotations ||
+  detail?.data?.linkedQuotations ||
+  [];
+
+setSelectedOpportunity({
+  ...opportunity,
+  linkedQuotations: Array.isArray(linkedQuotations)
+    ? linkedQuotations
+    : [],
+});
+
+setFollowUpList(Array.isArray(followUps) ? followUps : []);
+
+setSelectedOpportunityId(
+  opportunity.OpportunityId || opportunity.opportunityId
+);
   } catch (error) {
     console.error('loadOpportunityDetail error:', error);
     alert(error.message || '讀取案件明細失敗');
@@ -603,55 +619,9 @@ const openNewOpportunity = () => {
   setShowOpportunityForm(true);
 };
 
-const openEditOpportunity = () => {
-  if (!selectedOpportunity) return;
-
-  setOpportunityForm({
-    opportunityId:
-      selectedOpportunity.OpportunityId ||
-      selectedOpportunity.opportunityId ||
-      '',
-    customerId:
-      selectedOpportunity.CustomerId ||
-      selectedOpportunity.customerId ||
-      '',
-    quotationId:
-      selectedOpportunity.QuotationId ||
-      selectedOpportunity.quotationId ||
-      '',
-    opportunityName:
-      selectedOpportunity.OpportunityName ||
-      selectedOpportunity.opportunityName ||
-      '',
-    stage: selectedOpportunity.Stage || selectedOpportunity.stage || 'INITIAL_CONTACT',
-    customerGrade:
-      selectedOpportunity.CustomerGrade ||
-      selectedOpportunity.customerGrade ||
-      'B',
-  createdAt:
-     formatDateForInput(
-        selectedOpportunity.CreatedAt ||
-        selectedOpportunity.createdAt ||
-        selectedOpportunity.FillDate ||
-        selectedOpportunity.fillDate
-    ) || new Date().toISOString().slice(0, 10),
-estimatedAmount:
-      selectedOpportunity.EstimatedAmount ||
-      selectedOpportunity.estimatedAmount ||
-      '',
-    expectedCloseDate: formatDateForInput(
-      selectedOpportunity.ExpectedCloseDate ||
-        selectedOpportunity.expectedCloseDate
-    ),
-    nextFollowUpDate: formatDateForInput(
-      selectedOpportunity.NextFollowUpDate ||
-        selectedOpportunity.nextFollowUpDate
-    ),
-    description:
-      selectedOpportunity.Description ||
-      selectedOpportunity.description ||
-      '',
-  });
+  loadCustomerQuoteOptions(customerId);
+  setShowOpportunityForm(true);
+};
 
   setShowOpportunityForm(true);
 };
@@ -685,9 +655,16 @@ const saveOpportunity = async () => {
         ? Number(opportunityForm.opportunityId)
         : null,
       customerId: Number(opportunityForm.customerId),
-      quotationId: opportunityForm.quotationId
-        ? Number(opportunityForm.quotationId)
+      quotationIds: (opportunityForm.quotationIds || [])
+         .map((id) => Number(id))
+         .filter(Number.isSafeInteger),
+
+      primaryQuotationId: Number.isSafeInteger(
+        Number(opportunityForm.primaryQuotationId)
+      )
+        ? Number(opportunityForm.primaryQuotationId)
         : null,
+
       opportunityName: opportunityForm.opportunityName.trim(),
       stage: opportunityForm.stage,
       customerGrade: opportunityForm.customerGrade || null,
@@ -744,16 +721,25 @@ const saveFollowUp = async () => {
     await salesApiFetch('save-sales-follow-up', {
       method: 'POST',
       body: JSON.stringify({
-        opportunityId: Number(selectedOpportunityId),
-        followUpType: followUpForm.followUpType,
-        content: followUpForm.content.trim(),
-        nextFollowUpDate: followUpForm.nextFollowUpDate || null,
-        contactName: followUpForm.contactName || null,
-        contactMethod: followUpForm.contactMethod || null,
-        followUpDate: followUpForm.followUpDate || new Date().toISOString().slice(0, 10),
-        stage: followUpForm.stage || null,
-        customerGrade: followUpForm.customerGrade || null,
-      }),
+         opportunityId: Number(selectedOpportunityId),
+
+         quotationId: Number.isSafeInteger(
+         Number(followUpForm.quotationId)
+         )
+         ? Number(followUpForm.quotationId)
+         : null,
+
+         followUpType: followUpForm.followUpType,
+           content: followUpForm.content.trim(),
+           nextFollowUpDate: followUpForm.nextFollowUpDate || null,
+           contactName: followUpForm.contactName || null,
+           contactMethod: followUpForm.contactMethod || null,
+           followUpDate:
+              followUpForm.followUpDate ||
+              new Date().toISOString().slice(0, 10),
+         stage: followUpForm.stage || null,
+         customerGrade: followUpForm.customerGrade || null,
+         }),
     });
 
     setFollowUpForm(initialFollowUpForm);
@@ -988,6 +974,7 @@ const saveFollowUp = async () => {
     finalOfferTaxIncludedAmount: taxIncludedAmount,
   };
 }, [quoteItems, pricingRuleList]);
+
   const loadQuotes = async () => {
 
   setQuoteListLoading(true);
@@ -1020,6 +1007,128 @@ const saveFollowUp = async () => {
     setQuoteListLoading(false);
   }
 };
+
+const loadCustomerQuoteOptions = async (customerId) => {
+  if (!customerId) {
+    setCustomerQuoteOptions([]);
+    return;
+  }
+
+  setCustomerQuoteLoading(true);
+
+  try {
+    const data = await salesApiFetch(
+      `get-quotes?customerId=${encodeURIComponent(customerId)}`
+    );
+
+    const rows = getResultList(data);
+
+    setCustomerQuoteOptions(
+      rows.filter((quote) => String(quote.Status) !== 'VOID')
+    );
+  } catch (error) {
+    console.error('loadCustomerQuoteOptions error:', error);
+    setCustomerQuoteOptions([]);
+    alert(error.message || '讀取客戶報價單失敗');
+  } finally {
+    setCustomerQuoteLoading(false);
+  }
+};
+
+const openEditOpportunity = () => {
+  if (!selectedOpportunity) {
+    return;
+  }
+
+  const customerId =
+    selectedOpportunity.CustomerId ||
+    selectedOpportunity.customerId ||
+    '';
+
+  const linkedQuotations = Array.isArray(
+    selectedOpportunity.linkedQuotations
+  )
+    ? selectedOpportunity.linkedQuotations
+    : [];
+
+  const quotationIds = linkedQuotations
+    .map((quote) => String(quote.QuotationId || quote.quotationId || ''))
+    .filter(Boolean);
+
+  const primaryQuotation = linkedQuotations.find(
+    (quote) =>
+      quote.IsPrimary === true ||
+      quote.IsPrimary === 1 ||
+      quote.IsPrimary === '1' ||
+      quote.isPrimary === true ||
+      quote.isPrimary === 1 ||
+      quote.isPrimary === '1'
+  );
+
+  const primaryQuotationId = String(
+    primaryQuotation?.QuotationId ||
+      primaryQuotation?.quotationId ||
+      selectedOpportunity.QuotationId ||
+      selectedOpportunity.quotationId ||
+      quotationIds[0] ||
+      ''
+  );
+
+  setOpportunityForm({
+    opportunityId:
+      selectedOpportunity.OpportunityId ||
+      selectedOpportunity.opportunityId ||
+      '',
+
+    customerId: String(customerId),
+
+    quotationIds,
+
+    primaryQuotationId,
+
+    opportunityName:
+      selectedOpportunity.OpportunityName ||
+      selectedOpportunity.opportunityName ||
+      '',
+
+    stage:
+      selectedOpportunity.Stage ||
+      selectedOpportunity.stage ||
+      'INITIAL_CONTACT',
+
+    customerGrade:
+      selectedOpportunity.CustomerGrade ||
+      selectedOpportunity.customerGrade ||
+      'B',
+
+    createdAt:
+      formatDateForInput(
+        selectedOpportunity.CreatedAt ||
+          selectedOpportunity.createdAt ||
+          selectedOpportunity.FillDate ||
+          selectedOpportunity.fillDate
+      ) || new Date().toISOString().slice(0, 10),
+
+    estimatedAmount:
+      selectedOpportunity.EstimatedAmount ||
+      selectedOpportunity.estimatedAmount ||
+      '',
+
+    expectedCloseDate: formatDateForInput(
+      selectedOpportunity.ExpectedCloseDate ||
+        selectedOpportunity.expectedCloseDate
+    ),
+
+    nextFollowUpDate: formatDateForInput(
+      selectedOpportunity.NextFollowUpDate ||
+        selectedOpportunity.nextFollowUpDate
+    ),
+
+    description:
+      selectedOpportunity.Description ||
+      selectedOpportunity.description ||
+      '',
+  });
 
 const loadSalesUserOptions = async () => {
   try {
@@ -2029,8 +2138,158 @@ const renderSalesTracking = () => {
           </div>}
         </div>
       </div>
-      {showOpportunityForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={()=>setShowOpportunityForm(false)}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6" onMouseDown={e=>e.stopPropagation()}><div className="mb-5 flex justify-between"><h3 className="text-xl font-bold">{opportunityForm.opportunityId?'編輯案件':'新增案件'}</h3><button onClick={()=>setShowOpportunityForm(false)}>×</button></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><label className="md:col-span-2 text-sm">客戶 <span className="text-red-500">*</span><div className="mt-1 flex gap-2"><input readOnly value={selectedCustomer?`${selectedCustomer.Code}－${selectedCustomer.Name}`:''} placeholder="請點選選擇客戶" className="w-full rounded border bg-gray-50 p-2"/><button type="button" onClick={()=>setShowOpportunityCustomerPicker(true)} className="rounded border border-blue-600 px-4 text-blue-600">選擇客戶</button></div></label><label className="md:col-span-2 text-sm">案件名稱<input value={opportunityForm.opportunityName} onChange={e=>setOpportunityForm(p=>({...p,opportunityName:e.target.value}))} className="mt-1 w-full rounded border p-2" />
-      </label><label className="text-sm">
+      {showOpportunityForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={()=>setShowOpportunityForm(false)}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6" onMouseDown={e=>e.stopPropagation()}><div className="mb-5 flex justify-between"><h3 className="text-xl font-bold">{opportunityForm.opportunityId?'編輯案件':'新增案件'}</h3><button onClick={()=>setShowOpportunityForm(false)}>×</button></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+<label className="md:col-span-2 text-sm">
+  客戶 <span className="text-red-500">*</span>
+
+  <div className="mt-1 flex gap-2">
+    <input
+      readOnly
+      value={
+        selectedCustomer
+          ? `${selectedCustomer.Code}－${selectedCustomer.Name}`
+          : ''
+      }
+      placeholder="請點選選擇客戶"
+      className="w-full rounded border bg-gray-50 p-2"
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowOpportunityCustomerPicker(true)}
+      className="rounded border border-blue-600 px-4 text-blue-600"
+    >
+      選擇客戶
+    </button>
+  </div>
+</label>
+
+<div className="md:col-span-2">
+  <div className="mb-1 text-sm">
+    關聯報價單
+    <span className="ml-1 text-xs text-gray-500">
+      （選填，可選多筆）
+    </span>
+  </div>
+
+  {!opportunityForm.customerId ? (
+    <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
+      請先選擇客戶，再選擇該客戶的報價單。
+    </div>
+  ) : customerQuoteLoading ? (
+    <div className="rounded border bg-gray-50 p-3 text-sm text-gray-500">
+      報價單讀取中...
+    </div>
+  ) : customerQuoteOptions.length === 0 ? (
+    <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
+      此客戶目前沒有可關聯的報價單。
+    </div>
+  ) : (
+    <div className="max-h-48 overflow-y-auto rounded border">
+      {customerQuoteOptions.map((quote) => {
+        const quotationId = String(quote.QuotationId);
+        const checked = (opportunityForm.quotationIds || []).includes(
+          quotationId
+        );
+
+        return (
+          <label
+            key={quotationId}
+            className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-b-0 hover:bg-blue-50"
+          >
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(event) => {
+                setOpportunityForm((previous) => {
+                  const currentIds = previous.quotationIds || [];
+
+                  const nextIds = event.target.checked
+                    ? [...currentIds, quotationId]
+                    : currentIds.filter((id) => id !== quotationId);
+
+                  const nextPrimaryQuotationId =
+                    !nextIds.includes(previous.primaryQuotationId)
+                      ? nextIds[0] || ''
+                      : previous.primaryQuotationId;
+
+                  return {
+                    ...previous,
+                    quotationIds: nextIds,
+                    primaryQuotationId: nextPrimaryQuotationId,
+                  };
+                });
+              }}
+            />
+
+            <span className="flex-1 text-sm">
+              <b>{quote.QuotationNo || `#${quotationId}`}</b>
+              {'　'}
+              {formatDateForInput(quote.QuoteDate)}
+              {'　'}
+              {quoteStatusLabel(quote.Status)}
+            </span>
+
+            <span className="text-sm text-gray-600">
+              NT$
+              {Number(
+                quote.QuoteAmount ??
+                  quote.TotalAmount ??
+                  quote.FinalAmount ??
+                  0
+              ).toLocaleString()}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  )}
+
+  {(opportunityForm.quotationIds || []).length > 0 && (
+    <label className="mt-3 block text-sm">
+      主要報價單
+
+      <select
+        value={opportunityForm.primaryQuotationId || ''}
+        onChange={(event) =>
+          setOpportunityForm((previous) => ({
+            ...previous,
+            primaryQuotationId: event.target.value,
+          }))
+        }
+        className="mt-1 w-full rounded border p-2"
+      >
+        {(opportunityForm.quotationIds || []).map((id) => {
+          const quote = customerQuoteOptions.find(
+            (item) => String(item.QuotationId) === String(id)
+          );
+
+          return (
+            <option key={id} value={id}>
+              {quote?.QuotationNo || `報價單 #${id}`}
+            </option>
+          );
+        })}
+      </select>
+    </label>
+  )}
+</div>
+
+<label className="md:col-span-2 text-sm">
+  案件名稱
+  <input
+    value={opportunityForm.opportunityName}
+    onChange={(event) =>
+      setOpportunityForm((previous) => ({
+        ...previous,
+        opportunityName: event.target.value,
+      }))
+    }
+    className="mt-1 w-full rounded border p-2"
+  />
+</label>
+
+      <label className="text-sm">
        填單日
        <input
          type="text"
@@ -2154,8 +2413,52 @@ const renderSalesTracking = () => {
           }
           className="mt-1 w-full rounded border p-2"
         />
-</label><label className="md:col-span-2 text-sm">案件說明<textarea value={opportunityForm.description} onChange={e=>setOpportunityForm(p=>({...p,description:e.target.value}))} rows="4" className="mt-1 w-full rounded border p-2" /></label></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setShowOpportunityForm(false)} className="rounded border px-5 py-2">取消</button><button onClick={saveOpportunity} className="rounded bg-blue-600 px-5 py-2 text-white">儲存案件</button></div></div></div>}
-      {showOpportunityCustomerPicker && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-xl rounded-xl bg-white p-6"><div className="flex justify-between"><h3 className="text-lg font-bold">搜尋並選擇客戶</h3><button onClick={()=>setShowOpportunityCustomerPicker(false)}>×</button></div><input autoFocus value={opportunityCustomerSearch} onChange={e=>setOpportunityCustomerSearch(e.target.value)} placeholder="輸入客戶代號或名稱" className="mt-4 w-full rounded border p-2"/><div className="mt-3 max-h-80 overflow-y-auto border rounded">{pickerCustomers.map(c=><button key={c.CustomerId||c.Code} onClick={()=>{setOpportunityForm(p=>({...p,customerId:String(c.CustomerId)}));setShowOpportunityCustomerPicker(false);setOpportunityCustomerSearch('')}} className="block w-full border-b p-3 text-left hover:bg-blue-50"><b>{c.Code}</b>　{c.Name}</button>)}</div></div></div>}
+      </label>
+
+<label className="text-sm">
+  本次關聯報價單
+  <select
+    value={followUpForm.quotationId}
+    onChange={(event) =>
+      updateFollowUp('quotationId', event.target.value)
+    }
+    className="mt-1 w-full rounded border p-2"
+  >
+    <option value="">不指定報價單</option>
+
+    {(selectedOpportunity?.linkedQuotations || []).map((quote) => (
+      <option
+        key={quote.QuotationId}
+        value={quote.QuotationId}
+      >
+        {quote.QuotationNo}－NT$
+        {Number(quote.QuoteAmount || 0).toLocaleString()}
+        {quote.IsPrimary ? '（主要）' : ''}
+      </option>
+    ))}
+  </select>
+</label>
+
+
+<label className="md:col-span-2 text-sm">案件說明<textarea value={opportunityForm.description} onChange={e=>setOpportunityForm(p=>({...p,description:e.target.value}))} rows="4" className="mt-1 w-full rounded border p-2" /></label></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setShowOpportunityForm(false)} className="rounded border px-5 py-2">取消</button><button onClick={saveOpportunity} className="rounded bg-blue-600 px-5 py-2 text-white">儲存案件</button></div></div></div>}
+      {showOpportunityCustomerPicker && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-xl rounded-xl bg-white p-6"><div className="flex justify-between"><h3 className="text-lg font-bold">搜尋並選擇客戶</h3><button onClick={()=>setShowOpportunityCustomerPicker(false)}>×</button></div><input autoFocus value={opportunityCustomerSearch} onChange={e=>setOpportunityCustomerSearch(e.target.value)} placeholder="輸入客戶代號或名稱" className="mt-4 w-full rounded border p-2"/><div className="mt-3 max-h-80 overflow-y-auto border rounded">{pickerCustomers.map(c=><button key={c.CustomerId||c.Code} 
+
+onClick={() => {
+   const customerId = String(c.CustomerId);
+
+  setOpportunityForm((p) => ({
+    ...p,
+    customerId,
+    quotationIds: [],
+    primaryQuotationId: '',
+  }));
+
+  setCustomerQuoteOptions([]);
+  loadCustomerQuoteOptions(customerId);
+
+  setShowOpportunityCustomerPicker(false);
+  setOpportunityCustomerSearch('');
+  className="block w-full border-b p-3 text-left hover:bg-blue-50"><b>{c.Code}</b>　{c.Name}</button>)}</div></div></div>}
     </div>
   );
 };
