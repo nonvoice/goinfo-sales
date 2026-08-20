@@ -2484,7 +2484,7 @@ const renderSalesTracking = () => {
         />
       </label>
 
-<label className="md:col-span-2 text-sm">案件說明<textarea value={opportunityForm.description} onChange={e=>setOpportunityForm(p=>({...p,description:e.target.value}))} rows="4" className="mt-1 w-full rounded border p-2" /></label></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setShowOpportunityForm(false)} className="rounded border px-5 py-2">取消</button><button onClick={saveOpportunity} className="rounded bg-blue-600 px-5 py-2 text-white">儲存案件</button></div></div></div>}
+<label className="md:col-span-2 text-sm">案件說明<textarea value={opportunityForm.description} onChange={e=>setOpportunityForm(p=>({...p,description:e.target.value}))} rows="4" className="mt-1 w-full rounded border p-2" /></label></div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setShowOpportunityForm(false)} className="rounded border px-5 py-2">取消</button><button onClick={saveOpportunity} className="rounded bg-blue-600 px-5 py-2 text-white">儲存案件</button></div></div></div>)}
 
       {showOpportunityCustomerPicker && (
   <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
