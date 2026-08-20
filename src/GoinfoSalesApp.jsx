@@ -49,7 +49,11 @@ const toIsoDate = (value) => {
 
 const formatAmountInput = (value) => {
   const digits = String(value ?? '').replace(/[^\d]/g, '');
-  if (!digits) return '';
+
+  if (!digits) {
+    return '';
+  }
+
   return Number(digits).toLocaleString('en-US');
 };
 
@@ -199,7 +203,6 @@ export default function App() {
     canManageUsers: false,
     permissions: createDefaultPermissionRows(),
   };
-
   const [appUsers, setAppUsers] = useState([]);
   const [appUsersLoading, setAppUsersLoading] = useState(false);
   const [userForm, setUserForm] = useState(initialUserForm);
@@ -214,7 +217,6 @@ export default function App() {
       return null;
     }
   });
-
   const currentRole = String(
     salesUser?.role ||
     salesUser?.Role ||
@@ -324,6 +326,7 @@ export default function App() {
   const [hideNoFollowUp, setHideNoFollowUp] = useState(true);
   const [showOpportunityCustomerPicker, setShowOpportunityCustomerPicker] = useState(false);
   const [opportunityCustomerSearch, setOpportunityCustomerSearch] = useState('');
+  
   const [systemList, setSystemList] = useState([]);
   const [pricingRuleList, setPricingRuleList] = useState([]);
   const [systemForm, setSystemForm] = useState(initialSystemForm);
@@ -333,7 +336,6 @@ export default function App() {
   const [customerForm, setCustomerForm] = useState(initialCustomerForm);
   const [customerList, setCustomerList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
   const [selectedCustomerCode, setSelectedCustomerCode] = useState(null);
   const [customerCode, setCustomerCode] = useState('');
   const [quoteItems, setQuoteItems] = useState([]);
@@ -699,11 +701,11 @@ export default function App() {
     }
 
     if (
-    !isIsoDate(followUpForm.followUpDate) ||
-    !isIsoDate(followUpForm.nextFollowUpDate)
+      !isIsoDate(followUpForm.followUpDate) ||
+      !isIsoDate(followUpForm.nextFollowUpDate)
     ) {
-    alert('追蹤日期及下次追蹤日請使用 YYYY-MM-DD 格式');
-    return;
+      alert('追蹤日期及下次追蹤日請使用 YYYY-MM-DD 格式');
+      return;
     }
 
     setFollowUpSaving(true);
@@ -715,22 +717,22 @@ export default function App() {
           opportunityId: Number(selectedOpportunityId),
 
           quotationId: Number.isSafeInteger(
-          Number(followUpForm.quotationId)
+            Number(followUpForm.quotationId)
           )
-          ? Number(followUpForm.quotationId)
-          : null,
+            ? Number(followUpForm.quotationId)
+            : null,
 
           followUpType: followUpForm.followUpType,
-            content: followUpForm.content.trim(),
-            nextFollowUpDate: followUpForm.nextFollowUpDate || null,
-            contactName: followUpForm.contactName || null,
-            contactMethod: followUpForm.contactMethod || null,
-            followUpDate:
-                followUpForm.followUpDate ||
-                new Date().toISOString().slice(0, 10),
+          content: followUpForm.content.trim(),
+          nextFollowUpDate: followUpForm.nextFollowUpDate || null,
+          contactName: followUpForm.contactName || null,
+          contactMethod: followUpForm.contactMethod || null,
+          followUpDate:
+            followUpForm.followUpDate ||
+            new Date().toISOString().slice(0, 10),
           stage: followUpForm.stage || null,
           customerGrade: followUpForm.customerGrade || null,
-          }),
+        }),
       });
 
       setFollowUpForm(initialFollowUpForm);
@@ -797,7 +799,24 @@ export default function App() {
   const handleCustomerChange = (e) => setCustomerForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleNewCustomer = () => { setCustomerForm(initialCustomerForm); setSelectedCustomerCode(null); };
   const handleSelectCustomer = (customer) => { setCustomerForm({ ...initialCustomerForm, ...customer, PayM: String(customer.PayM ?? 0), State: String(customer.State ?? 1), demoT: formatDateForInput(customer.demoT), ContT: formatDateForInput(customer.ContT), SetupT: formatDateForInput(customer.SetupT) }); setSelectedCustomerCode(customer.Code); };
-  const saveCustomer = async () => { if (!customerForm.Code?.trim()) return alert('請輸入客戶代號'); const payload = { ...customerForm, Code: customerForm.Code.trim(), Name: customerForm.Name?.trim() || '', PayM: Number(customerForm.PayM) || 0, State: Number(customerForm.State) || 1, demoT: customerForm.demoT || null, ContT: customerForm.ContT || null, SetupT: customerForm.SetupT || null }; try { const res = await fetch(`${API_BASE}/save-customer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(await res.text()); setCustomerList(prev => { const i=prev.findIndex(c=>c.Code===payload.Code); return i < 0 ? [payload,...prev] : prev.map((c,n)=>n===i?payload:c); }); setSelectedCustomerCode(payload.Code); alert('客戶資料已成功存入資料庫！'); } catch (e) { console.error(e); alert('儲存客戶失敗。'); } };
+  
+  const saveCustomer = async () => { 
+    if (!customerForm.Code?.trim()) return alert('請輸入客戶代號'); 
+    const payload = { ...customerForm, Code: customerForm.Code.trim(), Name: customerForm.Name?.trim() || '', PayM: Number(customerForm.PayM) || 0, State: Number(customerForm.State) || 1, demoT: customerForm.demoT || null, ContT: customerForm.ContT || null, SetupT: customerForm.SetupT || null }; 
+    try { 
+      const res = await fetch(`${API_BASE}/save-customer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); 
+      if (!res.ok) throw new Error(await res.text()); 
+      setCustomerList(prev => { 
+        const i=prev.findIndex(c=>c.Code===payload.Code); 
+        return i < 0 ? [payload,...prev] : prev.map((c,n)=>n===i?payload:c); 
+      }); 
+      setSelectedCustomerCode(payload.Code); 
+      alert('客戶資料已成功存入資料庫！'); 
+    } catch (e) { 
+      console.error(e); 
+      alert('儲存客戶失敗。'); 
+    } 
+  };
 
   const authorizedPost = async (path, payload) => {
     if (!isRoot) {
@@ -897,7 +916,7 @@ export default function App() {
         )
       )[0];
   };
-
+  
   const calculateListAmount = (item) => { const rule=getEffectivePricingRule(item.systemId,item.itemType); if(!rule) return 0; const users=Math.max(Number(item.userCount)||0,0), first=Number(rule.FirstUserPrice)||0, add=Number(rule.AdditionalUserPrice)||0; return item.itemType==='ADD_USER' ? users*add : users>=1 ? first+(users-1)*add : 0; };
   const getDiscountPercent = (item) => Math.min(Math.max(Number(item.discountRate) || 100, 0), 100);
   const calculateTaxIncludedListAmount = (item) => Math.round(calculateListAmount(item) * 1.05);
@@ -905,6 +924,7 @@ export default function App() {
   const hasFinalAmount = (item) => item.specialPrice !== '' && Number.isFinite(Number(item.specialPrice)) && Number(item.specialPrice) >= 0;
   const calculateFinalTaxIncludedAmount = (item) => hasFinalAmount(item) ? Math.round(Number(item.specialPrice)) : calculateDiscountAmount(item);
   const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
+  
   const getMaintenanceRule = (systemId) => {
     const today = new Date().toISOString().slice(0, 10);
     return pricingRuleList.filter(r => Number(r.SystemId) === Number(systemId) && String(r.RuleType).toUpperCase() === 'MAINTENANCE' && (r.IsActive === true || r.IsActive === 1 || r.IsActive === 'true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10) <= today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10) >= today)).sort((a,b) => String(b.EffectiveStartDate || '').localeCompare(String(a.EffectiveStartDate || '')))[0];
@@ -1025,7 +1045,6 @@ export default function App() {
     }
   };
 
-  // ✅ Here is the fixed function with the proper closing brace
   const openEditOpportunity = () => {
     if (!selectedOpportunity) {
       return;
@@ -1120,7 +1139,7 @@ export default function App() {
         selectedOpportunity.description ||
         '',
     });
-  }; // 🛠️ FIX: Added the missing closing brace here!
+  }; // Fixed missing closing brace for openEditOpportunity
 
   const loadSalesUserOptions = async () => {
     try {
@@ -1138,6 +1157,7 @@ export default function App() {
   const itemTypeLabel = (type) => ({ NEW_LICENSE:'新購', ADD_USER:'增設', MAINTENANCE:'維護', OTHER:'其他' }[String(type)] || String(type || '其他'));
 
   const getSystemInfo = (systemId) => systemList.find(s => Number(s.SystemId) === Number(systemId)) || {};
+  
   const quoteFormalDetails = (detail) => {
     const isNewPurchase = String(detail.quote.Status) === '1' || detail.quote.Status === 'NEW_LICENSE';
     const lines = detail.items.map(item => {
@@ -1175,6 +1195,7 @@ export default function App() {
       setShowQuotePreview(true);
     } catch (e) { console.error(e); alert('無法讀取報價單詳細資料，請確認 get-quote-detail 工作流。'); }
   };
+
   const voidQuote = async (quote) => {
     if (!window.confirm(`確定要作廢報價單「${quote.QuotationNo}」嗎？作廢後可保留歷史紀錄，但不能再使用。`)) return;
     try {
@@ -1184,6 +1205,7 @@ export default function App() {
       await loadQuotes();
     } catch (e) { console.error(e); alert('作廢失敗，請確認 void-quote 工作流。'); }
   };
+
   const editQuote = async (quote) => {
     try {
       const response = await fetch(`${API_BASE}/get-quote-detail?quotationId=${encodeURIComponent(quote.QuotationId)}`);
@@ -1211,7 +1233,6 @@ export default function App() {
       2,
       '0'
     )}${String(now.getDate()).padStart(2, '0')}${String(Date.now()).slice(-6)}`;
-    
     const payload = {
       action,
       status: action === 'CreateNewSystemQuote' ? '1' : action === 'CreateAddUserQuote' ? '2' : action === 'CreateMaintenanceQuote' ? '3' : '4',
@@ -1251,6 +1272,7 @@ export default function App() {
         };
       })
     };
+    
     try {
       await salesApiFetch('save-quote', {
         method: 'POST',
@@ -1500,488 +1522,487 @@ export default function App() {
         </div>
       </div>
     );
-  }
+  };
 
   const selectedQuoteCustomer = customerList.find(c => String(c.CustomerId) === String(customerCode));
   const pickerCustomers = customerList.filter(c => {
     const term = customerPickerTerm.trim().toLowerCase();
     return !term || String(c.Code || '').toLowerCase().includes(term) || String(c.Name || '').toLowerCase().includes(term);
   });
+  
   const selectQuoteCustomer = (customer) => {
     setCustomerCode(customer.CustomerId);
     setShowCustomerPicker(false);
     setCustomerPickerTerm('');
   };
 
-  const renderQuotationForm = (title, defaultItemType, actionType) => {
-  return (
-  <>
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">
-        {title}
-      </h2>
+  const renderQuotationForm = (title, defaultItemType, actionType) => (
+    <>
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h2 className="text-xl font-bold mb-4 text-gray-800">
+          {title}
+        </h2>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          選擇客戶
-        </label>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            選擇客戶
+          </label>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value={
-              selectedQuoteCustomer
-                ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}`
-                : ''
-            }
-            placeholder="請點選右側按鈕選擇客戶"
-            className="flex-1 border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-700"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={
+                selectedQuoteCustomer
+                  ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}`
+                  : ''
+              }
+              placeholder="請點選右側按鈕選擇客戶"
+              className="flex-1 border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-700"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowCustomerPicker(true)}
+              className="px-4 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium whitespace-nowrap"
+            >
+              選擇客戶
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-800">
+            報價明細
+          </h3>
 
           <button
             type="button"
-            onClick={() => setShowCustomerPicker(true)}
-            className="px-4 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium whitespace-nowrap"
+            onClick={() => addItem(defaultItemType)}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
           >
-            選擇客戶
+            + 新增模組
           </button>
         </div>
-      </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-800">
-          報價明細
-        </h3>
+        <div className="space-y-4 mb-6">
+          {quoteItems.length === 0 && (
+            <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">
+              尚無項目
+            </div>
+          )}
 
-        <button
-          type="button"
-          onClick={() => addItem(defaultItemType)}
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
-        >
-          + 新增模組
-        </button>
-      </div>
+          {quoteItems.map((item) => (
+            <div
+              key={item.id}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"
+            >
+              <div className="lg:col-span-3">
+                <label className="text-xs text-gray-500">
+                  系統
+                </label>
 
-      <div className="space-y-4 mb-6">
-        {quoteItems.length === 0 && (
-          <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">
-            尚無項目
+                <select
+                  className="w-full border p-2 rounded"
+                  value={item.systemId}
+                  onChange={(e) =>
+                    updateItem(item.id, 'systemId', e.target.value)
+                  }
+                >
+                  <option value="">選擇系統</option>
+
+                  {systemList
+                    .filter(
+                      (system) =>
+                        system.IsActive !== false &&
+                        system.IsActive !== 0
+                    )
+                    .map((system) => (
+                      <option
+                        key={system.SystemId}
+                        value={system.SystemId}
+                      >
+                        {system.SystemCode}－{system.SystemName}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="lg:col-span-2">
+                <label className="text-xs text-gray-500">
+                  報價類型
+                </label>
+
+                <select
+                  className="w-full border p-2 rounded"
+                  value={item.itemType}
+                  onChange={(e) =>
+                    updateItem(item.id, 'itemType', e.target.value)
+                  }
+                >
+                  <option value="NEW_LICENSE">新購授權</option>
+                  <option value="ADD_USER">增設授權</option>
+                  <option value="MAINTENANCE">維護費</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-1">
+                <label className="text-xs text-gray-500">
+                  人數
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full border p-2 rounded text-right"
+                  value={item.userCount}
+                  onChange={(e) =>
+                    updateItem(item.id, 'userCount', e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label className="text-xs text-gray-500">
+                  牌價
+                </label>
+
+                <div className="border bg-white p-2 rounded text-right">
+                  ${calculateListAmount(item).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                <label className="text-xs text-gray-500">
+                  折數（80＝8折）
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  className="w-full border p-2 rounded text-right"
+                  value={item.discountRate}
+                  onChange={(e) =>
+                    updateItem(item.id, 'discountRate', e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <label className="text-xs text-gray-500">
+                  最終優惠價（含稅）
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="選填"
+                  className="w-full border p-2 rounded text-right"
+                  value={item.specialPrice}
+                  onChange={(e) =>
+                    updateItem(item.id, 'specialPrice', e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <label className="text-xs text-gray-500">
+                  折後金額（含稅）
+                </label>
+
+                <div className="font-bold text-blue-600 text-right p-2">
+                  ${calculateFinalTaxIncludedAmount(item).toLocaleString()}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => removeItem(item.id)}
+                className="lg:col-span-1 text-red-500 hover:text-red-700 p-2"
+              >
+                刪除
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {quoteItems.length > 0 && (
+          <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+            <div className="text-left space-y-3 border-l-4 border-blue-500 pl-4">
+              <div className="font-semibold text-gray-700">
+                保固與維護設定
+              </div>
+
+              <label className="block text-sm">
+                免費保固年限：
+
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={warrantyMonths}
+                  onChange={(e) => setWarrantyMonths(e.target.value)}
+                  className="ml-2 w-20 border rounded p-1 text-right"
+                />
+
+                <span className="ml-2">個月</span>
+
+                <span className="text-gray-500">
+                  （
+                  {Number(warrantyMonths) % 12 === 0
+                    ? `${Math.floor(Number(warrantyMonths) / 12)} 年`
+                    : `${Number(warrantyMonths) || 0} 個月`}
+                  ）
+                </span>
+              </label>
+
+              <div className="text-sm">
+                每年維護費用：
+                <b>
+                  NT$
+                  {quoteSummary.annualMaintenanceAmount.toLocaleString()}
+                  （含稅）
+                </b>
+              </div>
+
+              <label className="block text-sm">
+                維護費優惠金額：NT$
+
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="選填"
+                  value={maintenanceDiscountAmount}
+                  onChange={(e) =>
+                    setMaintenanceDiscountAmount(e.target.value)
+                  }
+                  className="ml-1 w-32 border rounded p-1 text-right"
+                />
+
+                <span className="text-gray-500">
+                  （含稅）
+                </span>
+              </label>
+            </div>
+
+            <div className="text-right space-y-1">
+              <div className="text-gray-500">
+                原始牌價（未稅）：
+                ${quoteSummary.listAmount.toLocaleString()}
+              </div>
+
+              <div className="text-gray-500">
+                原始牌價（含稅）：
+                ${quoteSummary.taxIncludedListAmount.toLocaleString()}
+              </div>
+
+              <div>
+                優惠總計（未稅）：
+                ${quoteSummary.taxExcludedAmount.toLocaleString()}
+              </div>
+
+              <div>
+                營業稅（5%）：
+                ${quoteSummary.taxAmount.toLocaleString()}
+              </div>
+
+              <div className="text-xl font-bold">
+                優惠總計（含稅）：
+                ${quoteSummary.taxIncludedAmount.toLocaleString()}
+              </div>
+
+              <div className="text-xl font-bold text-red-600">
+                最終優惠（含稅）：
+                ${quoteSummary.finalOfferTaxIncludedAmount.toLocaleString()}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSubmit(actionType)}
+                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow"
+              >
+                產生並存檔
+              </button>
+            </div>
           </div>
         )}
-
-        {quoteItems.map((item) => (
-          <div
-            key={item.id}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"
-          >
-            <div className="lg:col-span-3">
-              <label className="text-xs text-gray-500">
-                系統
-              </label>
-
-              <select
-                className="w-full border p-2 rounded"
-                value={item.systemId}
-                onChange={(e) =>
-                  updateItem(item.id, 'systemId', e.target.value)
-                }
-              >
-                <option value="">選擇系統</option>
-
-                {systemList
-                  .filter(
-                    (system) =>
-                      system.IsActive !== false &&
-                      system.IsActive !== 0
-                  )
-                  .map((system) => (
-                    <option
-                      key={system.SystemId}
-                      value={system.SystemId}
-                    >
-                      {system.SystemCode}－{system.SystemName}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="lg:col-span-2">
-              <label className="text-xs text-gray-500">
-                報價類型
-              </label>
-
-              <select
-                className="w-full border p-2 rounded"
-                value={item.itemType}
-                onChange={(e) =>
-                  updateItem(item.id, 'itemType', e.target.value)
-                }
-              >
-                <option value="NEW_LICENSE">新購授權</option>
-                <option value="ADD_USER">增設授權</option>
-                <option value="MAINTENANCE">維護費</option>
-              </select>
-            </div>
-
-            <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
-                人數
-              </label>
-
-              <input
-                type="number"
-                min="1"
-                className="w-full border p-2 rounded text-right"
-                value={item.userCount}
-                onChange={(e) =>
-                  updateItem(item.id, 'userCount', e.target.value)
-                }
-              />
-            </div>
-
-            <div className="lg:col-span-2">
-              <label className="text-xs text-gray-500">
-                牌價
-              </label>
-
-              <div className="border bg-white p-2 rounded text-right">
-                ${calculateListAmount(item).toLocaleString()}
-              </div>
-            </div>
-
-            <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
-                折數（80＝8折）
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                className="w-full border p-2 rounded text-right"
-                value={item.discountRate}
-                onChange={(e) =>
-                  updateItem(item.id, 'discountRate', e.target.value)
-                }
-              />
-            </div>
-
-            <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
-                最終優惠價（含稅）
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                placeholder="選填"
-                className="w-full border p-2 rounded text-right"
-                value={item.specialPrice}
-                onChange={(e) =>
-                  updateItem(item.id, 'specialPrice', e.target.value)
-                }
-              />
-            </div>
-
-            <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
-                折後金額（含稅）
-              </label>
-
-              <div className="font-bold text-blue-600 text-right p-2">
-                ${calculateFinalTaxIncludedAmount(item).toLocaleString()}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => removeItem(item.id)}
-              className="lg:col-span-1 text-red-500 hover:text-red-700 p-2"
-            >
-              刪除
-            </button>
-          </div>
-        ))}
       </div>
 
-      {quoteItems.length > 0 && (
-        <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-          <div className="text-left space-y-3 border-l-4 border-blue-500 pl-4">
-            <div className="font-semibold text-gray-700">
-              保固與維護設定
-            </div>
-
-            <label className="block text-sm">
-              免費保固年限：
-
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={warrantyMonths}
-                onChange={(e) => setWarrantyMonths(e.target.value)}
-                className="ml-2 w-20 border rounded p-1 text-right"
-              />
-
-              <span className="ml-2">個月</span>
-
-              <span className="text-gray-500">
-                （
-                {Number(warrantyMonths) % 12 === 0
-                  ? `${Math.floor(Number(warrantyMonths) / 12)} 年`
-                  : `${Number(warrantyMonths) || 0} 個月`}
-                ）
-              </span>
-            </label>
-
-            <div className="text-sm">
-              每年維護費用：
-              <b>
-                NT$
-                {quoteSummary.annualMaintenanceAmount.toLocaleString()}
-                （含稅）
-              </b>
-            </div>
-
-            <label className="block text-sm">
-              維護費優惠金額：NT$
-
-              <input
-                type="number"
-                min="0"
-                placeholder="選填"
-                value={maintenanceDiscountAmount}
-                onChange={(e) =>
-                  setMaintenanceDiscountAmount(e.target.value)
-                }
-                className="ml-1 w-32 border rounded p-1 text-right"
-              />
-
-              <span className="text-gray-500">
-                （含稅）
-              </span>
-            </label>
+      <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">
+              已建立報價單
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              可預覽、帶入修改或作廢報價紀錄。
+            </p>
           </div>
 
-          <div className="text-right space-y-1">
-            <div className="text-gray-500">
-              原始牌價（未稅）：
-              ${quoteSummary.listAmount.toLocaleString()}
-            </div>
+          <button
+            type="button"
+            onClick={loadQuotes}
+            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            重新整理
+          </button>
+        </div>
 
-            <div className="text-gray-500">
-              原始牌價（含稅）：
-              ${quoteSummary.taxIncludedListAmount.toLocaleString()}
-            </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <label className="text-sm text-gray-600">
+            報價日期篩選
+            <input
+              type="date"
+              value={quoteDateFrom}
+              onChange={(e) => setQuoteDateFrom(e.target.value)}
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
 
-            <div>
-              優惠總計（未稅）：
-              ${quoteSummary.taxExcludedAmount.toLocaleString()}
-            </div>
+          <label className="text-sm text-gray-600">
+            至
+            <input
+              type="date"
+              value={quoteDateTo}
+              onChange={(e) => setQuoteDateTo(e.target.value)}
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
 
-            <div>
-              營業稅（5%）：
-              ${quoteSummary.taxAmount.toLocaleString()}
-            </div>
+          <label className="text-sm text-gray-600">
+            業務篩選
+            <select
+              value={quoteOwnerUserId}
+              onChange={(e) => setQuoteOwnerUserId(e.target.value)}
+              className="mt-1 w-full rounded border p-2"
+            >
+              <option value="">全部</option>
 
-            <div className="text-xl font-bold">
-              優惠總計（含稅）：
-              ${quoteSummary.taxIncludedAmount.toLocaleString()}
-            </div>
+              {salesUserOptions.map((user) => (
+                <option key={user.UserId} value={user.UserId}>
+                  {user.DisplayName}（{user.RoleCode}）
+                </option>
+              ))}
+            </select>
+          </label>
 
-            <div className="text-xl font-bold text-red-600">
-              最終優惠（含稅）：
-              ${quoteSummary.finalOfferTaxIncludedAmount.toLocaleString()}
-            </div>
-
+          <div className="flex items-end">
             <button
               type="button"
-              onClick={() => handleSubmit(actionType)}
-              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded shadow"
+              onClick={loadQuotes}
+              className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
-              產生並存檔
+              查詢
             </button>
           </div>
         </div>
-      )}
-    </div>
 
-  <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-    <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h3 className="text-lg font-bold text-gray-800">
-          已建立報價單
-        </h3>
-        <p className="mt-1 text-sm text-gray-500">
-          可預覽、帶入修改或作廢報價紀錄。
-        </p>
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-100 text-gray-600">
+              <tr>
+                <th className="p-3">報價單號</th>
+                <th className="p-3">報價日期</th>
+                <th className="p-3">客戶名稱</th>
+                <th className="p-3">報價系統</th>
+                <th className="p-3 text-right">報價金額</th>
+                <th className="p-3">報價業務</th>
+                <th className="p-3">狀態</th>
+                <th className="p-3 text-center">操作</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {quoteListLoading ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
+                    載入中...
+                  </td>
+                </tr>
+              ) : quoteList.length > 0 ? (
+                quoteList.map((q) => (
+                  <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
+                    <td className="p-3 font-medium">
+                      {q.QuotationNo}
+                    </td>
+
+                    <td className="p-3">
+                      {formatDateForInput(q.QuoteDate)}
+                    </td>
+
+                    <td className="p-3">
+                      {q.CustomerName || q.CustomerCode || '－'}
+                    </td>
+
+                    <td className="p-3">
+                      {q.QuoteSystemCodes || '－'}
+                    </td>
+
+                    <td className="p-3 text-right font-medium">
+                      ${Number(q.QuoteAmount ?? 0).toLocaleString()}
+                    </td>
+
+                    <td className="p-3">
+                      {q.CreatedByName || q.CreatedByAccount || '－'}
+                    </td>
+
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          q.Status === 'VOID'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}
+                      >
+                        {quoteStatusLabel(q.Status)}
+                      </span>
+                    </td>
+
+                    <td className="p-3">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => previewQuoteById(q.QuotationId)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          預覽
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => editQuote(q)}
+                          className="text-amber-600 hover:underline"
+                        >
+                          修改
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => voidQuote(q)}
+                          disabled={q.Status === 'VOID'}
+                          className="text-red-600 hover:underline disabled:text-gray-300"
+                        >
+                          作廢
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
+                    查無符合條件的報價單
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={loadQuotes}
-        className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-      >
-        重新整理
-      </button>
-    </div>
-
-    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
-      <label className="text-sm text-gray-600">
-        報價日期篩選
-        <input
-          type="date"
-          value={quoteDateFrom}
-          onChange={(e) => setQuoteDateFrom(e.target.value)}
-          className="mt-1 w-full rounded border p-2"
-        />
-      </label>
-
-      <label className="text-sm text-gray-600">
-        至
-        <input
-          type="date"
-          value={quoteDateTo}
-          onChange={(e) => setQuoteDateTo(e.target.value)}
-          className="mt-1 w-full rounded border p-2"
-        />
-      </label>
-
-      <label className="text-sm text-gray-600">
-        業務篩選
-        <select
-          value={quoteOwnerUserId}
-          onChange={(e) => setQuoteOwnerUserId(e.target.value)}
-          className="mt-1 w-full rounded border p-2"
-        >
-          <option value="">全部</option>
-
-          {salesUserOptions.map((user) => (
-            <option key={user.UserId} value={user.UserId}>
-              {user.DisplayName}（{user.RoleCode}）
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="flex items-end">
-        <button
-          type="button"
-          onClick={loadQuotes}
-          className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-        >
-          查詢
-        </button>
-      </div>
-    </div>
-
-    <div className="mt-5 overflow-x-auto">
-      <table className="w-full text-sm text-left">
-    <thead className="bg-gray-100 text-gray-600">
-      <tr>
-        <th className="p-3">報價單號</th>
-        <th className="p-3">報價日期</th>
-        <th className="p-3">客戶名稱</th>
-        <th className="p-3">報價系統</th>
-        <th className="p-3 text-right">報價金額</th>
-        <th className="p-3">報價業務</th>
-        <th className="p-3">狀態</th>
-        <th className="p-3 text-center">操作</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {quoteListLoading ? (
-        <tr>
-          <td colSpan={8} className="p-8 text-center text-gray-400">
-            載入中...
-          </td>
-        </tr>
-      ) : quoteList.length > 0 ? (
-        quoteList.map((q) => (
-          <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
-            <td className="p-3 font-medium">
-              {q.QuotationNo}
-            </td>
-
-            <td className="p-3">
-              {formatDateForInput(q.QuoteDate)}
-            </td>
-
-            <td className="p-3">
-              {q.CustomerName || q.CustomerCode || '－'}
-            </td>
-
-            <td className="p-3">
-              {q.QuoteSystemCodes || '－'}
-            </td>
-
-            <td className="p-3 text-right font-medium">
-              ${Number(q.QuoteAmount ?? 0).toLocaleString()}
-            </td>
-
-            <td className="p-3">
-              {q.CreatedByName || q.CreatedByAccount || '－'}
-            </td>
-
-            <td className="p-3">
-              <span
-                className={`px-2 py-1 rounded text-xs ${
-                  q.Status === 'VOID'
-                    ? 'bg-red-100 text-red-700'
-                    : 'bg-blue-100 text-blue-700'
-                }`}
-              >
-                {quoteStatusLabel(q.Status)}
-              </span>
-            </td>
-
-            <td className="p-3">
-              <div className="flex justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => previewQuoteById(q.QuotationId)}
-                  className="text-blue-600 hover:underline"
-                >
-                  預覽
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => editQuote(q)}
-                  className="text-amber-600 hover:underline"
-                >
-                  修改
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => voidQuote(q)}
-                  disabled={q.Status === 'VOID'}
-                  className="text-red-600 hover:underline disabled:text-gray-300"
-                >
-                  作廢
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={8} className="p-8 text-center text-gray-400">
-            查無符合條件的報價單
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-    </div>
-  </div>
-  </>
+    </>
   );
-  };
 
   const renderSystemSettings = () => <div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-sm border"><h2 className="text-xl font-bold">系統設定：軟體及價格</h2><p className="text-sm text-gray-500 mt-1">管理可報價的軟體產品與生效中的價格規則。</p></div><div className="grid grid-cols-1 xl:grid-cols-2 gap-6"><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">軟體產品設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input placeholder="系統代號 *" className="border p-2 rounded" value={systemForm.SystemCode} onChange={e=>setSystemForm(p=>({...p,SystemCode:e.target.value}))}/><input placeholder="系統名稱 *" className="border p-2 rounded" value={systemForm.SystemName} onChange={e=>setSystemForm(p=>({...p,SystemName:e.target.value}))}/><input placeholder="分類" className="border p-2 rounded" value={systemForm.Category} onChange={e=>setSystemForm(p=>({...p,Category:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!systemForm.IsActive} onChange={e=>setSystemForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="系統內容說明" className="border p-2 rounded md:col-span-2" value={systemForm.Note} onChange={e=>setSystemForm(p=>({...p,Note:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveSystem} className="bg-blue-600 text-white px-4 py-2 rounded">儲存軟體</button><button onClick={()=>setSystemForm(initialSystemForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">代號</th><th className="p-2">名稱</th><th className="p-2">分類</th><th className="p-2">狀態</th><th></th></tr></thead><tbody>{systemList.map(s=><tr key={s.SystemId} className="border-b"><td className="p-2">{s.SystemCode}</td><td className="p-2">{s.SystemName}</td><td className="p-2">{s.Category}</td><td className="p-2">{s.IsActive===false||s.IsActive===0?'停用':'啟用'}</td><td><button className="text-blue-600" onClick={()=>setSystemForm({...initialSystemForm,...s,IsActive:s.IsActive!==false&&s.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div><div className="bg-white p-5 rounded-lg border shadow-sm"><h3 className="font-bold mb-4">價格規則設定</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-3"><select className="border p-2 rounded" value={ruleForm.SystemId} onChange={e=>setRuleForm(p=>({...p,SystemId:e.target.value}))}><option value="">選擇系統 *</option>{systemList.map(s=><option key={s.SystemId} value={s.SystemId}>{s.SystemCode}－{s.SystemName}</option>)}</select><select className="border p-2 rounded" value={ruleForm.RuleType} onChange={e=>setRuleForm(p=>({...p,RuleType:e.target.value}))}><option value="LICENSE">授權價格</option><option value="MAINTENANCE">維護價格</option></select><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveStartDate} onChange={e=>setRuleForm(p=>({...p,EffectiveStartDate:e.target.value}))}/><input type="date" className="border p-2 rounded" value={ruleForm.EffectiveEndDate} onChange={e=>setRuleForm(p=>({...p,EffectiveEndDate:e.target.value}))}/><input
   type="text" inputMode="numeric" placeholder="首位價格 *" className="border p-2 rounded text-right" value={formatAmountInput(ruleForm.FirstUserPrice)} onChange={(e) =>setRuleForm((p) => ({...p, FirstUserPrice: e.target.value.replace(/[^\d]/g, ''),}))}/><input type="text" inputMode="numeric" placeholder="增購單價 *" className="border p-2 rounded text-right" value={formatAmountInput(ruleForm.AdditionalUserPrice)} onChange={(e) =>setRuleForm((p) => ({...p, AdditionalUserPrice: e.target.value.replace(/[^\d]/g, ''),}))}/><input type="number" min="1" placeholder="最低人數" className="border p-2 rounded" value={ruleForm.MinimumUsers} onChange={e=>setRuleForm(p=>({...p,MinimumUsers:e.target.value}))}/><label className="flex items-center gap-2 p-2"><input type="checkbox" checked={!!ruleForm.IsActive} onChange={e=>setRuleForm(p=>({...p,IsActive:e.target.checked}))}/>啟用</label><textarea placeholder="備註" className="border p-2 rounded md:col-span-2" value={ruleForm.Remark} onChange={e=>setRuleForm(p=>({...p,Remark:e.target.value}))}/></div><div className="mt-3 flex gap-2"><button onClick={saveRule} className="bg-blue-600 text-white px-4 py-2 rounded">儲存價格</button><button onClick={()=>setRuleForm(initialRuleForm)} className="border px-4 py-2 rounded">新增／清除</button></div><div className="mt-5 overflow-auto"><table className="w-full text-sm"><thead><tr className="bg-gray-100 text-left"><th className="p-2">系統</th><th className="p-2">類型</th><th className="p-2">首位</th><th className="p-2">增購</th><th></th></tr></thead><tbody>{pricingRuleList.map(r=><tr key={r.PricingRuleId||`${r.SystemId}-${r.RuleType}-${r.EffectiveStartDate}`} className="border-b"><td className="p-2">{systemList.find(s=>Number(s.SystemId)===Number(r.SystemId))?.SystemName||r.SystemId}</td><td className="p-2">{r.RuleType==='MAINTENANCE'?'維護':'授權'}</td><td className="p-2">${Number(r.FirstUserPrice||0).toLocaleString()}</td><td className="p-2">${Number(r.AdditionalUserPrice||0).toLocaleString()}</td><td><button className="text-blue-600" onClick={()=>setRuleForm({...initialRuleForm,...r,SystemId:String(r.SystemId),EffectiveStartDate:formatDateForInput(r.EffectiveStartDate),EffectiveEndDate:formatDateForInput(r.EffectiveEndDate),IsActive:r.IsActive!==false&&r.IsActive!==0})}>編輯</button></td></tr>)}</tbody></table></div></div></div></div>;
@@ -2047,58 +2068,59 @@ export default function App() {
         (!hideNoFollowUp || stage !== 'LOST')
       );
     })
-
-      .sort((a,b) => {
-        const field = opportunitySort === 'CustomerName' ? (a.CustomerName || a.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[a.Stage || a.stage] || '') : opportunitySort === 'CustomerGrade' ? (a.CustomerGrade || a.customerGrade || '') : itemDate(a);
-        const other = opportunitySort === 'CustomerName' ? (b.CustomerName || b.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[b.Stage || b.stage] || '') : opportunitySort === 'CustomerGrade' ? (b.CustomerGrade || b.customerGrade || '') : itemDate(b);
-        return String(field).localeCompare(String(other), 'zh-Hant');
-      });
+    .sort((a,b) => {
+      const field = opportunitySort === 'CustomerName' ? (a.CustomerName || a.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[a.Stage || a.stage] || '') : opportunitySort === 'CustomerGrade' ? (a.CustomerGrade || a.customerGrade || '') : itemDate(a);
+      const other = opportunitySort === 'CustomerName' ? (b.CustomerName || b.customerName || '') : opportunitySort === 'Stage' ? (stageLabel[b.Stage || b.stage] || '') : opportunitySort === 'CustomerGrade' ? (b.CustomerGrade || b.customerGrade || '') : itemDate(b);
+      return String(field).localeCompare(String(other), 'zh-Hant');
+    });
+    
     const pickerCustomers = customerList.filter(c => {
       const term = opportunityCustomerSearch.trim().toLowerCase();
       return !term || String(c.Code || '').toLowerCase().includes(term) || String(c.Name || '').toLowerCase().includes(term);
     });
     const selectedCustomer = customerList.find(c => String(c.CustomerId) === String(opportunityForm.customerId));
     const updateFollowUp = (field, value) => setFollowUpForm(prev => ({...prev, [field]: value}));
+    
     return (
       <div className="space-y-5">
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div><h2 className="text-xl font-bold text-gray-800">3. 銷售案件追蹤</h2><p className="mt-1 text-sm text-gray-500">可依填單日期、客戶名稱篩選並管理業務案件。</p></div>
             <div className="flex gap-2"><button onClick={loadOpportunities} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">重新整理</button>  
-    {can('SALES_TRACK', 'canCreate') && (
-       <button
-           onClick={openNewOpportunity}
-           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-       >
-          ＋ 新增案件
-       </button>
-    )}
-    </div>
+              {can('SALES_TRACK', 'canCreate') && (
+                 <button
+                     onClick={openNewOpportunity}
+                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                 >
+                    ＋ 新增案件
+                 </button>
+              )}
+            </div>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             <label className="text-sm text-gray-600">填單日篩選<input type="date" value={opportunityDateFrom} onChange={e=>setOpportunityDateFrom(e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
             <label className="text-sm text-gray-600">至<input type="date" value={opportunityDateTo} onChange={e=>setOpportunityDateTo(e.target.value)} className="mt-1 w-full rounded border p-2" /></label>
             <label className="text-sm text-gray-600">搜尋客戶<input value={opportunitySearch} onChange={e=>setOpportunitySearch(e.target.value)} placeholder="客戶名稱關鍵字" className="mt-1 w-full rounded border p-2" /></label>
 
-  <label className="text-sm text-gray-600">
-    業務人員篩選
-    <select
-      value={opportunityOwnerName}
-      onChange={(e) => setOpportunityOwnerName(e.target.value)}
-      className="mt-1 w-full rounded border p-2"
-    >
-      <option value="">全部</option>
+            <label className="text-sm text-gray-600">
+              業務人員篩選
+              <select
+                value={opportunityOwnerName}
+                onChange={(e) => setOpportunityOwnerName(e.target.value)}
+                className="mt-1 w-full rounded border p-2"
+              >
+                <option value="">全部</option>
 
-      {salesUserOptions.map((user) => (
-        <option
-          key={user.UserId}
-          value={user.DisplayName}
-        >
-          {user.DisplayName}（{user.RoleCode}）
-        </option>
-      ))}
-    </select>
-  </label>
+                {salesUserOptions.map((user) => (
+                  <option
+                    key={user.UserId}
+                    value={user.DisplayName}
+                  >
+                    {user.DisplayName}（{user.RoleCode}）
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="text-sm text-gray-600">排序選擇<select value={opportunitySort} onChange={e=>setOpportunitySort(e.target.value)} className="mt-1 w-full rounded border p-2"><option value="CreatedAt">依填單日</option><option value="CustomerName">依客戶名稱</option><option value="Stage">依銷售階段</option><option value="CustomerGrade">依購買意願</option></select></label>
             <label className="flex items-center gap-2 pt-6 text-sm font-medium text-gray-700"><input type="checkbox" checked={hideNoFollowUp} onChange={e=>setHideNoFollowUp(e.target.checked)} />不需再追者略</label>
@@ -2109,507 +2131,510 @@ export default function App() {
           <div className="overflow-hidden rounded-lg border bg-white shadow-sm xl:col-span-2"><div className="border-b bg-gray-50 px-4 py-3"><h3 className="font-bold text-gray-700">案件清單</h3></div><div className="max-h-[45vh] xl:max-h-[680px] overflow-y-auto">
             {opportunityLoading ? <div className="p-8 text-center text-gray-400">案件讀取中...</div> : filteredOpportunities.length===0 ? <div className="p-8 text-center text-gray-400">尚無符合條件的案件</div> : filteredOpportunities.map(item=>{const id=item.OpportunityId||item.opportunityId, stage=item.Stage||item.stage, grade=item.CustomerGrade||item.customerGrade||'B'; return <button key={id} onClick={()=>loadOpportunityDetail(id)} className={`w-full border-b p-4 text-left ${Number(id)===Number(selectedId)?'border-l-4 border-l-blue-600 bg-blue-50':'hover:bg-gray-50'}`}><div className="flex justify-between gap-2"><b>{item.OpportunityName||item.opportunityName}</b><span className={`rounded-full px-2 py-1 text-xs font-bold ${grade==='S'?'bg-orange-100 text-orange-700':grade==='A'?'bg-lime-100 text-lime-700':grade==='B'?'bg-amber-100 text-amber-700':'bg-sky-100 text-sky-700'}`}>{grade}</span></div><div className="mt-1 text-sm text-gray-600">{item.CustomerName||item.customerName||item.CustomerCode||'-'}</div><div className="mt-2 flex justify-between text-xs text-gray-500"><span>填單日：{itemDate(item)||'-'}</span><span>{stageLabel[stage]||stage||'-'}</span></div><div className="mt-1 flex items-center justify-between gap-2 text-xs text-gray-500"><span>負責人：{item.OwnerName || item.ownerName || '－'}</span><span>預估：${Number(item.EstimatedAmount || item.estimatedAmount || 0).toLocaleString()}</span></div>
 
-  <div className="mt-1 text-xs text-gray-500">
-    最後追蹤日：{lastFollowUpDate(item) || '－'}
-  </div></button>})}
+            <div className="mt-1 text-xs text-gray-500">
+              最後追蹤日：{lastFollowUpDate(item) || '－'}
+            </div></button>})}
           </div></div>
           <div className="rounded-lg border bg-white p-6 shadow-sm xl:col-span-3">
             {!selectedOpportunity ? <div className="flex min-h-[450px] items-center justify-center text-gray-400">請從左側選擇案件</div> : <div className="space-y-6">
               <div className="flex justify-between border-b pb-4"><div><h3 className="text-xl font-bold">{selectedOpportunity.OpportunityName||selectedOpportunity.opportunityName}</h3><p className="mt-1 text-sm text-gray-500">客戶：{selectedOpportunity.CustomerName||selectedOpportunity.customerName||'-'}</p></div>
-    {can('SALES_TRACK', 'canUpdate') && (
-      <button
-        onClick={openEditOpportunity}
-        className="rounded-lg border border-blue-600 px-4 py-2 text-sm text-blue-600"
-      >
-        編輯案件
-      </button>
-    )}
-    </div>
+                {can('SALES_TRACK', 'canUpdate') && (
+                  <button
+                    onClick={openEditOpportunity}
+                    className="rounded-lg border border-blue-600 px-4 py-2 text-sm text-blue-600"
+                  >
+                    編輯案件
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4"><div className="rounded bg-gray-50 p-3"><small>目前階段</small><b className="mt-1 block">{stageLabel[selectedOpportunity.Stage||selectedOpportunity.stage]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>購買意願</small><b className="mt-1 block">{intentLabel[selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade]||'-'}</b></div><div className="rounded bg-gray-50 p-3"><small>預估金額</small><b className="mt-1 block">${Number(selectedOpportunity.EstimatedAmount||selectedOpportunity.estimatedAmount||0).toLocaleString()}</b></div><div className="rounded bg-gray-50 p-3"><small>下次追蹤日</small><b className="mt-1 block">{dateValue(selectedOpportunity.NextFollowUpDate||selectedOpportunity.nextFollowUpDate)||'-'}</b></div></div>
               <div className="border-t pt-5"><h4 className="mb-3 font-semibold">新增追蹤紀錄</h4><div className="grid grid-cols-1 gap-3 md:grid-cols-3"><label className="text-sm">聯絡方式<select value={followUpForm.contactMethod} onChange={e=>updateFollowUp('contactMethod',e.target.value)} className="mt-1 w-full rounded border p-2"><option>電話</option><option>會面</option><option>電子郵件</option><option>LINE</option><option>其他</option></select></label><label className="text-sm">接洽人員<input value={followUpForm.contactName} onChange={e=>updateFollowUp('contactName',e.target.value)} className="mt-1 w-full rounded border p-2" /></label><label className="text-sm">追蹤日期<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.followUpDate} onChange={(e) => updateFollowUp('followUpDate', e.target.value)} onBlur={(e) => updateFollowUp('followUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label><label className="text-sm">銷售階段<select value={followUpForm.stage||selectedOpportunity.Stage||selectedOpportunity.stage||''} onChange={e=>updateFollowUp('stage',e.target.value)} className="mt-1 w-full rounded border p-2">{stageOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">購買意願<select value={followUpForm.customerGrade||selectedOpportunity.CustomerGrade||selectedOpportunity.customerGrade||'B'} onChange={e=>updateFollowUp('customerGrade',e.target.value)} className="mt-1 w-full rounded border p-2">{intentOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label className="text-sm">下次追蹤日<input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={followUpForm.nextFollowUpDate} onChange={(e) => updateFollowUp('nextFollowUpDate', e.target.value)} onBlur={(e) => updateFollowUp('nextFollowUpDate', toIsoDate(e.target.value) || e.target.value)} className="mt-1 w-full rounded border p-2"/></label>
 
-  <label className="text-sm">
-    本次關聯報價單
-    <select
-      value={followUpForm.quotationId || ''}
-      onChange={(event) =>
-        updateFollowUp('quotationId', event.target.value)
-      }
-      className="mt-1 w-full rounded border p-2"
-    >
-      <option value="">不指定報價單</option>
+              <label className="text-sm">
+                本次關聯報價單
+                <select
+                  value={followUpForm.quotationId || ''}
+                  onChange={(event) =>
+                    updateFollowUp('quotationId', event.target.value)
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                >
+                  <option value="">不指定報價單</option>
 
-      {(selectedOpportunity?.linkedQuotations || []).map((quote) => (
-        <option
-          key={quote.QuotationId || quote.quotationId}
-          value={quote.QuotationId || quote.quotationId}
-        >
-          {quote.QuotationNo || quote.quotationNo}
-          {'－NT$'}
-          {Number(quote.QuoteAmount || quote.quoteAmount || 0).toLocaleString()}
-          {(quote.IsPrimary || quote.isPrimary) ? '（主要）' : ''}
-        </option>
-      ))}
-    </select>
-  </label>
+                  {(selectedOpportunity?.linkedQuotations || []).map((quote) => (
+                    <option
+                      key={quote.QuotationId || quote.quotationId}
+                      value={quote.QuotationId || quote.quotationId}
+                    >
+                      {quote.QuotationNo || quote.quotationNo}
+                      {'－NT$'}
+                      {Number(quote.QuoteAmount || quote.quoteAmount || 0).toLocaleString()}
+                      {(quote.IsPrimary || quote.isPrimary) ? '（主要）' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-  <label className="text-sm md:col-span-3">洽談內容<textarea value={followUpForm.content} onChange={e=>updateFollowUp('content',e.target.value)} rows="3" className="mt-1 w-full rounded border p-2" placeholder="請輸入本次追蹤內容" /></label></div><div className="mt-3 text-right">
-    {can('SALES_TRACK', 'canUpdate') && (
-      <button
-        onClick={saveFollowUp}
-        disabled={followUpSaving}
-        className="rounded bg-green-600 px-5 py-2 text-sm text-white disabled:bg-gray-400"
-      >
-        {followUpSaving ? '儲存中...' : '新增追蹤紀錄'}
-      </button>
-    )}
-    </div></div>
+              <label className="text-sm md:col-span-3">洽談內容<textarea value={followUpForm.content} onChange={e=>updateFollowUp('content',e.target.value)} rows="3" className="mt-1 w-full rounded border p-2" placeholder="請輸入本次追蹤內容" /></label></div><div className="mt-3 text-right">
+                {can('SALES_TRACK', 'canUpdate') && (
+                  <button
+                    onClick={saveFollowUp}
+                    disabled={followUpSaving}
+                    className="rounded bg-green-600 px-5 py-2 text-sm text-white disabled:bg-gray-400"
+                  >
+                    {followUpSaving ? '儲存中...' : '新增追蹤紀錄'}
+                  </button>
+                )}
+                </div></div>
 
               <div className="border-t pt-5">
-    <h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>
+                <h4 className="mb-3 font-semibold">歷史追蹤紀錄</h4>
 
-    {followUpList.length === 0 ? (
-      <div className="rounded bg-gray-50 p-4 text-sm text-gray-400">
-        尚無追蹤紀錄
-      </div>
-    ) : (
-      <div className="space-y-3">
-        {followUpList.map((item, i) => (
-          <div
-            key={item.FollowUpId || item.followUpId || i}
-            className="rounded border p-4"
-          >
-            <div className="flex justify-between">
-              <b>
-                {contactLabel[item.ContactMethod || item.contactMethod] || '其他'}{' '}
-                {item.ContactName || item.contactName || ''}
-              </b>
+                {followUpList.length === 0 ? (
+                  <div className="rounded bg-gray-50 p-4 text-sm text-gray-400">
+                    尚無追蹤紀錄
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {followUpList.map((item, i) => (
+                      <div
+                        key={item.FollowUpId || item.followUpId || i}
+                        className="rounded border p-4"
+                      >
+                        <div className="flex justify-between">
+                          <b>
+                            {contactLabel[item.ContactMethod || item.contactMethod] || '其他'}{' '}
+                            {item.ContactName || item.contactName || ''}
+                          </b>
 
-              <span className="text-xs text-gray-500">
-                {dateValue(item.FollowUpDate || item.followUpDate)}
-              </span>
-            </div>
+                          <span className="text-xs text-gray-500">
+                            {dateValue(item.FollowUpDate || item.followUpDate)}
+                          </span>
+                        </div>
 
-            <div className="mt-1 text-xs text-gray-500">
-              {stageLabel[item.Stage || item.stage] || ''}　
-              {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
-            </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {stageLabel[item.Stage || item.stage] || ''}　
+                          {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
+                        </div>
 
-            <p className="mt-2 text-sm">
-              {item.Content || item.content}
-            </p>
+                        <p className="mt-2 text-sm">
+                          {item.Content || item.content}
+                        </p>
 
-            {(item.QuotationNo || item.quotationNo) && (
-              <div className="mt-1 text-xs text-purple-600">
-                關聯報價：{item.QuotationNo || item.quotationNo}
+                        {(item.QuotationNo || item.quotationNo) && (
+                          <div className="mt-1 text-xs text-purple-600">
+                            關聯報價：{item.QuotationNo || item.quotationNo}
+                          </div>
+                        )}
+
+                        {(item.NextFollowUpDate || item.nextFollowUpDate) && (
+                          <div className="mt-2 text-xs text-blue-600">
+                            下次追蹤：
+                            {dateValue(item.NextFollowUpDate || item.nextFollowUpDate)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
 
-            {(item.NextFollowUpDate || item.nextFollowUpDate) && (
-              <div className="mt-2 text-xs text-blue-600">
-                下次追蹤：
-                {dateValue(item.NextFollowUpDate || item.nextFollowUpDate)}
-              </div>
-            )}
+              {showOpportunityForm && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                  onMouseDown={() => setShowOpportunityForm(false)}
+                >
+                  <div
+                    className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6"
+                    onMouseDown={(event) => event.stopPropagation()}
+                  >
+                    <div className="mb-5 flex justify-between">
+                      <h3 className="text-xl font-bold">
+                        {opportunityForm.opportunityId ? '編輯案件' : '新增案件'}
+                      </h3>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowOpportunityForm(false)}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                      <label className="md:col-span-2 text-sm">
+                        客戶 <span className="text-red-500">*</span>
+
+                        <div className="mt-1 flex gap-2">
+                          <input
+                            readOnly
+                            value={
+                              selectedCustomer
+                                ? `${selectedCustomer.Code}－${selectedCustomer.Name}`
+                                : ''
+                            }
+                            placeholder="請點選選擇客戶"
+                            className="w-full rounded border bg-gray-50 p-2"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => setShowOpportunityCustomerPicker(true)}
+                            className="rounded border border-blue-600 px-4 text-blue-600"
+                          >
+                            選擇客戶
+                          </button>
+                        </div>
+                      </label>
+
+                      <div className="md:col-span-2">
+                        <div className="mb-1 text-sm">
+                          關聯報價單
+                          <span className="ml-1 text-xs text-gray-500">
+                            （選填，可選多筆）
+                          </span>
+                        </div>
+
+                        {!opportunityForm.customerId ? (
+                          <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
+                            請先選擇客戶，再選擇該客戶的報價單。
+                          </div>
+                        ) : customerQuoteLoading ? (
+                          <div className="rounded border bg-gray-50 p-3 text-sm text-gray-500">
+                            報價單讀取中...
+                          </div>
+                        ) : customerQuoteOptions.length === 0 ? (
+                          <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
+                            此客戶目前沒有可關聯的報價單。
+                          </div>
+                        ) : (
+                          <div className="max-h-48 overflow-y-auto rounded border">
+                            {customerQuoteOptions.map((quote) => {
+                              const quotationId = String(quote.QuotationId);
+                              const checked = (opportunityForm.quotationIds || []).includes(
+                                quotationId
+                              );
+
+                              return (
+                                <label
+                                  key={quotationId}
+                                  className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-b-0 hover:bg-blue-50"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(event) => {
+                                      setOpportunityForm((previous) => {
+                                        const currentIds = previous.quotationIds || [];
+
+                                        const nextIds = event.target.checked
+                                          ? [...currentIds, quotationId]
+                                          : currentIds.filter((id) => id !== quotationId);
+
+                                        const nextPrimaryQuotationId =
+                                          !nextIds.includes(previous.primaryQuotationId)
+                                            ? nextIds[0] || ''
+                                            : previous.primaryQuotationId;
+
+                                        return {
+                                          ...previous,
+                                          quotationIds: nextIds,
+                                          primaryQuotationId: nextPrimaryQuotationId,
+                                        };
+                                      });
+                                    }}
+                                  />
+
+                                  <span className="flex-1 text-sm">
+                                    <b>{quote.QuotationNo || `#${quotationId}`}</b>
+                                    {'　'}
+                                    {formatDateForInput(quote.QuoteDate)}
+                                    {'　'}
+                                    {quoteStatusLabel(quote.Status)}
+                                  </span>
+
+                                  <span className="text-sm text-gray-600">
+                                    NT$
+                                    {Number(
+                                      quote.QuoteAmount ??
+                                        quote.TotalAmount ??
+                                        quote.FinalAmount ??
+                                        0
+                                    ).toLocaleString()}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {(opportunityForm.quotationIds || []).length > 0 && (
+                          <label className="mt-3 block text-sm">
+                            主要報價單
+
+                            <select
+                              value={opportunityForm.primaryQuotationId || ''}
+                              onChange={(event) =>
+                                setOpportunityForm((previous) => ({
+                                  ...previous,
+                                  primaryQuotationId: event.target.value,
+                                }))
+                              }
+                              className="mt-1 w-full rounded border p-2"
+                            >
+                              {(opportunityForm.quotationIds || []).map((id) => {
+                                const quote = customerQuoteOptions.find(
+                                  (item) => String(item.QuotationId) === String(id)
+                                );
+
+                                return (
+                                  <option key={id} value={id}>
+                                    {quote?.QuotationNo || `報價單 #${id}`}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </label>
+                        )}
+                      </div>
+
+                      <label className="md:col-span-2 text-sm">
+                        案件名稱
+                        <input
+                          value={opportunityForm.opportunityName}
+                          onChange={(event) =>
+                            setOpportunityForm((previous) => ({
+                              ...previous,
+                              opportunityName: event.target.value,
+                            }))
+                          }
+                          className="mt-1 w-full rounded border p-2"
+                        />
+                      </label>
+
+                      <label className="text-sm">
+                      填單日
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="YYYY-MM-DD"
+                        value={opportunityForm.createdAt}
+                        onChange={(e) =>
+                          setOpportunityForm((p) => ({
+                            ...p,
+                            createdAt: e.target.value,
+                          }))
+                        }
+                        onBlur={(e) =>
+                          setOpportunityForm((p) => ({
+                            ...p,
+                            createdAt: toIsoDate(e.target.value) || e.target.value,
+                          }))
+                        }
+                        className="mt-1 w-full rounded border p-2"
+                      />
+                      </label>
+
+                      <label className="text-sm">
+                        銷售階段
+                        <select
+                          value={opportunityForm.stage}
+                          onChange={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              stage: e.target.value,
+                            }))
+                          }
+                          className="mt-1 w-full rounded border p-2"
+                        >
+                          {stageOptions.map(([v, l]) => (
+                            <option key={v} value={v}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="text-sm">
+                        購買意願
+                        <select
+                          value={opportunityForm.customerGrade}
+                          onChange={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              customerGrade: e.target.value,
+                            }))
+                          }
+                          className="mt-1 w-full rounded border p-2"
+                        >
+                          {intentOptions.map(([v, l]) => (
+                            <option key={v} value={v}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="text-sm">
+                        預估金額
+                        <input
+                          type="text"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={formatAmountInput(opportunityForm.estimatedAmount)}
+                            onChange={(e) =>
+                              setOpportunityForm((p) => ({
+                                ...p,
+                                estimatedAmount: e.target.value.replace(/[^\d]/g, ''),
+                              }))
+                            }
+                            className="mt-1 w-full rounded border p-2 text-right"
+                          />
+                      </label>
+
+                      <label className="text-sm">
+                        預計成交日
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="YYYY-MM-DD"
+                          value={opportunityForm.expectedCloseDate}
+                          onChange={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              expectedCloseDate: e.target.value,
+                            }))
+                          }
+                          onBlur={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              expectedCloseDate: toIsoDate(e.target.value) || e.target.value,
+                            }))
+                          }
+                          className="mt-1 w-full rounded border p-2"
+                        />
+                      </label>
+
+                      <label className="text-sm">
+                        下次追蹤日
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="YYYY-MM-DD"
+                          value={opportunityForm.nextFollowUpDate}
+                          onChange={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              nextFollowUpDate: e.target.value,
+                            }))
+                          }
+                          onBlur={(e) =>
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              nextFollowUpDate: toIsoDate(e.target.value) || e.target.value,
+                            }))
+                          }
+                          className="mt-1 w-full rounded border p-2"
+                        />
+                      </label>
+
+                      <label className="md:col-span-2 text-sm">
+                        案件說明
+
+                        <textarea
+                          value={opportunityForm.description}
+                          onChange={(event) =>
+                            setOpportunityForm((previous) => ({
+                              ...previous,
+                              description: event.target.value,
+                            }))
+                          }
+                          rows="4"
+                          className="mt-1 w-full rounded border p-2"
+                        />
+                      </label>
+
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowOpportunityForm(false)}
+                        className="rounded border px-5 py-2"
+                      >
+                        取消
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={saveOpportunity}
+                        className="rounded bg-blue-600 px-5 py-2 text-white"
+                      >
+                        儲存案件
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showOpportunityCustomerPicker && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+                  <div className="w-full max-w-xl rounded-xl bg-white p-6">
+                    <div className="flex justify-between">
+                      <h3 className="text-lg font-bold">搜尋並選擇客戶</h3>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowOpportunityCustomerPicker(false)}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <input
+                      autoFocus
+                      value={opportunityCustomerSearch}
+                      onChange={(e) => setOpportunityCustomerSearch(e.target.value)}
+                      placeholder="輸入客戶代號或名稱"
+                      className="mt-4 w-full rounded border p-2"
+                    />
+
+                    <div className="mt-3 max-h-80 overflow-y-auto rounded border">
+                      {pickerCustomers.map((c) => (
+                        <button
+                          key={c.CustomerId || c.customerId || c.Code}
+                          type="button"
+                          className="block w-full border-b p-3 text-left hover:bg-blue-50"
+                          onClick={() => {
+                            const customerId = String(c.CustomerId || c.customerId || '');
+
+                            setOpportunityForm((p) => ({
+                              ...p,
+                              customerId,
+                              quotationIds: [],
+                              primaryQuotationId: '',
+                            }));
+
+                            setCustomerQuoteOptions([]);
+                            loadCustomerQuoteOptions(customerId);
+
+                            setShowOpportunityCustomerPicker(false);
+                            setOpportunityCustomerSearch('');
+                          }}
+                        >
+                          <b>{c.Code || c.code}</b>
+                          {'　'}
+                          {c.Name || c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
-    )}
-  </div>
-
-  {showOpportunityForm && (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onMouseDown={() => setShowOpportunityForm(false)}
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <div className="mb-5 flex justify-between">
-          <h3 className="text-xl font-bold">
-            {opportunityForm.opportunityId ? '編輯案件' : '新增案件'}
-          </h3>
-
-          <button
-            type="button"
-            onClick={() => setShowOpportunityForm(false)}
-          >
-            ×
-          </button>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-  <label className="md:col-span-2 text-sm">
-    客戶 <span className="text-red-500">*</span>
-
-    <div className="mt-1 flex gap-2">
-      <input
-        readOnly
-        value={
-          selectedCustomer
-            ? `${selectedCustomer.Code}－${selectedCustomer.Name}`
-            : ''
-        }
-        placeholder="請點選選擇客戶"
-        className="w-full rounded border bg-gray-50 p-2"
-      />
-
-      <button
-        type="button"
-        onClick={() => setShowOpportunityCustomerPicker(true)}
-        className="rounded border border-blue-600 px-4 text-blue-600"
-      >
-        選擇客戶
-      </button>
-    </div>
-  </label>
-
-  <div className="md:col-span-2">
-    <div className="mb-1 text-sm">
-      關聯報價單
-      <span className="ml-1 text-xs text-gray-500">
-        （選填，可選多筆）
-      </span>
-    </div>
-
-    {!opportunityForm.customerId ? (
-      <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
-        請先選擇客戶，再選擇該客戶的報價單。
-      </div>
-    ) : customerQuoteLoading ? (
-      <div className="rounded border bg-gray-50 p-3 text-sm text-gray-500">
-        報價單讀取中...
-      </div>
-    ) : customerQuoteOptions.length === 0 ? (
-      <div className="rounded border bg-gray-50 p-3 text-sm text-gray-400">
-        此客戶目前沒有可關聯的報價單。
-      </div>
-    ) : (
-      <div className="max-h-48 overflow-y-auto rounded border">
-        {customerQuoteOptions.map((quote) => {
-          const quotationId = String(quote.QuotationId);
-          const checked = (opportunityForm.quotationIds || []).includes(
-            quotationId
-          );
-
-          return (
-            <label
-              key={quotationId}
-              className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-b-0 hover:bg-blue-50"
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => {
-                  setOpportunityForm((previous) => {
-                    const currentIds = previous.quotationIds || [];
-
-                    const nextIds = event.target.checked
-                      ? [...currentIds, quotationId]
-                      : currentIds.filter((id) => id !== quotationId);
-
-                    const nextPrimaryQuotationId =
-                      !nextIds.includes(previous.primaryQuotationId)
-                        ? nextIds[0] || ''
-                        : previous.primaryQuotationId;
-
-                    return {
-                      ...previous,
-                      quotationIds: nextIds,
-                      primaryQuotationId: nextPrimaryQuotationId,
-                    };
-                  });
-                }}
-              />
-
-              <span className="flex-1 text-sm">
-                <b>{quote.QuotationNo || `#${quotationId}`}</b>
-                {'　'}
-                {formatDateForInput(quote.QuoteDate)}
-                {'　'}
-                {quoteStatusLabel(quote.Status)}
-              </span>
-
-              <span className="text-sm text-gray-600">
-                NT$
-                {Number(
-                  quote.QuoteAmount ??
-                    quote.TotalAmount ??
-                    quote.FinalAmount ??
-                    0
-                ).toLocaleString()}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    )}
-
-    {(opportunityForm.quotationIds || []).length > 0 && (
-      <label className="mt-3 block text-sm">
-        主要報價單
-
-        <select
-          value={opportunityForm.primaryQuotationId || ''}
-          onChange={(event) =>
-            setOpportunityForm((previous) => ({
-              ...previous,
-              primaryQuotationId: event.target.value,
-            }))
-          }
-          className="mt-1 w-full rounded border p-2"
-        >
-          {(opportunityForm.quotationIds || []).map((id) => {
-            const quote = customerQuoteOptions.find(
-              (item) => String(item.QuotationId) === String(id)
-            );
-
-            return (
-              <option key={id} value={id}>
-                {quote?.QuotationNo || `報價單 #${id}`}
-              </option>
-            );
-          })}
-        </select>
-      </label>
-    )}
-  </div>
-
-  <label className="md:col-span-2 text-sm">
-    案件名稱
-    <input
-      value={opportunityForm.opportunityName}
-      onChange={(event) =>
-        setOpportunityForm((previous) => ({
-          ...previous,
-          opportunityName: event.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded border p-2"
-    />
-  </label>
-
-        <label className="text-sm">
-         填單日
-         <input
-           type="text"
-           inputMode="numeric"
-           placeholder="YYYY-MM-DD"
-           value={opportunityForm.createdAt}
-           onChange={(e) =>
-             setOpportunityForm((p) => ({
-               ...p,
-               createdAt: e.target.value,
-             }))
-           }
-           onBlur={(e) =>
-             setOpportunityForm((p) => ({
-               ...p,
-               createdAt: toIsoDate(e.target.value) || e.target.value,
-             }))
-           }
-           className="mt-1 w-full rounded border p-2"
-         />
-        </label>
-
-        <label className="text-sm">
-          銷售階段
-          <select
-            value={opportunityForm.stage}
-            onChange={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                stage: e.target.value,
-              }))
-            }
-            className="mt-1 w-full rounded border p-2"
-          >
-            {stageOptions.map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-sm">
-          購買意願
-          <select
-            value={opportunityForm.customerGrade}
-            onChange={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                customerGrade: e.target.value,
-              }))
-            }
-            className="mt-1 w-full rounded border p-2"
-          >
-            {intentOptions.map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-sm">
-          預估金額
-          <input
-             type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={formatAmountInput(opportunityForm.estimatedAmount)}
-              onChange={(e) =>
-                setOpportunityForm((p) => ({
-                  ...p,
-                  estimatedAmount: e.target.value.replace(/[^\d]/g, ''),
-                }))
-              }
-              className="mt-1 w-full rounded border p-2 text-right"
-            />
-        </label>
-
-        <label className="text-sm">
-          預計成交日
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="YYYY-MM-DD"
-            value={opportunityForm.expectedCloseDate}
-            onChange={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                expectedCloseDate: e.target.value,
-              }))
-            }
-            onBlur={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                expectedCloseDate: toIsoDate(e.target.value) || e.target.value,
-              }))
-            }
-            className="mt-1 w-full rounded border p-2"
-          />
-        </label>
-
-        <label className="text-sm">
-          下次追蹤日
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="YYYY-MM-DD"
-            value={opportunityForm.nextFollowUpDate}
-            onChange={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                nextFollowUpDate: e.target.value,
-              }))
-            }
-            onBlur={(e) =>
-              setOpportunityForm((p) => ({
-                ...p,
-                nextFollowUpDate: toIsoDate(e.target.value) || e.target.value,
-              }))
-            }
-            className="mt-1 w-full rounded border p-2"
-          />
-        </label>
-
-  <label className="md:col-span-2 text-sm">
-    案件說明
-
-    <textarea
-      value={opportunityForm.description}
-      onChange={(event) =>
-        setOpportunityForm((previous) => ({
-          ...previous,
-          description: event.target.value,
-        }))
-      }
-      rows="4"
-      className="mt-1 w-full rounded border p-2"
-    />
-  </label>
-
-        </div>
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowOpportunityForm(false)}
-            className="rounded border px-5 py-2"
-          >
-            取消
-          </button>
-
-          <button
-            type="button"
-            onClick={saveOpportunity}
-            className="rounded bg-blue-600 px-5 py-2 text-white"
-          >
-            儲存案件
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-        {showOpportunityCustomerPicker && (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-xl rounded-xl bg-white p-6">
-        <div className="flex justify-between">
-          <h3 className="text-lg font-bold">搜尋並選擇客戶</h3>
-
-          <button
-            type="button"
-            onClick={() => setShowOpportunityCustomerPicker(false)}
-          >
-            ×
-          </button>
-        </div>
-
-        <input
-          autoFocus
-          value={opportunityCustomerSearch}
-          onChange={(e) => setOpportunityCustomerSearch(e.target.value)}
-          placeholder="輸入客戶代號或名稱"
-          className="mt-4 w-full rounded border p-2"
-        />
-
-        <div className="mt-3 max-h-80 overflow-y-auto rounded border">
-          {pickerCustomers.map((c) => (
-            <button
-              key={c.CustomerId || c.customerId || c.Code}
-              type="button"
-              className="block w-full border-b p-3 text-left hover:bg-blue-50"
-              onClick={() => {
-                const customerId = String(c.CustomerId || c.customerId || '');
-
-                setOpportunityForm((p) => ({
-                  ...p,
-                  customerId,
-                  quotationIds: [],
-                  primaryQuotationId: '',
-                }));
-
-                setCustomerQuoteOptions([]);
-                loadCustomerQuoteOptions(customerId);
-
-                setShowOpportunityCustomerPicker(false);
-                setOpportunityCustomerSearch('');
-              }}
-            >
-              <b>{c.Code || c.code}</b>
-              {'　'}
-              {c.Name || c.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )}
       </div>
     );
   };
@@ -2822,119 +2847,119 @@ export default function App() {
               </div>
 
               {String(userForm.roleCode).toUpperCase() === 'ROOT' ? (
-    <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-      ROOT 為系統管理員，永遠擁有全部功能及查詢、新增、修改、刪除權限，
-      不需要設定個別權限。
-    </div>
-  ) : (
-    <div className="border-t pt-4">
-      <div className="mb-3 text-sm font-semibold text-gray-700">
-        功能權限
-      </div>
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  ROOT 為系統管理員，永遠擁有全部功能及查詢、新增、修改、刪除權限，
+                  不需要設定個別權限。
+                </div>
+              ) : (
+                <div className="border-t pt-4">
+                  <div className="mb-3 text-sm font-semibold text-gray-700">
+                    功能權限
+                  </div>
 
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full min-w-[680px] text-sm">
-          <thead className="bg-gray-100 text-gray-700">
-            <tr>
-              <th className="px-3 py-2 text-left">功能名稱</th>
-              <th className="px-3 py-2 text-center">查詢</th>
-              <th className="px-3 py-2 text-center">新增</th>
-              <th className="px-3 py-2 text-center">修改</th>
-              <th className="px-3 py-2 text-center">刪除</th>
-            </tr>
-          </thead>
+                  <div className="overflow-x-auto rounded border">
+                    <table className="w-full min-w-[680px] text-sm">
+                      <thead className="bg-gray-100 text-gray-700">
+                        <tr>
+                          <th className="px-3 py-2 text-left">功能名稱</th>
+                          <th className="px-3 py-2 text-center">查詢</th>
+                          <th className="px-3 py-2 text-center">新增</th>
+                          <th className="px-3 py-2 text-center">修改</th>
+                          <th className="px-3 py-2 text-center">刪除</th>
+                        </tr>
+                      </thead>
 
-          <tbody>
-            {permissionFunctions.map((item) => {
-              const row =
-                userForm.permissions?.find(
-                  (permission) =>
-                    permission.functionCode === item.code
-                ) || {
-                  functionCode: item.code,
-                  canQuery: false,
-                  canCreate: false,
-                  canUpdate: false,
-                  canDelete: false,
-                };
+                      <tbody>
+                        {permissionFunctions.map((item) => {
+                          const row =
+                            userForm.permissions?.find(
+                              (permission) =>
+                                permission.functionCode === item.code
+                            ) || {
+                              functionCode: item.code,
+                              canQuery: false,
+                              canCreate: false,
+                              canUpdate: false,
+                              canDelete: false,
+                            };
 
-              const updatePermission = (field, checked) => {
-                setUserForm((previous) => {
-                  const permissions = [
-                    ...(previous.permissions || []),
-                  ];
+                          const updatePermission = (field, checked) => {
+                            setUserForm((previous) => {
+                              const permissions = [
+                                ...(previous.permissions || []),
+                              ];
 
-                  const index = permissions.findIndex(
-                    (permission) =>
-                      permission.functionCode === item.code
-                  );
+                              const index = permissions.findIndex(
+                                (permission) =>
+                                  permission.functionCode === item.code
+                              );
 
-                  const nextRow = {
-                    ...row,
-                    [field]: checked,
-                  };
+                              const nextRow = {
+                                ...row,
+                                [field]: checked,
+                              };
 
-                  // 勾選「新增、修改、刪除」時，自動勾選「查詢」
-                  if (field !== 'canQuery' && checked) {
-                    nextRow.canQuery = true;
-                  }
+                              // 勾選「新增、修改、刪除」時，自動勾選「查詢」
+                              if (field !== 'canQuery' && checked) {
+                                nextRow.canQuery = true;
+                              }
 
-                  // 取消「查詢」時，其他三個操作權限也一併取消
-                  if (field === 'canQuery' && !checked) {
-                    nextRow.canCreate = false;
-                    nextRow.canUpdate = false;
-                    nextRow.canDelete = false;
-                  }
+                              // 取消「查詢」時，其他三個操作權限也一併取消
+                              if (field === 'canQuery' && !checked) {
+                                nextRow.canCreate = false;
+                                nextRow.canUpdate = false;
+                                nextRow.canDelete = false;
+                              }
 
-                  if (index >= 0) {
-                    permissions[index] = nextRow;
-                  } else {
-                    permissions.push(nextRow);
-                  }
+                              if (index >= 0) {
+                                permissions[index] = nextRow;
+                              } else {
+                                permissions.push(nextRow);
+                              }
 
-                  return {
-                    ...previous,
-                    permissions,
-                  };
-                });
-              };
+                              return {
+                                ...previous,
+                                permissions,
+                              };
+                            });
+                          };
 
-              return (
-                <tr key={item.code} className="border-t">
-                  <td className="px-3 py-2 font-medium">
-                    {item.label}
-                  </td>
+                          return (
+                            <tr key={item.code} className="border-t">
+                              <td className="px-3 py-2 font-medium">
+                                {item.label}
+                              </td>
 
-                  {[
-                    'canQuery',
-                    'canCreate',
-                    'canUpdate',
-                    'canDelete',
-                  ].map((field) => (
-                    <td
-                      key={field}
-                      className="px-3 py-2 text-center"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={Boolean(row[field])}
-                        onChange={(event) =>
-                          updatePermission(
-                            field,
-                            event.target.checked
-                          )
-                        }
-                      />
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )}
+                              {[
+                                'canQuery',
+                                'canCreate',
+                                'canUpdate',
+                                'canDelete',
+                              ].map((field) => (
+                                <td
+                                  key={field}
+                                  className="px-3 py-2 text-center"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(row[field])}
+                                    onChange={(event) =>
+                                      updatePermission(
+                                        field,
+                                        event.target.checked
+                                      )
+                                    }
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -3104,27 +3129,27 @@ export default function App() {
           </div>
 
           <div className="mt-1 text-xs text-blue-300">
-          {(() => {
-            const roleCode = String(
-              salesUser?.role ||
-                salesUser?.Role ||
-                salesUser?.RoleCode ||
-                salesUser?.UserRole ||
-                ''
-            ).toUpperCase();
+            {(() => {
+              const roleCode = String(
+                salesUser?.role ||
+                  salesUser?.Role ||
+                  salesUser?.RoleCode ||
+                  salesUser?.UserRole ||
+                  ''
+              ).toUpperCase();
 
-            const roleLabelMap = {
-              ROOT: '系統管理員',
-              ADMIN: '系統管理員',
-              PRESIDENT: '高層主管',
-              MANAGER: '業務主管',
-              SALES: '業務人員',
-              SERVICE: '客服人員',
-            };
+              const roleLabelMap = {
+                ROOT: '系統管理員',
+                ADMIN: '系統管理員',
+                PRESIDENT: '高層主管',
+                MANAGER: '業務主管',
+                SALES: '業務人員',
+                SERVICE: '客服人員',
+              };
 
-            return roleLabelMap[roleCode] || '一般使用者';
-          })()}
-        </div>
+              return roleLabelMap[roleCode] || '一般使用者';
+            })()}
+          </div>
 
           <button
             onClick={handleSalesLogout}
@@ -3133,6 +3158,7 @@ export default function App() {
             登出目前帳號
           </button>
         </div>
+        
         <nav className="flex gap-2 overflow-x-auto p-3 md:block md:space-y-2 md:overflow-y-auto md:p-4">
           {(() => {
             const currentRole = String(
@@ -3298,7 +3324,6 @@ export default function App() {
          </div>
       </div>
       
-      {}
       {showQuotePreview && previewQuote && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white" onMouseDown={()=>setShowQuotePreview(false)}>
           <div className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black" onMouseDown={e=>e.stopPropagation()}>
@@ -3332,56 +3357,56 @@ export default function App() {
 
                 <tbody>
                   {previewQuote.items.map((item, index) => (
-                <tr
-                  key={
-                    item.QuotationItemId ||
-                    `${item.SystemId}-${item.ItemType || 'item'}-${index}`
-                  }
-                >
-                  <td>
-                    {item.SystemCode && item.SystemName
-                      ? `${item.SystemCode}－${item.SystemName}`
-                      : item.SystemName || item.SystemCode || '－'}
-                    （網路 {item.UserCount} 人版）
-                  </td>
-
-                  <td className="text-right whitespace-nowrap">
-                    NT${Number(item.LineAmount || 0).toLocaleString()}
-                  </td>
-
-                  <td className="text-center">1</td>
-
-                  <td className="text-right whitespace-nowrap">
-                    NT${Number(item.LineAmount || 0).toLocaleString()}
-                  </td>
-
-                  <td>
-                    折數 {item.Discount ?? 100}%
-                    <br />
-
-                    <span
-                      className={
-                        item.FinalAmount !== null &&
-                        item.FinalAmount !== undefined
-                          ? 'line-through text-red-600'
-                          : ''
+                    <tr
+                      key={
+                        item.QuotationItemId ||
+                        `${item.SystemId}-${item.ItemType || 'item'}-${index}`
                       }
                     >
-                      優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
-                    </span>
+                      <td>
+                        {item.SystemCode && item.SystemName
+                          ? `${item.SystemCode}－${item.SystemName}`
+                          : item.SystemName || item.SystemCode || '－'}
+                        （網路 {item.UserCount} 人版）
+                      </td>
 
-                    {item.FinalAmount !== null &&
-                      item.FinalAmount !== undefined && (
-                        <>
-                          <br />
-                          <span className="font-semibold text-red-600">
-                            → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
-                          </span>
-                        </>
-                      )}
-                  </td>
-                </tr>
-              ))}
+                      <td className="text-right whitespace-nowrap">
+                        NT${Number(item.LineAmount || 0).toLocaleString()}
+                      </td>
+
+                      <td className="text-center">1</td>
+
+                      <td className="text-right whitespace-nowrap">
+                        NT${Number(item.LineAmount || 0).toLocaleString()}
+                      </td>
+
+                      <td>
+                        折數 {item.Discount ?? 100}%
+                        <br />
+
+                        <span
+                          className={
+                            item.FinalAmount !== null &&
+                            item.FinalAmount !== undefined
+                              ? 'line-through text-red-600'
+                              : ''
+                          }
+                        >
+                          優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
+                        </span>
+
+                        {item.FinalAmount !== null &&
+                          item.FinalAmount !== undefined && (
+                            <>
+                              <br />
+                              <span className="font-semibold text-red-600">
+                                → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
+                              </span>
+                            </>
+                          )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 
@@ -3468,10 +3493,10 @@ export default function App() {
                   </h2>
 
                   {previewQuote.items.map((item, index) => (
-                <div
-                  key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
-                  className="mt-1"
-                >
+                    <div
+                      key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
+                      className="mt-1"
+                    >
                       <b className="block">
                         {item.SystemCode}－{item.SystemName}：
                       </b>
