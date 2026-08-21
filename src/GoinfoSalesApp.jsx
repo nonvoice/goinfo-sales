@@ -3088,9 +3088,9 @@ const renderQuotationSelector = ({
             </div>
 
             <div className="mt-1 text-xs text-gray-500">
-              {stageL{Array.isArray(item. followUpQuotations) &&abel[item.Stage || item.stage] || ''}
-              {'　'}
-              {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
+               {stageLabel[item.Stage || item.stage] || ''}
+               {'　'}
+               {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
             </div>
 
             <p className="mt-2 text-sm">
@@ -3140,11 +3140,10 @@ const renderQuotationSelector = ({
       })}
     </div>
   )}
-</div>
-
-          </div>}
-        </div>
       </div>
+    </div>
+  )}
+</div>
 
 {showOpportunityForm && (
   <div
