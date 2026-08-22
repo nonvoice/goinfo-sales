@@ -708,6 +708,96 @@ const saveOpportunity = async () => {
     return;
   }
 
+const deleteOpportunity = async () => {
+  const opportunityId =
+    selectedOpportunity?.OpportunityId ||
+    selectedOpportunity?.opportunityId;
+
+  if (!opportunityId) {
+    alert('找不到要刪除的案件');
+    return;
+  }
+
+  const opportunityName =
+    selectedOpportunity?.OpportunityName ||
+    selectedOpportunity?.opportunityName ||
+    '此案件';
+
+  const confirmed = window.confirm(
+    `確定要刪除「${opportunityName}」嗎？\n\n` +
+    '警告：此操作會永久刪除該案件、該案件的所有追蹤紀錄，' +
+    '以及所有案件／追蹤報價關聯資料，且無法復原。'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await salesApiFetch('delete-sales-opportunity', {
+      method: 'POST',
+      body: JSON.stringify({
+        opportunityId: Number(opportunityId),
+      }),
+    });
+
+    setSelectedOpportunity(null);
+    setSelectedOpportunityId(null);
+    setFollowUpList([]);
+    setOpportunityQuotationList([]);
+
+    await loadOpportunities();
+
+    alert('案件及其所有追蹤紀錄已刪除');
+  } catch (error) {
+    console.error('deleteOpportunity error:', error);
+    alert(error.message || '刪除案件失敗');
+  }
+};
+
+const deleteFollowUp = async (followUp) => {
+  const followUpId =
+    followUp?.FollowUpId ||
+    followUp?.followUpId;
+
+  if (!followUpId) {
+    alert('找不到要刪除的追蹤紀錄');
+    return;
+  }
+
+  const followUpDate = dateValue(
+    followUp?.FollowUpDate ||
+    followUp?.followUpDate
+  );
+
+  const confirmed = window.confirm(
+    `確定要刪除 ${followUpDate || '此筆'} 追蹤紀錄嗎？\n\n` +
+    '此操作只會刪除本筆追蹤紀錄及其關聯報價單；' +
+    '案件與其他追蹤紀錄都會保留。'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await salesApiFetch('delete-sales-follow-up', {
+      method: 'POST',
+      body: JSON.stringify({
+        followUpId: Number(followUpId),
+      }),
+    });
+
+    await loadOpportunityDetail(selectedOpportunityId);
+    await loadOpportunities();
+
+    alert('單筆追蹤紀錄已刪除');
+  } catch (error) {
+    console.error('deleteFollowUp error:', error);
+    alert(error.message || '刪除追蹤紀錄失敗');
+  }
+};
+
   const selectedQuotationIds = [
     ...new Set(
       (opportunityForm.quotationIds || [])
@@ -2787,7 +2877,17 @@ const renderQuotationSelector = ({  selectedIds = [],
             編輯案件
           </button>
         )}
-      </div>
+
+        {can('SALES_TRACK', 'canDelete') && (
+          <button
+            type="button"
+            onClick={deleteOpportunity}
+            className="rounded-lg border border-red-600 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            刪除案件
+          </button>
+        )}
+     </div>
 
       {/* 案件摘要 */}
       <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4">
@@ -3097,24 +3197,40 @@ const renderQuotationSelector = ({  selectedIds = [],
             key={item.FollowUpId || item.followUpId || index}
             className="rounded border p-4"
           >
-            <div className="flex justify-between">
-              <b>
-                {contactLabel[
-                  item.ContactMethod || item.contactMethod
-                ] || '其他'}
-                {' '}
-                {item.ContactName || item.contactName || ''}
-              </b>
+            <div className="flex items-start justify-between gap-3">
+               <div>
+                <b>
+                  {contactLabel[
+                    item.ContactMethod || item.contactMethod
+                  ] || '其他'}
+                  {' '}
+                  {item.ContactName || item.contactName || ''}
+                </b>
 
-              <span className="text-xs text-gray-500">
-                {dateValue(item.FollowUpDate || item.followUpDate)}
-              </span>
-            </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {stageLabel[item.Stage || item.stage] || ''}
+                  {'　'}
+                  {intentLabel[
+                    item.CustomerGrade || item.customerGrade
+                  ] || ''}
+                </div>
+              </div>
 
-            <div className="mt-1 text-xs text-gray-500">
-              {stageLabel[item.Stage || item.stage] || ''}
-              {'　'}
-              {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">
+                  {dateValue(item.FollowUpDate || item.followUpDate)}
+                </span>
+
+                {can('SALES_TRACK', 'canDelete') && (
+                  <button
+                    type="button"
+                    onClick={() => deleteFollowUp(item)}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    刪除
+                  </button>
+                )}
+              </div>
             </div>
 
             <p className="mt-2 text-sm">
