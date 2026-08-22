@@ -351,6 +351,7 @@ export default function App() {
   const [quoteDateFrom, setQuoteDateFrom] = useState('');
   const [quoteDateTo, setQuoteDateTo] = useState('');
   const [quoteOwnerUserId, setQuoteOwnerUserId] = useState('');
+  const [hideVoidedQuotes, setHideVoidedQuotes] = useState(true);
   const [salesUserOptions, setSalesUserOptions] = useState([]);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
@@ -1563,8 +1564,27 @@ const loadSalesUserOptions = async () => {
     setCustomerPickerTerm('');
   };
 
-  const renderQuotationForm = (title, defaultItemType, actionType) => (
-  <>
+  const renderQuotationForm = (
+  title,
+  defaultItemType,
+  actionType
+) => {
+  const isVoidedQuote = (quote) => {
+    const status = String(
+      quote.Status ??
+      quote.status ??
+      ''
+    ).toUpperCase();
+
+    return status === 'VOID' || status === '4';
+  };
+
+  const visibleQuoteList = hideVoidedQuotes
+    ? quoteList.filter((quote) => !isVoidedQuote(quote))
+    : quoteList;
+
+  return (
+    <>
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-bold mb-4 text-gray-800">
         {title}
@@ -1877,7 +1897,7 @@ const loadSalesUserOptions = async () => {
     </button>
   </div>
 
-  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
     <label className="text-sm text-gray-600">
       報價日期篩選
       <input
@@ -1915,6 +1935,15 @@ const loadSalesUserOptions = async () => {
       </select>
     </label>
 
+    <label className="flex items-center gap-2 pt-6 text-sm font-medium text-gray-700">
+      <input
+        type="checkbox"
+        checked={hideVoidedQuotes}
+        onChange={(e) => setHideVoidedQuotes(e.target.checked)}
+      />
+      已作廢者略
+    </label>
+
     <div className="flex items-end">
       <button
         type="button"
@@ -1948,8 +1977,8 @@ const loadSalesUserOptions = async () => {
           載入中...
         </td>
       </tr>
-    ) : quoteList.length > 0 ? (
-      quoteList.map((q) => (
+   ) : visibleQuoteList.length > 0 ? (
+     visibleQuoteList.map((q) => (
         <tr key={q.QuotationId} className="border-b hover:bg-blue-50">
           <td className="p-3 font-medium">
             {q.QuotationNo}
@@ -2020,8 +2049,10 @@ const loadSalesUserOptions = async () => {
     ) : (
       <tr>
         <td colSpan={8} className="p-8 text-center text-gray-400">
-          查無符合條件的報價單
-        </td>
+            {hideVoidedQuotes
+               ? '查無符合條件的未作廢報價單'
+                : '查無符合條件的報價單'}
+       </td>
       </tr>
     )}
   </tbody>
@@ -2029,8 +2060,8 @@ const loadSalesUserOptions = async () => {
   </div>
 </div>
 </>
-);
-
+  );
+};
 const renderSystemSettings = () => (
   <div className="space-y-6">
     {/* 頁面標題 */}
