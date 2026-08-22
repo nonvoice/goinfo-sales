@@ -3393,81 +3393,80 @@ const renderQuotationSelector = ({  selectedIds = [],
   </div>
 )}
 
-{showOpportunityCustomerPicker && (
-  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-    <div className="w-full max-w-xl rounded-xl bg-white p-6">
-      <div className="flex justify-between">
-        <h3 className="text-lg font-bold">
-          搜尋並選擇客戶
-        </h3>
+      {showOpportunityCustomerPicker && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-xl bg-white p-6">
+            <div className="flex justify-between">
+              <h3 className="text-lg font-bold">
+                搜尋並選擇客戶
+              </h3>
 
-        <button
-          type="button"
-          onClick={() => setShowOpportunityCustomerPicker(false)}
-          className="text-xl leading-none text-gray-500 hover:text-gray-800"
-          aria-label="關閉客戶選擇視窗"
-        >
-          ×
-        </button>
-      </div>
+              <button
+                type="button"
+                onClick={() => setShowOpportunityCustomerPicker(false)}
+                className="text-xl leading-none text-gray-500 hover:text-gray-800"
+                aria-label="關閉客戶選擇視窗"
+              >
+                ×
+              </button>
+            </div>
 
-      <input
-        autoFocus
-        value={opportunityCustomerSearch}
-        onChange={(e) =>
-          setOpportunityCustomerSearch(e.target.value)
-        }
-        placeholder="輸入客戶代號或名稱"
-        className="mt-4 w-full rounded border p-2"
-      />
-
-      <div className="mt-3 max-h-80 overflow-y-auto rounded border">
-        {pickerCustomers.length === 0 ? (
-          <div className="p-4 text-center text-sm text-gray-400">
-            查無符合條件的客戶
-          </div>
-        ) : (
-          pickerCustomers.map((customer) => (
-            <button
-              key={
-                customer.CustomerId ||
-                customer.customerId ||
-                customer.Code ||
-                customer.code
+            <input
+              autoFocus
+              value={opportunityCustomerSearch}
+              onChange={(e) =>
+                setOpportunityCustomerSearch(e.target.value)
               }
-              type="button"
-              onClick={() => {
-                setOpportunityForm((prev) => ({
-                  ...prev,
-                  customerId: String(
-                    customer.CustomerId ||
-                    customer.customerId
-                  ),
-                  quotationId: '',
-                  quotationIds: [],
-                }));
+              placeholder="輸入客戶代號或名稱"
+              className="mt-4 w-full rounded border p-2"
+            />
 
-                setShowOpportunityCustomerPicker(false);
-                setOpportunityCustomerSearch('');
-              }}
-              className="block w-full border-b p-3 text-left hover:bg-blue-50"
-            >
-              <b>
-                {customer.Code || customer.code}
-              </b>
+            <div className="mt-3 max-h-80 overflow-y-auto rounded border">
+              {pickerCustomers.length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-400">
+                  查無符合條件的客戶
+                </div>
+              ) : (
+                pickerCustomers.map((customer) => (
+                  <button
+                    key={
+                      customer.CustomerId ||
+                      customer.customerId ||
+                      customer.Code ||
+                      customer.code
+                    }
+                    type="button"
+                    onClick={() => {
+                      setOpportunityForm((prev) => ({
+                        ...prev,
+                        customerId: String(
+                          customer.CustomerId ||
+                          customer.customerId
+                        ),
+                        quotationId: '',
+                        quotationIds: [],
+                      }));
 
-              {'　'}
-              {customer.Name || customer.name}
-            </button>
-          ))
-        )}
-      </div>
+                      setShowOpportunityCustomerPicker(false);
+                      setOpportunityCustomerSearch('');
+                    }}
+                    className="block w-full border-b p-3 text-left hover:bg-blue-50"
+                  >
+                    <b>
+                      {customer.Code || customer.code}
+                    </b>
+
+                    {'　'}
+                    {customer.Name || customer.name}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-)}
-
-</div>
-);
+  );
 };
 
 const renderUserManagement = () => {
