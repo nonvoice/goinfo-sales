@@ -2365,9 +2365,9 @@ const toggleQuotationId = (ids, quotationId) => {
   return ids.includes(normalizedId)
     ? ids.filter((id) => id !== normalizedId)
     : [...ids, normalizedId];
+};
 
-const renderQuotationSelector = ({
-  selectedIds,
+const renderQuotationSelector = ({  selectedIds = [],
   onChange,
   customerId,
 }) => {
@@ -3396,7 +3396,6 @@ const renderQuotationSelector = ({
 {showOpportunityCustomerPicker && (
   <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
     <div className="w-full max-w-xl rounded-xl bg-white p-6">
-      {/* 客戶選取彈窗標題 */}
       <div className="flex justify-between">
         <h3 className="text-lg font-bold">
           搜尋並選擇客戶
@@ -3412,7 +3411,6 @@ const renderQuotationSelector = ({
         </button>
       </div>
 
-      {/* 搜尋欄位 */}
       <input
         autoFocus
         value={opportunityCustomerSearch}
@@ -3423,7 +3421,6 @@ const renderQuotationSelector = ({
         className="mt-4 w-full rounded border p-2"
       />
 
-      {/* 客戶清單 */}
       <div className="mt-3 max-h-80 overflow-y-auto rounded border">
         {pickerCustomers.length === 0 ? (
           <div className="p-4 text-center text-sm text-gray-400">
@@ -3432,16 +3429,19 @@ const renderQuotationSelector = ({
         ) : (
           pickerCustomers.map((customer) => (
             <button
-              key={customer.CustomerId || customer.customerId || customer.Code}
+              key={
+                customer.CustomerId ||
+                customer.customerId ||
+                customer.Code ||
+                customer.code
+              }
               type="button"
               onClick={() => {
                 setOpportunityForm((prev) => ({
                   ...prev,
-
-                  // 選擇新客戶時清空舊的關聯報價單，
-                  // 避免誤把前一個客戶的報價帶到新案件。
                   customerId: String(
-                    customer.CustomerId || customer.customerId
+                    customer.CustomerId ||
+                    customer.customerId
                   ),
                   quotationId: '',
                   quotationIds: [],
@@ -3465,8 +3465,9 @@ const renderQuotationSelector = ({
     </div>
   </div>
 )}
-    </div>
-  );
+
+</div>
+);
 };
 
 const renderUserManagement = () => {
