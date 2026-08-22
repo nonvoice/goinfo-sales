@@ -3428,38 +3428,38 @@ const renderQuotationSelector = ({  selectedIds = [],
                 </div>
               ) : (
                 pickerCustomers.map((customer) => (
-                  <button
-                    key={
-                      customer.CustomerId ||
-                      customer.customerId ||
-                      customer.Code ||
-                      customer.code
-                    }
-                    type="button"
-                    onClick={() => {
-                      setOpportunityForm((prev) => ({
-                        ...prev,
-                        customerId: String(
-                          customer.CustomerId ||
-                          customer.customerId
-                        ),
-                        quotationId: '',
-                        quotationIds: [],
-                      }));
+  <button
+    key={
+      customer.CustomerId ||
+      customer.customerId ||
+      customer.Code ||
+      customer.code
+    }
+    type="button"
+    onClick={() => {
+      setOpportunityForm((prev) => ({
+        ...prev,
+        customerId: String(
+          customer.CustomerId ||
+          customer.customerId
+        ),
+        quotationId: '',
+        quotationIds: [],
+      }));
 
-                      setShowOpportunityCustomerPicker(false);
-                      setOpportunityCustomerSearch('');
-                    }}
-                    className="block w-full border-b p-3 text-left hover:bg-blue-50"
-                  >
-                    <b>
-                      {customer.Code || customer.code}
-                    </b>
+      setShowOpportunityCustomerPicker(false);
+      setOpportunityCustomerSearch('');
+    }}
+    className="block w-full border-b p-3 text-left hover:bg-blue-50"
+  >
+    <b>
+      {customer.Code || customer.code}
+    </b>
 
-                    {'　'}
-                    {customer.Name || customer.name}
-                  </button>
-                ))
+    {'　'}
+    {customer.Name || customer.name}
+  </button>
+))
               )}
             </div>
           </div>
