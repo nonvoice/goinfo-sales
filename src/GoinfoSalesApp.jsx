@@ -3088,9 +3088,9 @@ const renderQuotationSelector = ({  selectedIds = [],
             </div>
 
             <div className="mt-1 text-xs text-gray-500">
-               {stageLabel[item.Stage || item.stage] || ''}
-               {'　'}
-               {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
+              {stageLabel[item.Stage || item.stage] || ''}
+              {'　'}
+              {intentLabel[item.CustomerGrade || item.customerGrade] || ''}
             </div>
 
             <p className="mt-2 text-sm">
@@ -3140,9 +3140,11 @@ const renderQuotationSelector = ({  selectedIds = [],
       })}
     </div>
   )}
+</div>
+
       </div>
-    </div>
-  )}
+    )}
+  </div>
 </div>
 
 {showOpportunityForm && (
