@@ -728,31 +728,38 @@ const saveOpportunity = async () => {
      ];
 
     const payload = {
-       action: opportunityForm.opportunityId ? 'update' : 'create',
+  action: opportunityForm.opportunityId ? 'update' : 'create',
 
-       opportunityId: opportunityForm.opportunityId
-         ? Number(opportunityForm.opportunityId)
-         : null,
+  opportunityId: opportunityForm.opportunityId
+    ? Number(opportunityForm.opportunityId)
+    : null,
 
-       customerId: Number(opportunityForm.customerId),
+  customerId: Number(opportunityForm.customerId),
 
-       // 保留以相容既有 SalesOpportunity.QuotationId。
-       quotationId: selectedQuotationIds[0] || null,
+  quotationId:
+    (opportunityForm.quotationIds || [])
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id > 0)[0] || null,
 
-       // 新增：後端以此欄位寫入多筆關聯表。
-       quotationIds: selectedQuotationIds,
+  quotationIds: [
+    ...new Set(
+      (opportunityForm.quotationIds || [])
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0)
+    ),
+  ],
 
-       opportunityName: opportunityForm.opportunityName.trim(),
-       stage: opportunityForm.stage,
-       customerGrade: opportunityForm.customerGrade || null,
-       estimatedAmount: Number(opportunityForm.estimatedAmount || 0),
-       expectedCloseDate: opportunityForm.expectedCloseDate || null,
-       nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
-       description: opportunityForm.description || null,
-       createdAt:
-       opportunityForm.createdAt ||
-       new Date().toISOString().slice(0, 10),
-       };
+  opportunityName: opportunityForm.opportunityName.trim(),
+  stage: opportunityForm.stage,
+  customerGrade: opportunityForm.customerGrade || null,
+  estimatedAmount: Number(opportunityForm.estimatedAmount || 0),
+  expectedCloseDate: opportunityForm.expectedCloseDate || null,
+  nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
+  description: opportunityForm.description || null,
+  createdAt:
+    opportunityForm.createdAt ||
+    new Date().toISOString().slice(0, 10),
+};
 
     await salesApiFetch('save-sales-opportunity', {
       method: 'POST',
@@ -794,38 +801,47 @@ const saveFollowUp = async () => {
   return;
   }
 
-  setFollowUpSaving(true);
+ setFollowUpSaving(true);
 
-  try {
-    await salesApiFetch('save-sales-follow-up', {
-      method: 'POST',
-      body: JSON.stringify({
-         opportunityId: Number(selectedOpportunityId),
-         followUpType: followUpForm.followUpType,
-         content: followUpForm.content.trim(),
-         nextFollowUpDate: followUpForm.nextFollowUpDate || null,
-         contactName: followUpForm.contactName || null,
-         contactMethod: followUpForm.contactMethod || null,
-         followUpDate:
-            followUpForm.followUpDate ||
-            new Date().toISOString().slice(0, 10),
-         stage: followUpForm.stage || null,
-         customerGrade: followUpForm.customerGrade || null,
-         quotationIds: selectedQuotationIds,
-       }),
-    });
+try {
+  await salesApiFetch('save-sales-follow-up', {
+    method: 'POST',
+    body: JSON.stringify({
+      opportunityId: Number(selectedOpportunityId),
+      followUpType: followUpForm.followUpType,
+      content: followUpForm.content.trim(),
+      nextFollowUpDate: followUpForm.nextFollowUpDate || null,
+      contactName: followUpForm.contactName || null,
+      contactMethod: followUpForm.contactMethod || null,
+      followUpDate:
+        followUpForm.followUpDate ||
+        new Date().toISOString().slice(0, 10),
+      stage: followUpForm.stage || null,
+      customerGrade: followUpForm.customerGrade || null,
 
-    setFollowUpForm(initialFollowUpForm);
-    await loadOpportunityDetail(selectedOpportunityId);
-    await loadOpportunities();
+      // 多選的關聯報價單
+      quotationIds: [
+        ...new Set(
+          (followUpForm.quotationIds || [])
+            .map(Number)
+            .filter((id) => Number.isInteger(id) && id > 0)
+        ),
+      ],
+    }),
+  });
 
-    alert('追蹤紀錄已儲存');
-  } catch (error) {
-    console.error('saveFollowUp error:', error);
-    alert(error.message || '儲存追蹤紀錄失敗');
-  } finally {
-    setFollowUpSaving(false);
-  }
+  setFollowUpForm(initialFollowUpForm);
+
+  await loadOpportunityDetail(selectedOpportunityId);
+  await loadOpportunities();
+
+  alert('追蹤紀錄已儲存');
+} catch (error) {
+  console.error('saveFollowUp error:', error);
+  alert(error.message || '儲存追蹤紀錄失敗');
+} finally {
+  setFollowUpSaving(false);
+}
 };
 
   const loadCustomers = async () => { try { setCustomerList(await getApiList(`${API_BASE}/get-customers`)); } catch (e) { console.error('讀取客戶失敗', e); } };
