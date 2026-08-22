@@ -706,7 +706,67 @@ const saveOpportunity = async () => {
   ) {
     alert('日期格式請使用 YYYY-MM-DD');
     return;
-  };
+  }
+
+  setOpportunitySaving(true);
+
+  try {
+    const quotationIds = [
+      ...new Set(
+        (opportunityForm.quotationIds || [])
+          .map(Number)
+          .filter((id) => Number.isInteger(id) && id > 0)
+      ),
+    ];
+
+    const payload = {
+      action: opportunityForm.opportunityId ? 'update' : 'create',
+
+      opportunityId: opportunityForm.opportunityId
+        ? Number(opportunityForm.opportunityId)
+        : null,
+
+      customerId: Number(opportunityForm.customerId),
+
+      // 相容既有 dbo.SalesOpportunity.QuotationId
+      quotationId: quotationIds[0] || null,
+
+      // 新增多張案件關聯報價單
+      quotationIds,
+
+      opportunityName: opportunityForm.opportunityName.trim(),
+      stage: opportunityForm.stage,
+      customerGrade: opportunityForm.customerGrade || null,
+      estimatedAmount: Number(opportunityForm.estimatedAmount || 0),
+      expectedCloseDate: opportunityForm.expectedCloseDate || null,
+      nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
+      description: opportunityForm.description || null,
+      createdAt:
+        opportunityForm.createdAt ||
+        new Date().toISOString().slice(0, 10),
+    };
+
+    await salesApiFetch('save-sales-opportunity', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    setShowOpportunityForm(false);
+
+    await loadOpportunities();
+
+    if (payload.opportunityId) {
+      await loadOpportunityDetail(payload.opportunityId);
+    }
+
+    alert('案件已儲存');
+  } catch (error) {
+    console.error('saveOpportunity error:', error);
+    alert(error.message || '儲存案件失敗');
+  } finally {
+    setOpportunitySaving(false);
+  }
+};
 
 const deleteOpportunity = async () => {
   const opportunityId =
@@ -766,8 +826,8 @@ const deleteFollowUp = async (followUp) => {
   }
 
   const followUpDate = toIsoDate(
-  followUp?.FollowUpDate ||
-  followUp?.followUpDate
+    followUp?.FollowUpDate ||
+    followUp?.followUpDate
   );
 
   const confirmed = window.confirm(
@@ -795,80 +855,6 @@ const deleteFollowUp = async (followUp) => {
   } catch (error) {
     console.error('deleteFollowUp error:', error);
     alert(error.message || '刪除追蹤紀錄失敗');
-  }
-};
-
-  const selectedQuotationIds = [
-    ...new Set(
-      (opportunityForm.quotationIds || [])
-        .map(Number)
-        .filter((id) => Number.isInteger(id) && id > 0)
-    ),
-  ];
-
-  setOpportunitySaving(true);
-
-  try {
-    const selectedQuotationIds = [
-       ...new Set(
-         (followUpForm.quotationIds || [])
-           .map(Number)
-           .filter((id) => Number.isInteger(id) && id > 0)
-       ),
-     ];
-
-    const payload = {
-  action: opportunityForm.opportunityId ? 'update' : 'create',
-
-  opportunityId: opportunityForm.opportunityId
-    ? Number(opportunityForm.opportunityId)
-    : null,
-
-  customerId: Number(opportunityForm.customerId),
-
-  quotationId:
-    (opportunityForm.quotationIds || [])
-      .map(Number)
-      .filter((id) => Number.isInteger(id) && id > 0)[0] || null,
-
-  quotationIds: [
-    ...new Set(
-      (opportunityForm.quotationIds || [])
-        .map(Number)
-        .filter((id) => Number.isInteger(id) && id > 0)
-    ),
-  ],
-
-  opportunityName: opportunityForm.opportunityName.trim(),
-  stage: opportunityForm.stage,
-  customerGrade: opportunityForm.customerGrade || null,
-  estimatedAmount: Number(opportunityForm.estimatedAmount || 0),
-  expectedCloseDate: opportunityForm.expectedCloseDate || null,
-  nextFollowUpDate: opportunityForm.nextFollowUpDate || null,
-  description: opportunityForm.description || null,
-  createdAt:
-    opportunityForm.createdAt ||
-    new Date().toISOString().slice(0, 10),
-};
-
-    await salesApiFetch('save-sales-opportunity', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    setShowOpportunityForm(false);
-    await loadOpportunities();
-
-    if (payload.opportunityId) {
-      await loadOpportunityDetail(payload.opportunityId);
-    }
-
-    alert('案件已儲存');
-  } catch (error) {
-    console.error('saveOpportunity error:', error);
-    alert(error.message || '儲存案件失敗');
-  } finally {
-    setOpportunitySaving(false);
   }
 };
 
