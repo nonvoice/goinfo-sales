@@ -704,9 +704,17 @@ const saveOpportunity = async () => {
     !isIsoDate(opportunityForm.expectedCloseDate) ||
     !isIsoDate(opportunityForm.nextFollowUpDate)
   ) {
-    alert('填單日、預計成交日及下次追蹤日請使用 YYYY-MM-DD 格式');
+    alert('日期格式請使用 YYYY-MM-DD');
     return;
   }
+
+  const selectedQuotationIds = [
+    ...new Set(
+      (opportunityForm.quotationIds || [])
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0)
+    ),
+  ];
 
   setOpportunitySaving(true);
 
