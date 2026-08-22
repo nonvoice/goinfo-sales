@@ -706,7 +706,7 @@ const saveOpportunity = async () => {
   ) {
     alert('日期格式請使用 YYYY-MM-DD');
     return;
-  }
+  };
 
 const deleteOpportunity = async () => {
   const opportunityId =
@@ -765,9 +765,9 @@ const deleteFollowUp = async (followUp) => {
     return;
   }
 
-  const followUpDate = dateValue(
-    followUp?.FollowUpDate ||
-    followUp?.followUpDate
+  const followUpDate = toIsoDate(
+  followUp?.FollowUpDate ||
+  followUp?.followUpDate
   );
 
   const confirmed = window.confirm(
