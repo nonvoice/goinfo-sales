@@ -1594,46 +1594,50 @@ const loadSalesUserOptions = async () => {
         {title}
       </h2>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          選擇客戶
-        </label>
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+  {/* 客戶：桌機佔 2/3 */}
+  <div className="md:col-span-2">
+    <label className="mb-2 block text-sm font-medium text-gray-700">
+      選擇客戶
+    </label>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value={
-              selectedQuoteCustomer
-                ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}`
-                : ''
-            }
-            placeholder="請點選右側按鈕選擇客戶"
-            className="flex-1 border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-700"
-          />
+    <div className="flex gap-2">
+      <input
+        type="text"
+        readOnly
+        value={
+          selectedQuoteCustomer
+            ? `${selectedQuoteCustomer.Code}－${selectedQuoteCustomer.Name}`
+            : ''
+        }
+        placeholder="請點選右側按鈕選擇客戶"
+        className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2 text-gray-700"
+      />
 
-          <button
-            type="button"
-            onClick={() => setShowCustomerPicker(true)}
-            className="px-4 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium whitespace-nowrap"
-          >
-            選擇客戶
-          </button>
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => setShowCustomerPicker(true)}
+        className="whitespace-nowrap rounded-lg border border-blue-600 px-4 text-blue-600 hover:bg-blue-50"
+      >
+        選擇客戶
+      </button>
+    </div>
+  </div>
 
-        <div className="mb-6 max-w-xs">
-           <label className="block text-sm font-medium text-gray-700 mb-2">
-              報價日期
-           </label>
+  {/* 報價日期：桌機佔 1/3 */}
+  <div>
+    <label className="mb-2 block text-sm font-medium text-gray-700">
+      報價日期
+    </label>
 
-           <input
-              type="date"
-              value={quoteDate}
-              onChange={(e) => setQuoteDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 p-2"
-           />
-        </div>
+    <input
+      type="date"
+      value={quoteDate}
+      onChange={(e) => setQuoteDate(e.target.value)}
+      className="w-full rounded-lg border border-gray-300 p-2"
+    />
+  </div>
+</div>
 
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-800">
