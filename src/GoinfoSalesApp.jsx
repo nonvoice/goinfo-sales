@@ -344,6 +344,7 @@ export default function App() {
   const [quoteItems, setQuoteItems] = useState([]);
   const [warrantyMonths, setWarrantyMonths] = useState(12);
   const [maintenanceDiscountAmount, setMaintenanceDiscountAmount] = useState('');
+  const [quoteDate, setQuoteDate] = useState(new Date().toISOString().slice(0, 10));
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [customerPickerTerm, setCustomerPickerTerm] = useState('');
   const [quoteList, setQuoteList] = useState([]);
@@ -1252,6 +1253,7 @@ const loadSalesUserOptions = async () => {
 
   const handleSubmit = async (action) => {
     if (!customerCode) return alert('請先選擇客戶');
+    if (!isIsoDate(quoteDate)) {alert('請選擇有效的報價日期'); return;}
     if (!quoteItems.length || quoteItems.some(x => !x.systemId)) return alert('請至少新增一筆完整的系統報價明細');
     if (quoteItems.some(x => !getEffectivePricingRule(x.systemId, x.itemType))) return alert('選取的系統找不到有效價格規則，請先至系統設定建立並啟用價格。');
     const customer = customerList.find(c => String(c.CustomerId) === String(customerCode));
@@ -1267,6 +1269,7 @@ const loadSalesUserOptions = async () => {
       status: action === 'CreateNewSystemQuote' ? '1' : action === 'CreateAddUserQuote' ? '2' : action === 'CreateMaintenanceQuote' ? '3' : '4',
       quoteNo,
       customerId: Number(customer.CustomerId),
+      quoteDate,
       customerCode: customer.Code,
       customerName: customer.Name || '',
       taxRate: 0.05,
@@ -1308,6 +1311,7 @@ const loadSalesUserOptions = async () => {
   });
 
   setQuoteItems([]);
+  setQuoteDate(new Date().toISOString().slice(0, 10));
   setCustomerCode('');
   alert('報價單已成功存入資料庫！');
 
@@ -1617,6 +1621,19 @@ const loadSalesUserOptions = async () => {
           </button>
         </div>
       </div>
+
+        <div className="mb-6 max-w-xs">
+           <label className="block text-sm font-medium text-gray-700 mb-2">
+              報價日期
+           </label>
+
+           <input
+              type="date"
+              value={quoteDate}
+              onChange={(e) => setQuoteDate(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 p-2"
+           />
+        </div>
 
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-800">
