@@ -1688,8 +1688,8 @@ const loadSalesUserOptions = async () => {
             key={item.id}
             className="grid min-w-[1300px] grid-cols-[1.7fr_0.9fr_0.45fr_0.75fr_0.55fr_0.8fr_1.6fr_0.65fr_0.8fr_0.4fr] gap-2 items-end bg-gray-50 p-3 rounded-lg border"
           >
-            <div className="col-span-2">
-              <label className="text-xs text-gray-500">
+            <div>
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 系統
               </label>
 
@@ -1719,8 +1719,8 @@ const loadSalesUserOptions = async () => {
               </select>
             </div>
 
-            <div className="col-span-1">
-              <label className="text-xs text-gray-500">
+            <div>
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 報價類型
               </label>
 
@@ -1737,8 +1737,8 @@ const loadSalesUserOptions = async () => {
               </select>
             </div>
 
-            <div className="col-span-1">
-              <label className="text-xs text-gray-500">
+            <div>
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 人數
               </label>
 
@@ -1753,7 +1753,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="col-span-1">
+            <div>
               <label className="block whitespace-nowrap text-xs text-gray-500">
                 牌價
               </label>
@@ -1763,7 +1763,7 @@ const loadSalesUserOptions = async () => {
               </div>
             </div>
 
-            <div className="col-span-1">
+            <div>
               <label className="block whitespace-nowrap text-xs text-gray-500">
                 折數(80=8折)
               </label>
@@ -1781,7 +1781,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="col-span-1">
+            <div>
               <label className="block whitespace-nowrap text-xs text-gray-500">
                 最終優惠(含稅)
               </label>
@@ -1798,8 +1798,8 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="col-span-2">
-              <label className="text-xs text-gray-500">扣項說明</label>
+            <div>
+              <label className="block whitespace-nowrap text-xs text-gray-500">扣項說明</label>
               <input
                 type="text"
                 className="w-full border px-2 py-1.5 rounded text-sm"
@@ -1811,8 +1811,8 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="col-span-1">
-              <label className="text-xs text-gray-500">升級折抵</label>
+            <div>
+              <label className="block whitespace-nowrap text-xs text-gray-500">升級折抵</label>
               <input
                 type="number"
                 min="0"
@@ -1826,7 +1826,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="col-span-1">
+            <div>
               <label className="block whitespace-nowrap text-xs text-gray-500">
                 折後金額（含稅）
               </label>
@@ -1839,7 +1839,7 @@ const loadSalesUserOptions = async () => {
             <button
               type="button"
               onClick={() => removeItem(item.id)}
-              className="col-span-1 text-red-500 hover:text-red-700 p-2"
+              className="p-2 text-red-500 hover:text-red-700 whitespace-nowrap"
             >
               刪除
             </button>
