@@ -4479,129 +4479,151 @@ const renderUserManagement = () => {
     <col className="w-[17%]" />
   </colgroup>
 
-  <tbody>
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap">未稅金額</td>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      NT${Number(previewQuote.quote.SubtotalAmount || 0).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+<tbody>
+  {(() => {
+    const taxIncludedSubtotal = Math.round(
+      Number(previewQuote.quote.SubtotalAmount || 0) * 1.05
+    );
 
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap">含稅金額</td>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      NT$
-      {Math.round(
-        Number(previewQuote.quote.SubtotalAmount || 0) * 1.05
-      ).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+    const discountSubtotal = previewQuote.items.reduce(
+      (sum, item) => sum + Number(item.DiscountAmount || 0),
+      0
+    );
 
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap font-bold">
-      優惠小計（含稅）
-    </td>
-    <td></td>
-    <td className="text-right whitespace-nowrap font-bold">
-      NT$
-      {Number(
-        previewQuote.items.reduce(
-          (sum, item) => sum + Number(item.DiscountAmount || 0),
-          0
-        )
-      ).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+    const finalOfferSubtotal = previewQuote.items.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.FinalAmount !== null &&
+          item.FinalAmount !== undefined
+            ? item.FinalAmount
+            : item.DiscountAmount || 0
+        ),
+      0
+    );
 
-  {previewQuote.items.some(
-    (item) => Number(item.UpgradeCreditAmount || 0) > 0
-  ) && (
-    <>
-      <tr>
-        <td></td>
-        <td className="text-right whitespace-nowrap text-red-700">
-          扣：
-          {previewQuote.items
-            .filter((item) => Number(item.UpgradeCreditAmount || 0) > 0)
-            .map(
-              (item) =>
-                item.UpgradeCreditDescription || '升級舊版折抵'
-            )
-            .join('、')}
-        </td>
-        <td></td>
-        <td className="text-right whitespace-nowrap font-semibold text-red-700">
-          -NT$
-          {previewQuote.items
-            .reduce(
-              (sum, item) =>
-                sum + Number(item.UpgradeCreditAmount || 0),
-              0
-            )
-            .toLocaleString()}
-        </td>
-        <td></td>
-      </tr>
+    const upgradeCreditTotal = previewQuote.items.reduce(
+      (sum, item) =>
+        sum + Number(item.UpgradeCreditAmount || 0),
+      0
+    );
 
-      <tr>
-        <td></td>
-        <td className="text-right whitespace-nowrap font-bold">
-          優惠後金額（含稅）
-        </td>
-        <td></td>
-        <td className="text-right whitespace-nowrap font-bold text-blue-700">
-          NT$
-          {Number(
-            previewQuote.items.reduce(
-              (sum, item) =>
-                sum +
-                Number(
-                  item.FinalAmount !== null &&
-                  item.FinalAmount !== undefined
-                    ? item.FinalAmount
-                    : item.DiscountAmount || 0
-                ),
-              0
-            )
-          ).toLocaleString()}
-        </td>
-        <td></td>
-      </tr>
-    </>
-  )}
+    /*
+      最終優惠價 = 已輸入的 FinalAmount + 升級折抵。
+      因為資料庫目前的 FinalAmount 已是「扣升級折抵後」金額。
+      例如：
+      FinalAmount = 60,000
+      UpgradeCredit = 115,000
+      最終優惠價 = 175,000
+    */
+    const finalOfferBeforeUpgradeCredit =
+      finalOfferSubtotal + upgradeCreditTotal;
 
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap font-bold">
-      合計金額（含稅）
-    </td>
-    <td></td>
-    <td className="text-right whitespace-nowrap font-bold text-blue-700">
-      NT$
-      {Number(
-        previewQuote.items.reduce(
-          (sum, item) =>
-            sum +
-            Number(
-              item.FinalAmount !== null &&
-              item.FinalAmount !== undefined
-                ? item.FinalAmount
-                : item.DiscountAmount || 0
-            ),
-          0
-        )
-      ).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+    /*
+      優惠後金額（折抵前）：
+      若有升級折抵，要顯示「優惠小計」與「最終優惠價」。
+      不含升級折抵時，只顯示優惠小計 → 最終優惠價。
+    */
+    const hasFinalOffer =
+      finalOfferBeforeUpgradeCredit !== discountSubtotal;
+
+    const hasUpgradeCredit = upgradeCreditTotal > 0;
+
+    const upgradeCreditNames = previewQuote.items
+      .filter((item) => Number(item.UpgradeCreditAmount || 0) > 0)
+      .map(
+        (item) =>
+          item.UpgradeCreditDescription || '升級舊版折抵'
+      )
+      .join('、');
+
+    return (
+      <>
+        <tr>
+          <td></td>
+          <td className="text-right whitespace-nowrap">
+            未稅金額
+          </td>
+          <td></td>
+          <td className="text-right whitespace-nowrap">
+            NT$
+            {Number(
+              previewQuote.quote.SubtotalAmount || 0
+            ).toLocaleString()}
+          </td>
+          <td></td>
+        </tr>
+
+        <tr>
+          <td></td>
+          <td className="text-right whitespace-nowrap">
+            含稅金額
+          </td>
+          <td></td>
+          <td className="text-right whitespace-nowrap">
+            NT${taxIncludedSubtotal.toLocaleString()}
+          </td>
+          <td></td>
+        </tr>
+
+        <tr>
+          <td></td>
+          <td className="text-right whitespace-nowrap font-bold">
+            優惠小計（含稅）
+          </td>
+          <td></td>
+          <td
+            className={
+              hasFinalOffer
+                ? 'text-right whitespace-nowrap text-red-600 line-through'
+                : 'text-right whitespace-nowrap font-bold'
+            }
+          >
+            NT${discountSubtotal.toLocaleString()}
+          </td>
+          <td className="whitespace-nowrap">
+            {hasFinalOffer && (
+              <span className="font-semibold text-red-600">
+                → NT${finalOfferBeforeUpgradeCredit.toLocaleString()}
+              </span>
+            )}
+          </td>
+        </tr>
+
+        {hasUpgradeCredit && (
+          <>
+            <tr>
+              <td></td>
+              <td className="text-right whitespace-nowrap text-red-700">
+                扣：{upgradeCreditNames}
+              </td>
+              <td></td>
+              <td className="text-right whitespace-nowrap font-semibold text-red-700">
+                -NT${upgradeCreditTotal.toLocaleString()}
+              </td>
+              <td></td>
+            </tr>
+
+            <tr>
+              <td></td>
+              <td className="text-right whitespace-nowrap font-bold">
+                優惠後金額（含稅）
+              </td>
+              <td className="text-right whitespace-nowrap font-bold text-red-600 line-through">
+                NT${finalOfferBeforeUpgradeCredit.toLocaleString()}
+              </td>
+              <td></td>
+              <td className="whitespace-nowrap">
+                <span className="font-semibold text-red-600">
+                  → NT${finalOfferSubtotal.toLocaleString()}
+                </span>
+              </td>
+            </tr>
+          </>
+        )}
+      </>
+    );
+  })()}
 </tbody>
 </table>
 
