@@ -1048,7 +1048,21 @@ try {
   }
 };
 
-  const addItem = (itemType='NEW_LICENSE') => setQuoteItems(p => [...p, { id:`${Date.now()}-${Math.random()}`, systemId:'', itemType, userCount:1, discountRate:100, specialPrice:'' }]);
+  const addItem = (itemType = 'NEW_LICENSE') =>
+  setQuoteItems((p) => [
+    ...p,
+    {
+      id: `${Date.now()}-${Math.random()}`,
+      systemId: '',
+      itemType,
+      userCount: 1,
+      discountRate: 100,
+      specialPrice: '',
+
+      upgradeCreditAmount: 0,
+      upgradeCreditDescription: '',
+    },
+  ]);
   const updateItem = (id, field, value) => setQuoteItems(p => p.map(x => x.id===id ? {...x,[field]:value} : x));
   const removeItem = (id) => setQuoteItems(p => p.filter(x => x.id !== id));
   const getEffectivePricingRule = (systemId, itemType) => {
@@ -1079,7 +1093,16 @@ try {
   const calculateDiscountAmount = (item) => Math.round(calculateTaxIncludedListAmount(item) * (getDiscountPercent(item) / 100));
   // FinalAmount 為含稅折後金額再行議價的最終含稅價格；未填時採用 DiscountAmount。
   const hasFinalAmount = (item) => item.specialPrice !== '' && Number.isFinite(Number(item.specialPrice)) && Number(item.specialPrice) >= 0;
-  const calculateFinalTaxIncludedAmount = (item) => hasFinalAmount(item) ? Math.round(Number(item.specialPrice)) : calculateDiscountAmount(item);
+  const getUpgradeCreditAmount = (item) => Math.max(Number(item.upgradeCreditAmount) || 0, 0);
+  const calculateFinalTaxIncludedAmount = (item) => {
+  const baseFinalAmount = hasFinalAmount(item)
+    ? Math.round(Number(item.specialPrice))
+    : calculateDiscountAmount(item);
+  return Math.max(
+    baseFinalAmount - getUpgradeCreditAmount(item),
+    0
+    );
+  };
   const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
   const getMaintenanceRule = (systemId) => {
     const today = new Date().toISOString().slice(0, 10);
@@ -1771,6 +1794,34 @@ const loadSalesUserOptions = async () => {
                 value={item.specialPrice}
                 onChange={(e) =>
                   updateItem(item.id, 'specialPrice', e.target.value)
+                }
+              />
+            </div>
+
+            <div className="lg:col-span-2">
+              <label className="text-xs text-gray-500">扣項說明</label>
+              <input
+                type="text"
+                className="w-full border p-2 rounded"
+                placeholder="例如：扣原購買單機版"
+                value={item.upgradeCreditDescription || ''}
+                onChange={(e) =>
+                  updateItem(item.id, 'upgradeCreditDescription', e.target.value)
+                }
+              />
+            </div>
+
+            <div className="lg:col-span-1">
+              <label className="text-xs text-gray-500">升級折抵</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                className="w-full border p-2 rounded text-right"
+                placeholder="0"
+                value={item.upgradeCreditAmount || ''}
+                onChange={(e) =>
+                  updateItem(item.id, 'upgradeCreditAmount', e.target.value)
                 }
               />
             </div>
@@ -4403,6 +4454,17 @@ const renderUserManagement = () => {
       >
         優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
       </span>
+
+       {Number(item.UpgradeCreditAmount || 0) > 0 && (
+           <>
+             <br />
+             <span className="text-red-700">
+               扣：{item.UpgradeCreditDescription || '升級舊版折抵'}
+               {' '}
+               -NT${Number(item.UpgradeCreditAmount).toLocaleString()}
+             </span>
+           </>
+         )}
 
       {item.FinalAmount !== null &&
         item.FinalAmount !== undefined && (
