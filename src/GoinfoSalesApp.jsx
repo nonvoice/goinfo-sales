@@ -4605,20 +4605,24 @@ const renderUserManagement = () => {
             </tr>
 
             <tr>
-              <td></td>
-              <td className="text-right whitespace-nowrap font-bold">
-                優惠後金額（含稅）
-              </td>
-              <td className="text-right whitespace-nowrap font-bold text-red-600 line-through">
-                NT${finalOfferBeforeUpgradeCredit.toLocaleString()}
-              </td>
-              <td></td>
-              <td className="whitespace-nowrap">
-                <span className="font-semibold text-red-600">
-                  → NT${finalOfferSubtotal.toLocaleString()}
-                </span>
-              </td>
-            </tr>
+               <td></td>
+
+                 <td className="text-right whitespace-nowrap font-bold">
+                   優惠後金額（含稅）
+                 </td>
+
+                 <td></td>
+
+                 <td className="text-right whitespace-nowrap font-bold text-red-600 line-through">
+                   NT${finalOfferBeforeUpgradeCredit.toLocaleString()}
+                 </td>
+
+                 <td className="whitespace-nowrap">
+                   <span className="font-semibold text-red-600">
+                     → NT${finalOfferSubtotal.toLocaleString()}
+                   </span>
+                 </td>
+               </tr>
           </>
         )}
       </>
@@ -4648,22 +4652,92 @@ const renderUserManagement = () => {
       </div>
     ))}
 
-    <h2 className="font-bold text-sm border-b-2 border-black mt-3">
-      維護說明
-    </h2>
+    <h2 className="mt-3 border-b-2 border-black text-sm font-bold">
+  維護說明
+</h2>
 
-    <ol className="list-decimal pl-5">
+<ol className="list-decimal pl-5">
+  <li>
+    軟體系統自簽約日起
+    {' '}
+    {Number(previewQuote.warrantyMonths || 0) % 12 === 0
+      ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
+      : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
+    免費提供教育訓練及維護修復。保固期滿後年度維護費為
+    {' '}
+    NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
+    （含稅）
+    {previewQuote.maintenanceDiscountAmount !== null &&
+    previewQuote.maintenanceDiscountAmount !== undefined &&
+    previewQuote.maintenanceDiscountAmount !== ''
+      ? `，優惠金額為 NT$${Number(
+          previewQuote.maintenanceDiscountAmount
+        ).toLocaleString()}（含稅）`
+      : ''}
+    。
+
+    {(() => {
+      const maintenanceItems = previewQuote.items.filter(
+        (item) =>
+          Number(item.addUserMaintenanceTaxIncluded || 0) > 0
+      );
+
+      if (maintenanceItems.length === 0) {
+        return null;
+      }
+
+      return (
+        <>
+          日後若新增授權人數，各系統每增加一使用者維護費：
+          {' '}
+          {maintenanceItems.map((item, index) => (
+            <span key={`maintenance-${item.SystemId}-${index}`}>
+              {index > 0 ? '；' : ''}
+              {item.SystemCode || item.SystemName}
+              {' '}
+              NT$
+              {Number(
+                item.addUserMaintenanceTaxIncluded || 0
+              ).toLocaleString()}
+              （含稅）
+            </span>
+          ))}
+          。
+        </>
+      );
+    })()}
+  </li>
+
+  {(() => {
+    const licenseAddUserItems = previewQuote.items.filter(
+      (item) =>
+        Number(item.licenseAddUserTaxIncluded || 0) > 0
+    );
+
+    if (licenseAddUserItems.length === 0) {
+      return null;
+    }
+
+    return (
       <li>
-        軟體系統自簽約日起
-        {previewQuote.warrantyMonths % 12 === 0
-          ? ` ${previewQuote.warrantyMonths / 12} 年`
-          : ` ${previewQuote.warrantyMonths} 個月`}
-        免費提供教育訓練及維護修復。保固期滿後年度維護費為 NT$
-        {previewQuote.maintenanceTotal.toLocaleString()}（含稅）。
+        網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
+        {' '}
+        {licenseAddUserItems.map((item, index) => (
+          <span key={`license-${item.SystemId}-${index}`}>
+            {index > 0 ? '；' : ''}
+            {item.SystemCode || item.SystemName}
+            {' '}
+            NT$
+            {Number(
+              item.licenseAddUserTaxIncluded || 0
+            ).toLocaleString()}
+          </span>
+        ))}
+        。
       </li>
-    </ol>
-  </section>
-)}
+    );
+  })()}
+</ol>
 
 <table className="mt-3 w-full">
   <tbody>
