@@ -1686,7 +1686,7 @@ const loadSalesUserOptions = async () => {
         {quoteItems.map((item) => (
           <div
             key={item.id}
-            className="grid min-w-[1300px] grid-cols-[1.7fr_0.9fr_0.45fr_0.75fr_0.55fr_0.8fr_1.6fr_0.65fr_0.8fr_0.4fr] gap-2 items-end bg-gray-50 p-3 rounded-lg border"
+            className="grid min-w-[1230px] grid-cols-[1.7fr_0.9fr_0.45fr_0.75fr_0.55fr_0.8fr_1.6fr_0.65fr_0.8fr_0.4fr] gap-2 items-end bg-gray-50 p-3 rounded-lg border"
           >
             <div>
               <label className="block whitespace-nowrap text-xs text-gray-500">
@@ -1758,7 +1758,7 @@ const loadSalesUserOptions = async () => {
                 牌價
               </label>
 
-              <div className="border bg-white p-2 rounded text-right">
+              <div className="w-full border px-2 py-1.5 rounded text-right text-sm">
                 ${calculateListAmount(item).toLocaleString()}
               </div>
             </div>
