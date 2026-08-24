@@ -4739,6 +4739,7 @@ const renderUserManagement = () => {
   })()}
 </ol>
 </section>
+)}
 
 <table className="mt-3 w-full">
   <tbody>
