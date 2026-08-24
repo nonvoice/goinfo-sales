@@ -1686,7 +1686,7 @@ const loadSalesUserOptions = async () => {
         {quoteItems.map((item) => (
           <div
             key={item.id}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end bg-gray-50 p-4 rounded-lg border"
+            className="grid grid-cols-1 lg:grid-cols-20 gap-2 items-end bg-gray-50 p-3 rounded-lg border"
           >
             <div className="lg:col-span-3">
               <label className="text-xs text-gray-500">
@@ -1764,7 +1764,7 @@ const loadSalesUserOptions = async () => {
             </div>
 
             <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 折數（80＝8折）
               </label>
 
@@ -1781,8 +1781,8 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-1">
-              <label className="text-xs text-gray-500">
+            <div className="lg:col-span-2">
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 最終優惠價（含稅）
               </label>
 
@@ -1798,7 +1798,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <label className="text-xs text-gray-500">扣項說明</label>
               <input
                 type="text"
@@ -1811,7 +1811,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <label className="text-xs text-gray-500">升級折抵</label>
               <input
                 type="number"
@@ -1826,7 +1826,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <label className="text-xs text-gray-500">
                 折後金額（含稅）
               </label>
