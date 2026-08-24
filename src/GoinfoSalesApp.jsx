@@ -4517,8 +4517,64 @@ const renderUserManagement = () => {
     <tr>
       <td></td>
       <td className="text-right whitespace-nowrap font-bold">
-        優惠金額（含稅）
+        優惠小計（含稅）
       </td>
+      {previewQuote.items.some(
+        (item) => Number(item.UpgradeCreditAmount || 0) > 0
+      ) && (
+        <>
+          <tr>
+            <td></td>
+            <td className="text-right whitespace-nowrap text-red-700">
+              扣：
+              {previewQuote.items
+                .filter((item) => Number(item.UpgradeCreditAmount || 0) > 0)
+                .map(
+                  (item) =>
+                    item.UpgradeCreditDescription || '升級舊版折抵'
+                )
+                .join('、')}
+            </td>
+            <td></td>
+            <td className="text-right whitespace-nowrap font-semibold text-red-700">
+              -NT$
+              {previewQuote.items
+                .reduce(
+                  (sum, item) =>
+                    sum + Number(item.UpgradeCreditAmount || 0),
+                  0
+                )
+                .toLocaleString()}
+            </td>
+            <td></td>
+          </tr>
+
+          <tr>
+            <td></td>
+            <td className="text-right whitespace-nowrap font-bold">
+              優惠後金額（含稅）
+            </td>
+            <td></td>
+            <td className="text-right whitespace-nowrap font-bold text-blue-700">
+              NT$
+              {Number(
+                previewQuote.items.reduce(
+                  (sum, item) =>
+                    sum +
+                    Number(
+                      item.FinalAmount !== null &&
+                      item.FinalAmount !== undefined
+                        ? item.FinalAmount
+                        : item.DiscountAmount || 0
+                    ),
+                  0
+                )
+              ).toLocaleString()}
+            </td>
+            <td></td>
+          </tr>
+        </>
+      )}
       <td></td>
       <td className="text-right whitespace-nowrap font-bold">
         NT$
