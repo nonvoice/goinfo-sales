@@ -4605,24 +4605,24 @@ const renderUserManagement = () => {
             </tr>
 
             <tr>
-               <td></td>
+              <td></td>
 
-                 <td className="text-right whitespace-nowrap font-bold">
-                   優惠後金額（含稅）
-                 </td>
+              <td className="text-right whitespace-nowrap font-bold">
+                優惠後金額（含稅）
+              </td>
 
-                 <td></td>
+              <td></td>
 
-                 <td className="text-right whitespace-nowrap font-bold text-red-600 line-through">
-                   NT${finalOfferBeforeUpgradeCredit.toLocaleString()}
-                 </td>
+              <td className="text-right whitespace-nowrap font-bold text-red-600 line-through">
+                NT${(discountSubtotal - upgradeCreditTotal).toLocaleString()}
+              </td>
 
-                 <td className="whitespace-nowrap">
-                   <span className="font-semibold text-red-600">
-                     → NT${finalOfferSubtotal.toLocaleString()}
-                   </span>
-                 </td>
-               </tr>
+              <td className="whitespace-nowrap">
+                <span className="font-semibold text-red-600">
+                  → NT${finalOfferSubtotal.toLocaleString()}
+                </span>
+              </td>
+            </tr>
           </>
         )}
       </>
