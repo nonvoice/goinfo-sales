@@ -1676,7 +1676,7 @@ const loadSalesUserOptions = async () => {
         </button>
       </div>
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-4 mb-6 overflow-x-auto pb-2">
         {quoteItems.length === 0 && (
           <div className="text-center text-gray-400 py-4 border-2 border-dashed rounded-lg">
             尚無項目
@@ -1686,15 +1686,15 @@ const loadSalesUserOptions = async () => {
         {quoteItems.map((item) => (
           <div
             key={item.id}
-            className="grid grid-cols-1 lg:grid-cols-20 gap-2 items-end bg-gray-50 p-3 rounded-lg border"
+            className="grid min-w-[1350px] grid-cols-12 gap-2 items-end bg-gray-50 p-3 rounded-lg border"
           >
-            <div className="lg:col-span-3">
+            <div className="col-span-2">
               <label className="text-xs text-gray-500">
                 系統
               </label>
 
               <select
-                className="w-full border p-2 rounded"
+                className="w-full border px-2 py-1.5 rounded text-sm"
                 value={item.systemId}
                 onChange={(e) =>
                   updateItem(item.id, 'systemId', e.target.value)
@@ -1719,13 +1719,13 @@ const loadSalesUserOptions = async () => {
               </select>
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="col-span-1">
               <label className="text-xs text-gray-500">
                 報價類型
               </label>
 
               <select
-                className="w-full border p-2 rounded"
+                className="w-full border px-2 py-1.5 rounded text-sm"
                 value={item.itemType}
                 onChange={(e) =>
                   updateItem(item.id, 'itemType', e.target.value)
@@ -1737,7 +1737,7 @@ const loadSalesUserOptions = async () => {
               </select>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="col-span-1">
               <label className="text-xs text-gray-500">
                 人數
               </label>
@@ -1745,7 +1745,7 @@ const loadSalesUserOptions = async () => {
               <input
                 type="number"
                 min="1"
-                className="w-full border p-2 rounded text-right"
+                className="w-full border px-2 py-1.5 rounded text-right text-sm"
                 value={item.userCount}
                 onChange={(e) =>
                   updateItem(item.id, 'userCount', e.target.value)
@@ -1753,7 +1753,7 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="col-span-1">
               <label className="text-xs text-gray-500">
                 牌價
               </label>
@@ -1763,9 +1763,9 @@ const loadSalesUserOptions = async () => {
               </div>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="col-span-1">
               <label className="block whitespace-nowrap text-xs text-gray-500">
-                折數（80＝8折）
+                折數(80=8折)
               </label>
 
               <input
@@ -1773,7 +1773,7 @@ const loadSalesUserOptions = async () => {
                 min="0"
                 max="100"
                 step="1"
-                className="w-full border p-2 rounded text-right"
+                className="w-full border px-2 py-1.5 rounded text-right text-sm"
                 value={item.discountRate}
                 onChange={(e) =>
                   updateItem(item.id, 'discountRate', e.target.value)
@@ -1781,16 +1781,16 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="col-span-1">
               <label className="block whitespace-nowrap text-xs text-gray-500">
-                最終優惠價（含稅）
+                最終優惠(含稅)
               </label>
 
               <input
                 type="number"
                 min="0"
                 placeholder="選填"
-                className="w-full border p-2 rounded text-right"
+                className="w-full border px-2 py-1.5 rounded text-right text-sm"
                 value={item.specialPrice}
                 onChange={(e) =>
                   updateItem(item.id, 'specialPrice', e.target.value)
@@ -1798,11 +1798,11 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-3">
+            <div className="col-span-2">
               <label className="text-xs text-gray-500">扣項說明</label>
               <input
                 type="text"
-                className="w-full border p-2 rounded"
+                className="w-full border px-2 py-1.5 rounded text-sm"
                 placeholder="例如：扣原購買單機版"
                 value={item.upgradeCreditDescription || ''}
                 onChange={(e) =>
@@ -1811,13 +1811,13 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="col-span-1">
               <label className="text-xs text-gray-500">升級折抵</label>
               <input
                 type="number"
                 min="0"
                 step="1"
-                className="w-full border p-2 rounded text-right"
+                className="w-full border px-2 py-1.5 rounded text-right text-sm"
                 placeholder="0"
                 value={item.upgradeCreditAmount || ''}
                 onChange={(e) =>
@@ -1826,8 +1826,8 @@ const loadSalesUserOptions = async () => {
               />
             </div>
 
-            <div className="lg:col-span-2">
-              <label className="text-xs text-gray-500">
+            <div className="col-span-1">
+              <label className="block whitespace-nowrap text-xs text-gray-500">
                 折後金額（含稅）
               </label>
 
@@ -1839,7 +1839,7 @@ const loadSalesUserOptions = async () => {
             <button
               type="button"
               onClick={() => removeItem(item.id)}
-              className="lg:col-span-1 text-red-500 hover:text-red-700 p-2"
+              className="col-span-1 text-red-500 hover:text-red-700 p-2"
             >
               刪除
             </button>
