@@ -4655,135 +4655,138 @@ const renderUserManagement = () => {
          line-height: 1.25;
 
        /* 列印時：A4 內上下左右置中 */
-       @media print {
-         @page {
-           size: A4 portrait;
-           margin: 0;
-         }
-
-         html,
-         body {
-           width: 210mm !important;
-           height: 297mm !important;
-           margin: 0 !important;
-           padding: 0 !important;
-           overflow: hidden !important;
-           background: #fff !important;
-
-           -webkit-print-color-adjust: exact !important;
-           print-color-adjust: exact !important;
-         }
-
-         /*
-           先隱藏整個網頁；
-           再只顯示報價單紙張本體 quote-sheet。
-         */
-         body > * {
-           visibility: hidden !important;
-         }
-
-         .quote-sheet,
-         .quote-sheet * {
-           visibility: visible !important;
-         }
-
-         /*
-           不列印外層彈窗 quote-print：
-           它原本含有 overflow-y-auto、最大高度與操作按鈕，
-           這就是出現捲軸與多頁的主因。
-         */
-         .quote-print {
-           position: static !important;
-           display: block !important;
-
-           width: auto !important;
-           min-width: 0 !important;
-           max-width: none !important;
-
-           height: auto !important;
-           min-height: 0 !important;
-           max-height: none !important;
-
-           margin: 0 !important;
-           padding: 0 !important;
-           overflow: visible !important;
-
-           background: transparent !important;
-           box-shadow: none !important;
-         }
-
-         /*
-           列印真正的 A4 報價單內容。
-           210 × 297mm，四邊各留 5mm，
-           也就是報價單外框為 200 × 287mm。
-         */
-         .quote-sheet {
-           position: fixed !important;
-           top: 5mm !important;
-           left: 5mm !important;
-
-           width: 200mm !important;
-           min-width: 200mm !important;
-           max-width: 200mm !important;
-
-           height: 287mm !important;
-           min-height: 287mm !important;
-           max-height: 287mm !important;
-
-           margin: 0 !important;
-           padding: 5mm !important;
-           overflow: hidden !important;
-           box-sizing: border-box !important;
-
-           display: flex !important;
-           flex-direction: column !important;
-
-           border: 1px solid #111 !important;
-           background: #fff !important;
-           box-shadow: none !important;
-         }
-
-         /* 列印時明確移除所有操作介面 */
-         .no-print,
-         button,
-         .quote-print + * {
-           display: none !important;
-         }
-
-         /* 表格格線 */
-         .quote-sheet table {
-           width: 100% !important;
-           border-collapse: collapse !important;
-           border-spacing: 0 !important;
-         }
-
-         .quote-sheet table:not(.noborder),
-         .quote-sheet table:not(.noborder) th,
-         .quote-sheet table:not(.noborder) td {
-           border: 1px solid #111 !important;
-         }
-
-         .quote-sheet table:not(.noborder) th,
-         .quote-sheet table:not(.noborder) td {
-           padding: 4px !important;
-           vertical-align: middle !important;
-         }
-
-         /* 公司地址資訊表原本就是無框 */
-         .quote-sheet .noborder,
-         .quote-sheet .noborder th,
-         .quote-sheet .noborder td {
-           border: 0 !important;
-         }
-
-         .quote-sheet table,
-         .quote-sheet tr,
-         .quote-sheet td,
-         .quote-sheet th {
-           break-inside: avoid !important;
-           page-break-inside: avoid !important;
-         }
+       
+     @media print {
+       @page {
+         size: A4 portrait;
+         margin: 0;
        }
+
+       html,
+       body {
+         width: 210mm !important;
+         height: 297mm !important;
+         margin: 0 !important;
+         padding: 0 !important;
+         overflow: hidden !important;
+         background: #fff !important;
+
+         -webkit-print-color-adjust: exact !important;
+         print-color-adjust: exact !important;
+       }
+
+       /*
+         先讓整個 React 頁面不佔任何列印版面。
+         使用 display:none，不用 visibility:hidden，
+         才不會保留外層彈窗、捲軸或按鈕的空間。
+       */
+       #root > * {
+         display: none !important;
+       }
+
+       /*
+         showQuotePreview 產生的彈窗是 root 最後一個子節點，
+         指定最後一個子節點重新顯示。
+       */
+       #root > *:last-child {
+         display: flex !important;
+         position: fixed !important;
+         inset: 0 !important;
+
+         width: 210mm !important;
+         height: 297mm !important;
+         margin: 0 !important;
+         padding: 0 !important;
+
+         overflow: hidden !important;
+         background: #fff !important;
+       }
+
+       /*
+         外層黑色遮罩與可捲動預覽容器，列印時全部取消。
+       */
+       #root > *:last-child > div {
+         display: block !important;
+         position: static !important;
+
+         width: auto !important;
+         max-width: none !important;
+         height: auto !important;
+         max-height: none !important;
+
+         margin: 0 !important;
+         padding: 0 !important;
+         overflow: visible !important;
+
+         background: transparent !important;
+         box-shadow: none !important;
+       }
+
+       /*
+         只有真正的報價紙張保留。
+       */
+       .quote-sheet {
+         display: flex !important;
+         flex-direction: column !important;
+
+         position: fixed !important;
+         top: 5mm !important;
+         left: 5mm !important;
+
+         width: 200mm !important;
+         min-width: 200mm !important;
+         max-width: 200mm !important;
+
+         height: 287mm !important;
+         min-height: 287mm !important;
+         max-height: 287mm !important;
+
+         margin: 0 !important;
+         padding: 5mm !important;
+         box-sizing: border-box !important;
+         overflow: hidden !important;
+
+         border: 1px solid #111 !important;
+         background: #fff !important;
+         box-shadow: none !important;
+       }
+
+       /*
+         明確移除預覽互動元件。
+       */
+       .no-print,
+       .quote-sheet button,
+       button {
+         display: none !important;
+       }
+
+       /*
+         表格格線維持。
+       */
+       .quote-sheet table {
+         width: 100% !important;
+         border-collapse: collapse !important;
+         border-spacing: 0 !important;
+       }
+
+       .quote-sheet table:not(.noborder),
+       .quote-sheet table:not(.noborder) th,
+       .quote-sheet table:not(.noborder) td {
+         border: 1px solid #111 !important;
+       }
+
+       .quote-sheet table:not(.noborder) th,
+       .quote-sheet table:not(.noborder) td {
+         padding: 4px !important;
+         vertical-align: middle !important;
+       }
+
+       .quote-sheet .noborder,
+       .quote-sheet .noborder th,
+       .quote-sheet .noborder td {
+         border: 0 !important;
+       }
+     }
       `}</style>
 
       <div className="quote-sheet">
