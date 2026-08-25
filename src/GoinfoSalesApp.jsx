@@ -1172,14 +1172,32 @@ const calculateFinalTaxIncludedAmount = (item) =>
     0
   );
 
-  const taxIncludedAmount = quoteItems.reduce(
-    (sum, item) => sum + calculateFinalTaxIncludedAmount(item),
-    0
+  const discountTaxIncludedAmount = quoteItems.reduce(
+  (sum, item) => sum + calculateDiscountTaxIncludedAmount(item),
+  0
   );
 
-  const taxExcludedAmount = Math.round(taxIncludedAmount / 1.05);
+ const afterUpgradeCreditTaxIncludedAmount = quoteItems.reduce(
+  (sum, item) =>
+    sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
+  0
+ );
 
-  const taxAmount = taxIncludedAmount - taxExcludedAmount;
+const finalOfferTaxIncludedAmount = quoteItems.reduce(
+  (sum, item) => sum + calculateFinalTaxIncludedAmount(item),
+  0
+ );
+
+/*
+  報價表頭的優惠總計、未稅與營業稅：
+  以「折數後優惠總計」為準，不受 final price 影響。
+*/
+const taxExcludedAmount = Math.round(
+  discountTaxIncludedAmount / 1.05
+);
+
+const taxAmount =
+  discountTaxIncludedAmount - taxExcludedAmount;
 
   const annualMaintenanceAmount = quoteItems.reduce((sum, item) => {
     const rule = getMaintenanceRule(item.systemId);
@@ -1201,14 +1219,13 @@ const calculateFinalTaxIncludedAmount = (item) =>
     listAmount,
     taxIncludedListAmount,
     discountAmount,
+    discountTaxIncludedAmount,
+    afterUpgradeCreditTaxIncludedAmount,
+    finalOfferTaxIncludedAmount,
     taxExcludedAmount,
     taxAmount,
-    taxIncludedAmount,
     annualMaintenanceAmount,
-
-    discountTaxIncludedAmount: discountAmount,
     hasManualFinalPrice: quoteItems.some(hasFinalAmount),
-    finalOfferTaxIncludedAmount: taxIncludedAmount,
   };
 }, [quoteItems, pricingRuleList]);
   const loadQuotes = async () => {
@@ -1348,10 +1365,13 @@ const loadSalesUserOptions = async () => {
       maintenanceDiscountAmount: maintenanceDiscountAmount === '' ? null : Number(maintenanceDiscountAmount),
       listAmount: quoteSummary.listAmount,
       discountAmount: quoteSummary.discountTaxIncludedAmount,
+      /* 報價表頭的優惠總計相關金額 */
       taxExcludedAmount: quoteSummary.taxExcludedAmount,
       taxAmount: quoteSummary.taxAmount,
-      taxIncludedAmount: quoteSummary.finalOfferTaxIncludedAmount,
-      totalAmount: quoteSummary.finalOfferTaxIncludedAmount,
+      taxIncludedAmount: quoteSummary.discountTaxIncludedAmount,
+      totalAmount: quoteSummary.discountTaxIncludedAmount,
+      /* 最終成交優惠價另外存入 FinalAmount */
+      finalAmount: quoteSummary.finalOfferTaxIncludedAmount,     
       hasManualFinalPrice: quoteSummary.hasManualFinalPrice,
       items: quoteItems.map((x, index) => {
         const rule = getEffectivePricingRule(x.systemId, x.itemType);
