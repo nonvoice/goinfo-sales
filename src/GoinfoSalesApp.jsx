@@ -1163,74 +1163,71 @@ const calculateFinalTaxIncludedAmount = (item) =>
   );
 
   const taxIncludedListAmount = quoteItems.reduce(
-    (sum, item) => sum + calculateTaxIncludedListAmount(item),
-    0
-  );
-
-  const discountAmount = quoteItems.reduce(
-    (sum, item) => sum + calculateDiscountTaxIncludedAmount(item),
+    (sum, item) =>
+      sum + calculateTaxIncludedListAmount(item),
     0
   );
 
   const discountTaxIncludedAmount = quoteItems.reduce(
-  (sum, item) => sum + calculateDiscountTaxIncludedAmount(item),
-  0
+    (sum, item) =>
+      sum + calculateDiscountTaxIncludedAmount(item),
+    0
   );
 
- const afterUpgradeCreditTaxIncludedAmount = quoteItems.reduce(
-  (sum, item) =>
-    sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
-  0
- );
+  const afterUpgradeCreditTaxIncludedAmount = quoteItems.reduce(
+    (sum, item) =>
+      sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
+    0
+  );
 
-const finalOfferTaxIncludedAmount = quoteItems.reduce(
-  (sum, item) => sum + calculateFinalTaxIncludedAmount(item),
-  0
- );
+  const finalOfferTaxIncludedAmount = quoteItems.reduce(
+    (sum, item) =>
+      sum + calculateFinalTaxIncludedAmount(item),
+    0
+  );
 
-/*
-  報價表頭的優惠總計、未稅與營業稅：
-  以「折數後優惠總計」為準，不受 final price 影響。
-*/
-const taxExcludedAmount = Math.round(
-  discountTaxIncludedAmount / 1.05
-);
+  const taxExcludedAmount = Math.round(
+    discountTaxIncludedAmount / 1.05
+  );
 
-const taxAmount =
-  discountTaxIncludedAmount - taxExcludedAmount;
+  const taxAmount =
+    discountTaxIncludedAmount - taxExcludedAmount;
 
-  const annualMaintenanceAmount = quoteItems.reduce((sum, item) => {
-    const rule = getMaintenanceRule(item.systemId);
-    const users = Math.max(Number(item.userCount) || 0, 0);
+  const annualMaintenanceAmount = quoteItems.reduce(
+    (sum, item) => {
+      const rule = getMaintenanceRule(item.systemId);
+      const users = Math.max(Number(item.userCount) || 0, 0);
 
-    if (!rule || !users) {
-      return sum;
-    }
+      if (!rule || !users) {
+        return sum;
+      }
 
-    return (
-      sum +
-      Number(rule.FirstUserPrice || 0) +
-      Math.max(users - 1, 0) *
-        Number(rule.AdditionalUserPrice || 0)
-    );
-  }, 0);
+      return (
+        sum +
+        Number(rule.FirstUserPrice || 0) +
+        Math.max(users - 1, 0) *
+          Number(rule.AdditionalUserPrice || 0)
+      );
+    },
+    0
+  );
 
   return {
     listAmount,
     taxIncludedListAmount,
-    discountAmount,
+
+    discountAmount: discountTaxIncludedAmount,
     discountTaxIncludedAmount,
     afterUpgradeCreditTaxIncludedAmount,
     finalOfferTaxIncludedAmount,
+
     taxExcludedAmount,
     taxAmount,
+
     annualMaintenanceAmount,
     hasManualFinalPrice: quoteItems.some(hasFinalAmount),
   };
 }, [quoteItems, pricingRuleList]);
-  const loadQuotes = async () => {
-
-  setQuoteListLoading(true);
 
   try {
     const params = new URLSearchParams();
@@ -1386,8 +1383,18 @@ const loadSalesUserOptions = async () => {
           discount: Number(x.discountRate) || 100,
           discountRate: Number(x.discountRate) || 100,
           discountAmount: calculateDiscountTaxIncludedAmount(x),
-          specialPrice: x.specialPrice === '' ? null : Number(x.specialPrice),
-          finalAmount: hasFinalAmount(x) ? calculateFinalTaxIncludedAmount(x) : null,
+
+          specialPrice: hasFinalAmount(x)
+            ? Number(x.specialPrice)
+            : null,
+
+          finalAmount: hasFinalAmount(x)
+            ? calculateFinalTaxIncludedAmount(x)
+            : null,
+
+          upgradeCreditAmount: Number(x.upgradeCreditAmount) || 0,
+          upgradeCreditDescription: x.upgradeCreditDescription || '',
+
           taxExcludedAmount: calculateLineAmount(x),
           lineAmount: calculateListAmount(x),
           sortOrder: index + 1
@@ -4941,7 +4948,7 @@ const renderUserManagement = () => {
 
             <div className="overflow-y-auto flex-1">
               {pickerCustomers.length > 0 ? (
-                pickerconst hasFinalAmount = (item) =>Customers.map((customer) => (
+                pickerCustomers.map((customer) => (
                   <button
                     type="button"
                     key={customer.CustomerId || customer.Code}
