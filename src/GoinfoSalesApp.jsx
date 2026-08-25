@@ -1367,6 +1367,336 @@ const previewQuoteById = async (quotationId) => {
   }
 };
 
+const printQuoteSheet = () => {
+  const sheet = document.querySelector('.quote-sheet');
+
+  if (!sheet) {
+    alert('找不到報價單內容，請先重新開啟報價預覽後再列印。');
+    return;
+  }
+
+  const printWindow = window.open(
+    '',
+    '_blank',
+    'width=900,height=900'
+  );
+
+  if (!printWindow) {
+    alert('瀏覽器已封鎖列印視窗，請允許本站開啟彈出式視窗後再試一次。');
+    return;
+  }
+
+  const sheetHtml = sheet.outerHTML;
+
+  printWindow.document.open();
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="zh-Hant">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>軟體買賣報價單</title>
+
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 5mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #000000;
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          .quote-sheet {
+            width: 200mm;
+            min-height: 287mm;
+            margin: 0 auto;
+            padding: 5mm;
+            box-sizing: border-box;
+
+            border: 1px solid #111;
+            background: #fff;
+
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
+
+            display: flex;
+            flex-direction: column;
+          }
+
+          .quote-sheet table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+          }
+
+          .quote-sheet table:not(.noborder),
+          .quote-sheet table:not(.noborder) th,
+          .quote-sheet table:not(.noborder) td {
+            border: 1px solid #111;
+          }
+
+          .quote-sheet table:not(.noborder) th,
+          .quote-sheet table:not(.noborder) td {
+            padding: 4px;
+            vertical-align: middle;
+          }
+
+          .quote-sheet .noborder,
+          .quote-sheet .noborder th,
+          .quote-sheet .noborder td {
+            border: 0;
+            padding: 1px;
+          }
+
+          .quote-sheet .compact {
+            font-size: 10px;
+            line-height: 1.25;
+          }
+
+          .quote-sheet .mt-auto {
+            margin-top: auto;
+          }
+
+          .quote-sheet .text-center {
+            text-align: center;
+          }
+
+          .quote-sheet .text-right {
+            text-align: right;
+          }
+
+          .quote-sheet .font-bold {
+            font-weight: 700;
+          }
+
+          .quote-sheet .font-semibold {
+            font-weight: 600;
+          }
+
+          .quote-sheet .block {
+            display: block;
+          }
+
+          .quote-sheet .flex {
+            display: flex;
+          }
+
+          .quote-sheet .items-center {
+            align-items: center;
+          }
+
+          .quote-sheet .justify-center {
+            justify-content: center;
+          }
+
+          .quote-sheet .gap-3 {
+            gap: 0.75rem;
+          }
+
+          .quote-sheet .mt-1 {
+            margin-top: 0.25rem;
+          }
+
+          .quote-sheet .mt-2 {
+            margin-top: 0.5rem;
+          }
+
+          .quote-sheet .mt-3 {
+            margin-top: 0.75rem;
+          }
+
+          .quote-sheet .mb-2 {
+            margin-bottom: 0.5rem;
+          }
+
+          .quote-sheet .pb-2 {
+            padding-bottom: 0.5rem;
+          }
+
+          .quote-sheet .pt-1 {
+            padding-top: 0.25rem;
+          }
+
+          .quote-sheet .p-0 {
+            padding: 0;
+          }
+
+          .quote-sheet .border-b-2 {
+            border-bottom: 2px solid #111;
+          }
+
+          .quote-sheet .border-t {
+            border-top: 1px solid #111;
+          }
+
+          .quote-sheet .border-black {
+            border-color: #111;
+          }
+
+          .quote-sheet .h-10 {
+            height: 2.5rem;
+          }
+
+          .quote-sheet .h-7 {
+            height: 1.75rem;
+          }
+
+          .quote-sheet .h-28 {
+            height: 7rem;
+          }
+
+          .quote-sheet .h-32 {
+            height: 8rem;
+          }
+
+          .quote-sheet .h-full {
+            height: 100%;
+          }
+
+          .quote-sheet .w-full {
+            width: 100%;
+          }
+
+          .quote-sheet .w-16 {
+            width: 4rem;
+          }
+
+          .quote-sheet .w-\\[34\\%\\] {
+            width: 34%;
+          }
+
+          .quote-sheet .w-\\[30\\%\\] {
+            width: 30%;
+          }
+
+          .quote-sheet .w-\\[36\\%\\] {
+            width: 36%;
+          }
+
+          .quote-sheet .w-\\[47\\%\\] {
+            width: 47%;
+          }
+
+          .quote-sheet .w-\\[16\\%\\] {
+            width: 16%;
+          }
+
+          .quote-sheet .w-\\[7\\%\\] {
+            width: 7%;
+          }
+
+          .quote-sheet .w-\\[13\\%\\] {
+            width: 13%;
+          }
+
+          .quote-sheet .w-\\[17\\%\\] {
+            width: 17%;
+          }
+
+          .quote-sheet .object-contain {
+            object-fit: contain;
+          }
+
+          .quote-sheet .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+          }
+
+          .quote-sheet .whitespace-nowrap {
+            white-space: nowrap;
+          }
+
+          .quote-sheet .whitespace-pre-wrap {
+            white-space: pre-wrap;
+          }
+
+          .quote-sheet .list-decimal {
+            list-style-type: decimal;
+          }
+
+          .quote-sheet .pl-5 {
+            padding-left: 1.25rem;
+          }
+
+          .quote-sheet .text-xl {
+            font-size: 1.25rem;
+          }
+
+          .quote-sheet .text-sm {
+            font-size: 0.875rem;
+          }
+
+          .quote-sheet .text-red-600 {
+            color: #dc2626;
+          }
+
+          .quote-sheet .line-through {
+            text-decoration: line-through;
+          }
+
+          .quote-sheet .bg-gray-100 {
+            background: #f3f4f6;
+          }
+
+          .quote-sheet img {
+            max-width: 100%;
+          }
+
+          .quote-sheet .no-print,
+          .quote-sheet button {
+            display: none !important;
+          }
+
+          @media print {
+            html,
+            body {
+              width: 210mm;
+              height: 297mm;
+              overflow: hidden;
+            }
+
+            .quote-sheet {
+              width: 200mm;
+              min-height: 287mm;
+              margin: 0 auto;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        ${sheetHtml}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  const startPrint = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  printWindow.onload = startPrint;
+
+  setTimeout(startPrint, 700);
+};
+
   const voidQuote = async (quote) => {
     if (!window.confirm(`確定要作廢報價單「${quote.QuotationNo}」嗎？作廢後可保留歷史紀錄，但不能再使用。`)) return;
     try {
@@ -4652,141 +4982,8 @@ const renderUserManagement = () => {
 
        .quote-sheet .compact {
          font-size: 10px;
-         line-height: 1.25;
-
-       /* 列印時：A4 內上下左右置中 */
-       
-     @media print {
-       @page {
-         size: A4 portrait;
-         margin: 5mm;
-       }
-
-       html,
-       body {
-         margin: 0 !important;
-         padding: 0 !important;
-         background: #fff !important;
-
-         -webkit-print-color-adjust: exact !important;
-         print-color-adjust: exact !important;
-       }
-
-       /*
-         所有正常頁面內容隱藏。
-         注意：使用 visibility，而不是 display:none，
-         才不會連同 quote-print 一起被父層隱藏。
-       */
-       body * {
-         visibility: hidden !important;
-       }
-
-       /*
-         僅恢復報價彈窗與真正報價單內容。
-       */
-       .quote-print,
-       .quote-print * {
-         visibility: visible !important;
-       }
-
-       /*
-         列印時取消預覽視窗的滾動、陰影、最大尺寸限制。
-         讓它不再把 max-h-[94vh] 與 overflow-y-auto 當作列印內容。
-       */
-       .quote-print {
-         position: static !important;
-         display: block !important;
-
-         width: 100% !important;
-         max-width: none !important;
-
-         height: auto !important;
-         min-height: 0 !important;
-         max-height: none !important;
-
-         margin: 0 !important;
-         padding: 0 !important;
-         overflow: visible !important;
-
-         background: #fff !important;
-         box-shadow: none !important;
-       }
-
-       /*
-         報價紙張：不強制固定 287mm 高，
-         避免內容被裁掉；只固定可列印寬度並水平置中。
-       */
-       .quote-sheet {
-         position: static !important;
-
-         display: flex !important;
-         flex-direction: column !important;
-
-         width: 200mm !important;
-         min-width: 0 !important;
-         max-width: 200mm !important;
-
-         height: auto !important;
-         min-height: 0 !important;
-         max-height: none !important;
-
-         margin: 0 auto !important;
-         padding: 5mm !important;
-         box-sizing: border-box !important;
-         overflow: visible !important;
-
-         border: 1px solid #111 !important;
-         background: #fff !important;
-         box-shadow: none !important;
-       }
-
-       /*
-         報價預覽介面：不列印。
-         同時避免前面 .quote-print * visibility: visible
-         將 no-print 元素重新顯示。
-       */
-       .no-print,
-       .no-print *,
-       button,
-       button * {
-         display: none !important;
-         visibility: hidden !important;
-       }
-
-       /* 列印表格格線 */
-       .quote-sheet table {
-         width: 100% !important;
-         border-collapse: collapse !important;
-         border-spacing: 0 !important;
-       }
-
-       .quote-sheet table:not(.noborder),
-       .quote-sheet table:not(.noborder) th,
-       .quote-sheet table:not(.noborder) td {
-         border: 1px solid #111 !important;
-       }
-
-       .quote-sheet table:not(.noborder) th,
-       .quote-sheet table:not(.noborder) td {
-         padding: 4px !important;
-         vertical-align: middle !important;
-       }
-
-       /* 最上方公司地址表不需格線 */
-       .quote-sheet .noborder,
-       .quote-sheet .noborder th,
-       .quote-sheet .noborder td {
-         border: 0 !important;
-       }
-
-       /* 避免簽章表格被切成兩段 */
-       .quote-sheet table,
-       .quote-sheet tr {
-         break-inside: avoid !important;
-         page-break-inside: avoid !important;
-       }
-     }
-      `}</style>
+         line-height: 1.25; 
+           `}</style>
 
       <div className="quote-sheet">
         <button
@@ -5304,7 +5501,7 @@ const renderUserManagement = () => {
             <div className="no-print mt-4 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={printQuoteSheet}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg"
               >
                 列印
