@@ -1315,16 +1315,58 @@ const loadSalesUserOptions = async () => {
     return { quote: { ...quote, SubtotalAmount: Number(quote.SubtotalAmount ?? quote.subtotalAmount ?? itemListAmount), TaxExcludedAmount: taxExcludedAmount, TaxAmount: taxAmount, TaxIncludedAmount: Math.round(Number(quote.SubtotalAmount ?? quote.subtotalAmount ?? itemListAmount) * 1.05), DiscountAmount: Number(quote.DiscountAmount ?? quote.discountAmount ?? itemFinalAmount), TotalAmount: taxIncludedAmount, FinalAmount: taxIncludedAmount }, items };
   };
 
-  const previewQuoteById = async (quotationId) => {
-    try {
-      const response = await fetch(`${API_BASE}/get-quote-detail?quotationId=${encodeURIComponent(quotationId)}`);
-      if (!response.ok) throw new Error(String(response.status));
-      const raw = await response.json();
-      const detail = normalizeQuoteDetail(raw);
-      setPreviewQuote(quoteFormalDetails(detail));
-      setShowQuotePreview(true);
-    } catch (e) { console.error(e); alert('無法讀取報價單詳細資料，請確認 get-quote-detail 工作流。'); }
-  };
+  const formatQuoteSystemCode = (systemCode) =>
+  String(systemCode || '')
+    .replace(/\d+$/g, '')
+    .trim();
+
+const formatQuoteItemName = (item) => {
+  const code = formatQuoteSystemCode(
+    item.SystemCode || item.systemCode
+  );
+
+  const name = String(
+    item.SystemName || item.systemName || ''
+  ).trim();
+
+  const isStandalone =
+    name.includes('單機版') || name.includes('單機');
+
+  const users = Number(item.UserCount ?? item.userCount ?? 1);
+
+  // 單機版：不要加入「網路 1 人版」
+  if (isStandalone) {
+    return `${code}－${name}`;
+  }
+
+  // 網路版：若原名稱已有網路人數文字，就不重複加
+  const alreadyHasNetworkText =
+    /[（(]網路\s*\d+\s*人版[）)]/.test(name);
+
+  return alreadyHasNetworkText
+    ? `${code}－${name}`
+    : `${code}－${name}（網路 ${users} 人版）`;
+};
+
+
+const previewQuoteById = async (quotationId) => {
+  try {
+    const response = await fetch(
+      `${API_BASE}/get-quote-detail?quotationId=${encodeURIComponent(quotationId)}`
+    );
+    if (!response.ok) throw new Error(String(response.status));
+
+    const raw = await response.json();
+    const detail = normalizeQuoteDetail(raw);
+
+    setPreviewQuote(quoteFormalDetails(detail));
+    setShowQuotePreview(true);
+  } catch (e) {
+    console.error(e);
+    alert('無法讀取報價單詳細資料，請確認 get-quote-detail 工作流。');
+  }
+};
+
   const voidQuote = async (quote) => {
     if (!window.confirm(`確定要作廢報價單「${quote.QuotationNo}」嗎？作廢後可保留歷史紀錄，但不能再使用。`)) return;
     try {
@@ -4590,11 +4632,27 @@ const renderUserManagement = () => {
     }
   >
     <td>
-      {item.SystemCode && item.SystemName
-        ? `${item.SystemCode}－${item.SystemName}`
-        : item.SystemName || item.SystemCode || '－'}
-      （網路 {item.UserCount} 人版）
-    </td>
+  {(() => {
+    const systemCode = String(item.SystemCode || '')
+      .replace(/\d+$/g, '')
+      .trim();
+
+    const systemName = String(item.SystemName || '').trim();
+
+    const isStandalone =
+      systemName.includes('單機版') ||
+      systemName.includes('單機');
+
+    const productName =
+      systemCode && systemName
+        ? `${systemCode}－${systemName}`
+        : systemName || systemCode || '－';
+
+    return isStandalone
+      ? productName
+      : `${productName}（網路 ${item.UserCount || 1} 人版）`;
+  })()}
+</td>
 
     <td className="text-right whitespace-nowrap">
       NT${Number(item.LineAmount || 0).toLocaleString()}
