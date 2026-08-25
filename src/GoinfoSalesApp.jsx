@@ -4625,6 +4625,35 @@ const renderUserManagement = () => {
          flex-direction: column;
        }
 
+       /* ===== 預覽畫面：恢復報價表格格線 ===== */
+       .quote-sheet table {
+         width: 100%;
+         border-collapse: collapse;
+         border-spacing: 0;
+       }
+
+       .quote-sheet table:not(.noborder) {
+         border: 1px solid #111;
+       }
+
+       .quote-sheet table:not(.noborder) th,
+       .quote-sheet table:not(.noborder) td {
+         border: 1px solid #111;
+         padding: 4px;
+         vertical-align: middle;
+       }
+
+       /* 公司資料／地址表格保留無格線 */
+       .quote-sheet .noborder,
+       .quote-sheet .noborder th,
+       .quote-sheet .noborder td {
+         border: 0;
+       }
+
+       .quote-sheet .compact {
+         font-size: 10px;
+         line-height: 1.25;
+
        /* 列印時：A4 內上下左右置中 */
        @media print {
          @page {
