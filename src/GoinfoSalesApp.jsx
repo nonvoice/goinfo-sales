@@ -1422,8 +1422,9 @@ const printQuoteSheet = () => {
 
           .quote-sheet {
             width: 200mm;
-            min-height: 287mm;
-            margin: 0 auto;
+            height: 285mm;
+            min-height: 285mm;
+            margin: 1mm auto 0;
             padding: 5mm;
             box-sizing: border-box;
 
@@ -1667,13 +1668,16 @@ const printQuoteSheet = () => {
             body {
               width: 210mm;
               height: 297mm;
+              margin: 0;
+              padding: 0;
               overflow: hidden;
             }
 
             .quote-sheet {
               width: 200mm;
-              min-height: 287mm;
-              margin: 0 auto;
+              height: 285mm;
+              min-height: 285mm;
+              margin: 1mm auto 0;
             }
           }
         </style>
