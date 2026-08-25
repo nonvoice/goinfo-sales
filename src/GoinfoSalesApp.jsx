@@ -1335,93 +1335,171 @@ const loadSalesUserOptions = async () => {
     } catch (e) { console.error(e); alert('無法載入報價資料，請確認 get-quote-detail 工作流。'); }
   };
 
-  const handleSubmit = async (action) => {
-    if (!customerCode) return alert('請先選擇客戶');
-    if (!isIsoDate(quoteDate)) {alert('請選擇有效的報價日期'); return;}
-    if (!quoteItems.length || quoteItems.some(x => !x.systemId)) return alert('請至少新增一筆完整的系統報價明細');
-    if (quoteItems.some(x => !getEffectivePricingRule(x.systemId, x.itemType))) return alert('選取的系統找不到有效價格規則，請先至系統設定建立並啟用價格。');
-    const customer = customerList.find(c => String(c.CustomerId) === String(customerCode));
-    if (!customer?.CustomerId) return alert('客戶資料缺少 CustomerId，請先依下方說明更新 get-customers 工作流。');
-    const now = new Date();
-    const rocYear = now.getFullYear() - 1911;
-   const quoteNo = `Q${rocYear}${String(now.getMonth() + 1).padStart(
-  2,
-  '0'
-)}${String(now.getDate()).padStart(2, '0')}${String(Date.now()).slice(-6)}`;
-    const payload = {
-      action,
-      status: action === 'CreateNewSystemQuote' ? '1' : action === 'CreateAddUserQuote' ? '2' : action === 'CreateMaintenanceQuote' ? '3' : '4',
-      quoteNo,
-      customerId: Number(customer.CustomerId),
-      quoteDate,
-      customerCode: customer.Code,
-      customerName: customer.Name || '',
-      taxRate: 0.05,
-      warrantyMonths: Number(warrantyMonths) || 0,
-      annualMaintenanceAmount: quoteSummary.annualMaintenanceAmount,
-      maintenanceDiscountAmount: maintenanceDiscountAmount === '' ? null : Number(maintenanceDiscountAmount),
-      listAmount: quoteSummary.listAmount,
-      discountAmount: quoteSummary.discountTaxIncludedAmount,
-      /* 報價表頭的優惠總計相關金額 */
-      taxExcludedAmount: quoteSummary.taxExcludedAmount,
-      taxAmount: quoteSummary.taxAmount,
-      taxIncludedAmount: quoteSummary.discountTaxIncludedAmount,
-      totalAmount: quoteSummary.discountTaxIncludedAmount,
-      /* 最終成交優惠價另外存入 FinalAmount */
-      finalAmount: quoteSummary.finalOfferTaxIncludedAmount,     
-      hasManualFinalPrice: quoteSummary.hasManualFinalPrice,
-      items: quoteItems.map((x, index) => {
-        const rule = getEffectivePricingRule(x.systemId, x.itemType);
-        return {
-          systemId: Number(x.systemId),
-          pricingRuleId: Number(rule?.PricingRuleId) || 0,
-          itemType: x.itemType,
-          userCount: Number(x.userCount),
-          firstUserPriceSnapshot: Number(rule?.FirstUserPrice) || 0,
-          additionalUserPriceSnapshot: Number(rule?.AdditionalUserPrice) || 0,
-          listAmount: calculateListAmount(x),
-          discount: Number(x.discountRate) || 100,
-          discountRate: Number(x.discountRate) || 100,
-          discountAmount: calculateDiscountTaxIncludedAmount(x),
+ const handleSubmit = async (action) => {
+  if (!customerCode) {
+    alert('請先選擇客戶');
+    return;
+  }
 
-          specialPrice: hasFinalAmount(x)
-            ? Number(x.specialPrice)
-            : null,
+  if (!isIsoDate(quoteDate)) {
+    alert('請選擇有效的報價日期');
+    return;
+  }
 
-          finalAmount: hasFinalAmount(x)
-            ? calculateFinalTaxIncludedAmount(x)
-            : null,
+  if (!quoteItems.length || quoteItems.some((x) => !x.systemId)) {
+    alert('請至少新增一筆完整的系統報價明細');
+    return;
+  }
 
-          upgradeCreditAmount: Number(x.upgradeCreditAmount) || 0,
-          upgradeCreditDescription: x.upgradeCreditDescription || '',
+  if (
+    quoteItems.some(
+      (x) => !getEffectivePricingRule(x.systemId, x.itemType)
+    )
+  ) {
+    alert('選取的系統找不到有效價格規則，請先至系統設定建立並啟用價格。');
+    return;
+  }
 
-          taxExcludedAmount: calculateLineAmount(x),
-          lineAmount: calculateListAmount(x),
-          sortOrder: index + 1
-        };
-      }),
-    };
-    try {
-  await salesApiFetch('save-quote', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  const customer = customerList.find(
+    (c) => String(c.CustomerId) === String(customerCode)
+  );
 
-  setQuoteItems([]);
-  setQuoteDate(new Date().toISOString().slice(0, 10));
-  setCustomerCode('');
-  alert('報價單已成功存入資料庫！');
+  if (!customer?.CustomerId) {
+    alert('客戶資料缺少 CustomerId，請先依下方說明更新 get-customers 工作流。');
+    return;
+  }
+
+  const now = new Date();
+  const rocYear = now.getFullYear() - 1911;
+
+  const quoteNo =
+    `Q${rocYear}` +
+    `${String(now.getMonth() + 1).padStart(2, '0')}` +
+    `${String(now.getDate()).padStart(2, '0')}` +
+    `${String(Date.now()).slice(-6)}`;
+
+  const payload = {
+    action,
+    status:
+      action === 'CreateNewSystemQuote'
+        ? '1'
+        : action === 'CreateAddUserQuote'
+          ? '2'
+          : action === 'CreateMaintenanceQuote'
+            ? '3'
+            : '4',
+
+    quoteNo,
+    quoteDate,
+
+    customerId: Number(customer.CustomerId),
+    customerCode: customer.Code,
+    customerName: customer.Name || '',
+
+    taxRate: 0.05,
+    warrantyMonths: Number(warrantyMonths) || 0,
+
+    annualMaintenanceAmount:
+      quoteSummary.annualMaintenanceAmount,
+
+    maintenanceDiscountAmount:
+      maintenanceDiscountAmount === ''
+        ? null
+        : Number(maintenanceDiscountAmount),
+
+    listAmount: quoteSummary.listAmount,
+    discountAmount: quoteSummary.discountTaxIncludedAmount,
+
+    taxExcludedAmount: quoteSummary.taxExcludedAmount,
+    taxAmount: quoteSummary.taxAmount,
+
+    /* 優惠總計（含稅），不受手動最終優惠影響 */
+    taxIncludedAmount:
+      quoteSummary.discountTaxIncludedAmount,
+
+    totalAmount:
+      quoteSummary.discountTaxIncludedAmount,
+
+    /* 最終成交優惠價 */
+    finalAmount:
+      quoteSummary.finalOfferTaxIncludedAmount,
+
+    hasManualFinalPrice:
+      quoteSummary.hasManualFinalPrice,
+
+    items: quoteItems.map((x, index) => {
+      const rule = getEffectivePricingRule(
+        x.systemId,
+        x.itemType
+      );
+
+      return {
+        systemId: Number(x.systemId),
+        pricingRuleId: Number(rule?.PricingRuleId) || 0,
+        itemType: x.itemType,
+
+        userCount: Number(x.userCount) || 0,
+
+        firstUserPriceSnapshot:
+          Number(rule?.FirstUserPrice) || 0,
+
+        additionalUserPriceSnapshot:
+          Number(rule?.AdditionalUserPrice) || 0,
+
+        listAmount: calculateListAmount(x),
+
+        discount: Number(x.discountRate) || 100,
+        discountRate: Number(x.discountRate) || 100,
+
+        /* 優惠總計（含稅） */
+        discountAmount:
+          calculateDiscountTaxIncludedAmount(x),
+
+        specialPrice: hasFinalAmount(x)
+          ? Number(x.specialPrice)
+          : null,
+
+        /* 手動最終優惠才寫入 FinalAmount */
+        finalAmount: hasFinalAmount(x)
+          ? calculateFinalTaxIncludedAmount(x)
+          : null,
+
+        upgradeCreditAmount:
+          Number(x.upgradeCreditAmount) || 0,
+
+        upgradeCreditDescription:
+          x.upgradeCreditDescription || '',
+
+        taxExcludedAmount: calculateLineAmount(x),
+
+        lineAmount: calculateListAmount(x),
+        sortOrder: index + 1,
+      };
+    }),
+  };
 
   try {
-    await loadQuotes();
-  } catch (refreshError) {
-    console.error('報價清單更新失敗：', refreshError);
+    await salesApiFetch('save-quote', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    setQuoteItems([]);
+    setQuoteDate(new Date().toISOString().slice(0, 10));
+    setCustomerCode('');
+
+    alert('報價單已成功存入資料庫！');
+
+    try {
+      await loadQuotes();
+    } catch (refreshError) {
+      console.error('報價清單更新失敗：', refreshError);
+    }
+  } catch (error) {
+    console.error('save-quote error:', error);
+    alert('報價單儲存失敗：' + error.message);
   }
-} catch (error) {
-  console.error('save-quote error:', error);
-  alert('報價單儲存失敗：' + error.message);
-}
-  };
+}; 
 
   // 1. (潛在)客戶資料建檔 - Master/Detail 版面
   const renderCustomerForm = () => {
