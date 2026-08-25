@@ -1086,23 +1086,70 @@ try {
       )
     )[0];
 };
-  const calculateListAmount = (item) => { const rule=getEffectivePricingRule(item.systemId,item.itemType); if(!rule) return 0; const users=Math.max(Number(item.userCount)||0,0), first=Number(rule.FirstUserPrice)||0, add=Number(rule.AdditionalUserPrice)||0; return item.itemType==='ADD_USER' ? users*add : users>=1 ? first+(users-1)*add : 0; };
-  const getDiscountPercent = (item) => Math.min(Math.max(Number(item.discountRate) || 100, 0), 100);
-  const calculateTaxIncludedListAmount = (item) => Math.round(calculateListAmount(item) * 1.05);
-  // Discount 表示「幾折」：80 代表 8 折（80%）；DiscountAmount 為含稅牌價乘折數後的含稅金額。
-  const calculateDiscountAmount = (item) => Math.round(calculateTaxIncludedListAmount(item) * (getDiscountPercent(item) / 100));
-  // FinalAmount 為含稅折後金額再行議價的最終含稅價格；未填時採用 DiscountAmount。
-  const hasFinalAmount = (item) => item.specialPrice !== '' && Number.isFinite(Number(item.specialPrice)) && Number(item.specialPrice) >= 0;
-  const getUpgradeCreditAmount = (item) => Math.max(Number(item.upgradeCreditAmount) || 0, 0);
-  const calculateFinalTaxIncludedAmount = (item) => {
-  const baseFinalAmount = hasFinalAmount(item)
-    ? Math.round(Number(item.specialPrice))
-    : calculateDiscountAmount(item);
-  return Math.max(
-    baseFinalAmount - getUpgradeCreditAmount(item),
+  const calculateListAmount = (item) => {
+  const rule = getEffectivePricingRule(item.systemId, item.itemType);
+
+  if (!rule) {
+    return 0;
+  }
+
+  const users = Math.max(Number(item.userCount) || 0, 0);
+  const first = Number(rule.FirstUserPrice) || 0;
+  const add = Number(rule.AdditionalUserPrice) || 0;
+
+  return item.itemType === 'ADD_USER'
+    ? users * add
+    : users >= 1
+      ? first + (users - 1) * add
+      : 0;
+};
+
+const getDiscountPercent = (item) =>
+  Math.min(Math.max(Number(item.discountRate) || 100, 0), 100);
+
+/* 原始牌價（含稅） */
+const calculateTaxIncludedListAmount = (item) =>
+  Math.round(calculateListAmount(item) * 1.05);
+
+/* 優惠總計（含稅）：只由牌價與折數計算 */
+const calculateDiscountTaxIncludedAmount = (item) =>
+  Math.round(
+    calculateTaxIncludedListAmount(item) *
+      (getDiscountPercent(item) / 100)
+  );
+
+const hasFinalAmount = (item) =>
+  item.specialPrice !== '' &&
+  item.specialPrice !== null &&
+  item.specialPrice !== undefined &&
+  Number.isFinite(Number(item.specialPrice)) &&
+  Number(item.specialPrice) >= 0;
+
+/* 升級折抵：輸入正數，例如 115000 */
+const getUpgradeCreditAmount = (item) =>
+  Math.max(Number(item.upgradeCreditAmount) || 0, 0);
+
+/*
+  優惠後金額（含稅）：
+  優惠總計 - 升級折抵
+  例：183750 - 115000 = 68750
+*/
+const calculateAfterUpgradeCreditTaxIncludedAmount = (item) =>
+  Math.max(
+    calculateDiscountTaxIncludedAmount(item) -
+      getUpgradeCreditAmount(item),
     0
-    );
-  };
+  );
+
+/*
+  最終優惠（含稅）：
+  若業務手動填寫 specialPrice，就使用它；
+  未填時，使用「優惠後金額」。
+*/
+const calculateFinalTaxIncludedAmount = (item) =>
+  hasFinalAmount(item)
+    ? Math.round(Number(item.specialPrice))
+    : calculateAfterUpgradeCreditTaxIncludedAmount(item);
   const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
   const getMaintenanceRule = (systemId) => {
     const today = new Date().toISOString().slice(0, 10);
@@ -1121,7 +1168,7 @@ try {
   );
 
   const discountAmount = quoteItems.reduce(
-    (sum, item) => sum + calculateDiscountAmount(item),
+    (sum, item) => sum + calculateDiscountTaxIncludedAmount(item),
     0
   );
 
@@ -1318,7 +1365,7 @@ const loadSalesUserOptions = async () => {
           listAmount: calculateListAmount(x),
           discount: Number(x.discountRate) || 100,
           discountRate: Number(x.discountRate) || 100,
-          discountAmount: calculateDiscountAmount(x),
+          discountAmount: calculateDiscountTaxIncludedAmount(x),
           specialPrice: x.specialPrice === '' ? null : Number(x.specialPrice),
           finalAmount: hasFinalAmount(x) ? calculateFinalTaxIncludedAmount(x) : null,
           taxExcludedAmount: calculateLineAmount(x),
@@ -4874,7 +4921,7 @@ const renderUserManagement = () => {
 
             <div className="overflow-y-auto flex-1">
               {pickerCustomers.length > 0 ? (
-                pickerCustomers.map((customer) => (
+                pickerconst hasFinalAmount = (item) =>Customers.map((customer) => (
                   <button
                     type="button"
                     key={customer.CustomerId || customer.Code}
