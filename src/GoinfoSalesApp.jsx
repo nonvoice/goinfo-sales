@@ -1058,7 +1058,6 @@ try {
       userCount: 1,
       discountRate: 100,
       specialPrice: '',
-
       upgradeCreditAmount: 0,
       upgradeCreditDescription: '',
     },
@@ -1117,6 +1116,10 @@ const calculateDiscountTaxIncludedAmount = (item) =>
     calculateTaxIncludedListAmount(item) *
       (getDiscountPercent(item) / 100)
   );
+
+/* 相容舊畫面程式：原 calculateDiscountAmount 名稱仍可使用 */
+const calculateDiscountAmount = (item) =>
+  calculateDiscountTaxIncludedAmount(item);
 
 const hasFinalAmount = (item) =>
   item.specialPrice !== '' &&
@@ -1213,16 +1216,24 @@ const calculateFinalTaxIncludedAmount = (item) =>
   );
 
   return {
-    listAmount,
-    taxIncludedListAmount,
+  listAmount,
+  taxIncludedListAmount,
 
-    discountAmount: discountTaxIncludedAmount,
-    discountTaxIncludedAmount,
+  discountAmount: discountTaxIncludedAmount,
+
+  /* 相容既有畫面：避免 quoteSummary.taxIncludedAmount 是 undefined */
+  taxIncludedAmount: discountTaxIncludedAmount,
+
+  /* 相容既有畫面：優惠後金額 */
+  afterUpgradeCreditAmount:
     afterUpgradeCreditTaxIncludedAmount,
-    finalOfferTaxIncludedAmount,
 
-    taxExcludedAmount,
-    taxAmount,
+  discountTaxIncludedAmount,
+  afterUpgradeCreditTaxIncludedAmount,
+  finalOfferTaxIncludedAmount,
+
+  taxExcludedAmount,
+  taxAmount,
 
     annualMaintenanceAmount,
     hasManualFinalPrice: quoteItems.some(hasFinalAmount),
