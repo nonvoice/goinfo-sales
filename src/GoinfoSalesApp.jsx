@@ -1229,6 +1229,9 @@ const calculateFinalTaxIncludedAmount = (item) =>
   };
 }, [quoteItems, pricingRuleList]);
 
+    const loadQuotes = async () => {
+       setQuoteListLoading(true);
+
   try {
     const params = new URLSearchParams();
 
