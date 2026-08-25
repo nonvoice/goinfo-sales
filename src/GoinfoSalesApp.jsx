@@ -1392,7 +1392,7 @@ const loadSalesUserOptions = async () => {
           lineAmount: calculateListAmount(x),
           sortOrder: index + 1
         };
-      })
+      }),
     };
     try {
   await salesApiFetch('save-quote', {
