@@ -1687,9 +1687,13 @@ const printQuoteSheet = () => {
 
   printWindow.document.close();
 
+  printWindow.onafterprint = () => {
+    printWindow.close();
+  };
+
   setTimeout(() => {
-  printWindow.focus();
-  printWindow.print();
+    printWindow.focus();
+    printWindow.print();
   }, 500);
   };
 
