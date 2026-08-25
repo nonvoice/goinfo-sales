@@ -4659,16 +4659,13 @@ const renderUserManagement = () => {
      @media print {
        @page {
          size: A4 portrait;
-         margin: 0;
+         margin: 5mm;
        }
 
        html,
        body {
-         width: 210mm !important;
-         height: 297mm !important;
          margin: 0 !important;
          padding: 0 !important;
-         overflow: hidden !important;
          background: #fff !important;
 
          -webkit-print-color-adjust: exact !important;
@@ -4676,75 +4673,67 @@ const renderUserManagement = () => {
        }
 
        /*
-         先讓整個 React 頁面不佔任何列印版面。
-         使用 display:none，不用 visibility:hidden，
-         才不會保留外層彈窗、捲軸或按鈕的空間。
+         所有正常頁面內容隱藏。
+         注意：使用 visibility，而不是 display:none，
+         才不會連同 quote-print 一起被父層隱藏。
        */
-       #root > * {
-         display: none !important;
+       body * {
+         visibility: hidden !important;
        }
 
        /*
-         showQuotePreview 產生的彈窗是 root 最後一個子節點，
-         指定最後一個子節點重新顯示。
+         僅恢復報價彈窗與真正報價單內容。
        */
-       #root > *:last-child {
-         display: flex !important;
-         position: fixed !important;
-         inset: 0 !important;
-
-         width: 210mm !important;
-         height: 297mm !important;
-         margin: 0 !important;
-         padding: 0 !important;
-
-         overflow: hidden !important;
-         background: #fff !important;
+       .quote-print,
+       .quote-print * {
+         visibility: visible !important;
        }
 
        /*
-         外層黑色遮罩與可捲動預覽容器，列印時全部取消。
+         列印時取消預覽視窗的滾動、陰影、最大尺寸限制。
+         讓它不再把 max-h-[94vh] 與 overflow-y-auto 當作列印內容。
        */
-       #root > *:last-child > div {
-         display: block !important;
+       .quote-print {
          position: static !important;
+         display: block !important;
 
-         width: auto !important;
+         width: 100% !important;
          max-width: none !important;
+
          height: auto !important;
+         min-height: 0 !important;
          max-height: none !important;
 
          margin: 0 !important;
          padding: 0 !important;
          overflow: visible !important;
 
-         background: transparent !important;
+         background: #fff !important;
          box-shadow: none !important;
        }
 
        /*
-         只有真正的報價紙張保留。
+         報價紙張：不強制固定 287mm 高，
+         避免內容被裁掉；只固定可列印寬度並水平置中。
        */
        .quote-sheet {
+         position: static !important;
+
          display: flex !important;
          flex-direction: column !important;
 
-         position: fixed !important;
-         top: 5mm !important;
-         left: 5mm !important;
-
          width: 200mm !important;
-         min-width: 200mm !important;
+         min-width: 0 !important;
          max-width: 200mm !important;
 
-         height: 287mm !important;
-         min-height: 287mm !important;
-         max-height: 287mm !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
 
-         margin: 0 !important;
+         margin: 0 auto !important;
          padding: 5mm !important;
          box-sizing: border-box !important;
-         overflow: hidden !important;
+         overflow: visible !important;
 
          border: 1px solid #111 !important;
          background: #fff !important;
@@ -4752,17 +4741,19 @@ const renderUserManagement = () => {
        }
 
        /*
-         明確移除預覽互動元件。
+         報價預覽介面：不列印。
+         同時避免前面 .quote-print * visibility: visible
+         將 no-print 元素重新顯示。
        */
        .no-print,
-       .quote-sheet button,
-       button {
+       .no-print *,
+       button,
+       button * {
          display: none !important;
+         visibility: hidden !important;
        }
 
-       /*
-         表格格線維持。
-       */
+       /* 列印表格格線 */
        .quote-sheet table {
          width: 100% !important;
          border-collapse: collapse !important;
@@ -4781,10 +4772,18 @@ const renderUserManagement = () => {
          vertical-align: middle !important;
        }
 
+       /* 最上方公司地址表不需格線 */
        .quote-sheet .noborder,
        .quote-sheet .noborder th,
        .quote-sheet .noborder td {
          border: 0 !important;
+       }
+
+       /* 避免簽章表格被切成兩段 */
+       .quote-sheet table,
+       .quote-sheet tr {
+         break-inside: avoid !important;
+         page-break-inside: avoid !important;
        }
      }
       `}</style>
