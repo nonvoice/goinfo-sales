@@ -1687,15 +1687,11 @@ const printQuoteSheet = () => {
 
   printWindow.document.close();
 
-  const startPrint = () => {
-    printWindow.focus();
-    printWindow.print();
+  setTimeout(() => {
+  printWindow.focus();
+  printWindow.print();
+  }, 500);
   };
-
-  printWindow.onload = startPrint;
-
-  setTimeout(startPrint, 700);
-};
 
   const voidQuote = async (quote) => {
     if (!window.confirm(`確定要作廢報價單「${quote.QuotationNo}」嗎？作廢後可保留歷史紀錄，但不能再使用。`)) return;
