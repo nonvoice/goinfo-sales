@@ -4629,7 +4629,7 @@ const renderUserManagement = () => {
        @media print {
          @page {
            size: A4 portrait;
-           margin: 5mm;
+           margin: 0;
          }
 
          html,
@@ -4640,6 +4640,9 @@ const renderUserManagement = () => {
            padding: 0 !important;
            overflow: hidden !important;
            background: #fff !important;
+
+           -webkit-print-color-adjust: exact !important;
+           print-color-adjust: exact !important;
          }
 
          body * {
@@ -4678,12 +4681,6 @@ const renderUserManagement = () => {
          }
 
          .quote-sheet {
-           /*
-             A4 210 × 297mm；
-             四邊保留 5mm，報價單本體為 200 × 287mm。
-             外層 flex 的 align-items / justify-content
-             會將它置於正中央。
-           */
            width: 200mm !important;
            min-width: 200mm !important;
            max-width: 200mm !important;
@@ -4697,11 +4694,47 @@ const renderUserManagement = () => {
            box-sizing: border-box !important;
            overflow: hidden !important;
 
-           border: 1px solid #111 !important;
-           background: #fff !important;
-
            display: flex !important;
            flex-direction: column !important;
+
+           border: 1px solid #111 !important;
+           background: #fff !important;
+         }
+
+         /* ===== 強制恢復表格格線 ===== */
+         .quote-sheet table {
+           width: 100% !important;
+           border-collapse: collapse !important;
+           border-spacing: 0 !important;
+         }
+
+         .quote-sheet table:not(.noborder) {
+           border: 1px solid #111 !important;
+         }
+
+         .quote-sheet table:not(.noborder) th,
+         .quote-sheet table:not(.noborder) td {
+           border: 1px solid #111 !important;
+           padding: 4px !important;
+           vertical-align: middle !important;
+
+           -webkit-print-color-adjust: exact !important;
+           print-color-adjust: exact !important;
+         }
+
+         /* 最上方公司地址表格：原本就設計成無格線 */
+         .quote-sheet .noborder,
+         .quote-sheet .noborder th,
+         .quote-sheet .noborder td {
+           border: 0 !important;
+         }
+
+         .quote-sheet table,
+         .quote-sheet tr,
+         .quote-sheet td,
+         .quote-sheet th {
+           break-inside: avoid;
+           page-break-inside: avoid;
          }
 
          .no-print {
