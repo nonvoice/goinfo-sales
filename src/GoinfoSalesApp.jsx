@@ -4663,8 +4663,8 @@ const renderUserManagement = () => {
 
          html,
          body {
-           width: 210mm;
-           height: 297mm;
+           width: 210mm !important;
+           height: 297mm !important;
            margin: 0 !important;
            padding: 0 !important;
            overflow: hidden !important;
@@ -4674,42 +4674,54 @@ const renderUserManagement = () => {
            print-color-adjust: exact !important;
          }
 
-         body * {
-           visibility: hidden;
+         /*
+           先隱藏整個網頁；
+           再只顯示報價單紙張本體 quote-sheet。
+         */
+         body > * {
+           visibility: hidden !important;
          }
 
-         .quote-print,
-         .quote-print * {
-           visibility: visible;
+         .quote-sheet,
+         .quote-sheet * {
+           visibility: visible !important;
          }
 
+         /*
+           不列印外層彈窗 quote-print：
+           它原本含有 overflow-y-auto、最大高度與操作按鈕，
+           這就是出現捲軸與多頁的主因。
+         */
          .quote-print {
-           position: absolute;
-           top: 0;
-           left: 0;
+           position: static !important;
+           display: block !important;
 
-           width: 210mm !important;
-           min-width: 210mm !important;
-           max-width: 210mm !important;
+           width: auto !important;
+           min-width: 0 !important;
+           max-width: none !important;
 
-           height: 297mm !important;
-           min-height: 297mm !important;
-           max-height: 297mm !important;
-
-           display: flex !important;
-           align-items: center !important;
-           justify-content: center !important;
+           height: auto !important;
+           min-height: 0 !important;
+           max-height: none !important;
 
            margin: 0 !important;
            padding: 0 !important;
-           overflow: hidden !important;
-           box-sizing: border-box !important;
+           overflow: visible !important;
 
-           background: #fff !important;
+           background: transparent !important;
            box-shadow: none !important;
          }
 
+         /*
+           列印真正的 A4 報價單內容。
+           210 × 297mm，四邊各留 5mm，
+           也就是報價單外框為 200 × 287mm。
+         */
          .quote-sheet {
+           position: fixed !important;
+           top: 5mm !important;
+           left: 5mm !important;
+
            width: 200mm !important;
            min-width: 200mm !important;
            max-width: 200mm !important;
@@ -4720,38 +4732,44 @@ const renderUserManagement = () => {
 
            margin: 0 !important;
            padding: 5mm !important;
-           box-sizing: border-box !important;
            overflow: hidden !important;
+           box-sizing: border-box !important;
 
            display: flex !important;
            flex-direction: column !important;
 
            border: 1px solid #111 !important;
            background: #fff !important;
+           box-shadow: none !important;
          }
 
-         /* ===== 強制恢復表格格線 ===== */
+         /* 列印時明確移除所有操作介面 */
+         .no-print,
+         button,
+         .quote-print + * {
+           display: none !important;
+         }
+
+         /* 表格格線 */
          .quote-sheet table {
            width: 100% !important;
            border-collapse: collapse !important;
            border-spacing: 0 !important;
          }
 
-         .quote-sheet table:not(.noborder) {
+         .quote-sheet table:not(.noborder),
+         .quote-sheet table:not(.noborder) th,
+         .quote-sheet table:not(.noborder) td {
            border: 1px solid #111 !important;
          }
 
          .quote-sheet table:not(.noborder) th,
          .quote-sheet table:not(.noborder) td {
-           border: 1px solid #111 !important;
            padding: 4px !important;
            vertical-align: middle !important;
-
-           -webkit-print-color-adjust: exact !important;
-           print-color-adjust: exact !important;
          }
 
-         /* 最上方公司地址表格：原本就設計成無格線 */
+         /* 公司地址資訊表原本就是無框 */
          .quote-sheet .noborder,
          .quote-sheet .noborder th,
          .quote-sheet .noborder td {
@@ -4762,12 +4780,8 @@ const renderUserManagement = () => {
          .quote-sheet tr,
          .quote-sheet td,
          .quote-sheet th {
-           break-inside: avoid;
-           page-break-inside: avoid;
-         }
-
-         .no-print {
-           display: none !important;
+           break-inside: avoid !important;
+           page-break-inside: avoid !important;
          }
        }
       `}</style>
