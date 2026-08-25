@@ -4593,35 +4593,228 @@ const renderUserManagement = () => {
       </div>
       
       {showQuotePreview && previewQuote && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white" onMouseDown={()=>setShowQuotePreview(false)}>
-          <div className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black" onMouseDown={e=>e.stopPropagation()}>
-            <style>{`@media print { body * { visibility:hidden; } .quote-print, .quote-print * { visibility:visible; } .quote-print { position:absolute; left:0; top:0; width:100%; max-width:none; max-height:none; overflow:visible; padding:5mm; box-shadow:none; } .no-print {display:none!important;} @page {size:A4 portrait;margin:5mm;} } .quote-sheet{border:1px solid #111;padding:6mm;font-family:Arial,'Microsoft JhengHei',sans-serif;font-size:11px;line-height:1.3}.quote-sheet table{border-collapse:collapse;width:100%}.quote-sheet th,.quote-sheet td{border:1px solid #111;padding:4px;vertical-align:middle}.quote-sheet .noborder td{border:0;padding:1px}.quote-sheet .compact{font-size:10px;line-height:1.25}`}</style>
-            <div className="quote-sheet">
-              <button onClick={()=>setShowQuotePreview(false)} className="no-print float-right text-2xl text-gray-400">×</button>
-              <header className="border-b-2 border-black pb-2 mb-2">
-                <div className="flex items-center gap-3"><img src="/goinfo.jpg" alt="Goinfo" className="h-10 object-contain"/><div className="text-xl font-bold">高益電腦股份有限公司 Goinfo Auto Co., Ltd.</div></div>
-                <table className="noborder compact mt-1"><tbody><tr><td className="w-16">總公司台北</td><td>地址：台北市松山區復興北路333號9樓之3</td><td>電話：02-2713-7188</td><td>傳真：02-2713-4563</td></tr><tr><td>總公司台中</td><td>地址：台中市西屯區文心路三段241號16樓之9</td><td>電話：04-2298-1378</td><td>傳真：04-2298-1328</td></tr><tr><td>總公司高雄</td><td>地址：高雄市左營區大順一路93號5樓之5</td><td>電話：07-5580096</td><td>傳真：07-5580128</td></tr></tbody></table>
-                <h1 className="text-center text-xl font-bold mt-1">軟體買賣報價單</h1><div className="text-center font-semibold">QUOTATION</div>
-              </header>
-              <table className="mb-2"><tbody><tr><td>報價單號：{previewQuote.quote.QuotationNo}（類型：{quoteStatusLabel(previewQuote.quote.Status)}）</td><td>報價日期：{formatDateForInput(previewQuote.quote.QuoteDate)}</td></tr><tr><td>客戶代號：{previewQuote.quote.CustomerCode || '－'}</td><td>客戶電話：{previewQuote.quote.Tel || previewQuote.quote.CustomerTel || '－'}</td></tr><tr><td>客戶名稱：{previewQuote.quote.CustomerName || '－'}　{previewQuote.quote.ContactName || previewQuote.quote.Contacter || ''}</td><td>客戶傳真：{previewQuote.quote.Fax || previewQuote.quote.CustomerFax || '－'}</td></tr></tbody></table>
-<table className="w-full">
-  <colgroup>
-    <col className="w-[47%]" />
-    <col className="w-[16%]" />
-    <col className="w-[7%]" />
-    <col className="w-[13%]" />
-    <col className="w-[17%]" />
-  </colgroup>
+  <div
+    className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
+    onMouseDown={() => setShowQuotePreview(false)}
+  >
+    <div
+      className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <style>{`
+        /* 預覽視窗中的報價單樣式 */
+        .quote-sheet {
+          border: 1px solid #111;
+          padding: 6mm;
+          font-family: Arial, "Microsoft JhengHei", sans-serif;
+          font-size: 11px;
+          line-height: 1.3;
+        }
 
-  <thead>
-    <tr className="text-center bg-gray-100">
-      <th>品名</th>
-      <th className="whitespace-nowrap">定價（未稅）</th>
-      <th>數量</th>
-      <th className="whitespace-nowrap">小計（未稅）</th>
-      <th>備註</th>
-    </tr>
-  </thead>
+        .quote-sheet table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .quote-sheet th,
+        .quote-sheet td {
+          padding: 4px;
+          vertical-align: middle;
+          border: 1px solid #111;
+        }
+
+        .quote-sheet .noborder td {
+          padding: 1px;
+          border: 0;
+        }
+
+        .quote-sheet .compact {
+          font-size: 10px;
+          line-height: 1.25;
+        }
+
+        /* 列印時才套用 */
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 5mm;
+          }
+
+          html,
+          body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background: #fff !important;
+          }
+
+          body * {
+            visibility: hidden;
+          }
+
+          .quote-print,
+          .quote-print * {
+            visibility: visible;
+          }
+
+          .quote-print {
+            position: absolute;
+            top: 0;
+            left: 0;
+
+            /*
+              A4：210mm × 297mm
+              @page 上下左右 5mm 後，內容最大範圍：
+              寬 200mm、高 287mm
+            */
+            width: 200mm !important;
+            min-width: 200mm !important;
+            max-width: 200mm !important;
+
+            height: 287mm !important;
+            min-height: 287mm !important;
+            max-height: 287mm !important;
+
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+
+            background: #fff !important;
+            box-shadow: none !important;
+          }
+
+          .quote-sheet {
+            width: 200mm !important;
+            height: 287mm !important;
+            min-height: 287mm !important;
+            max-height: 287mm !important;
+
+            margin: 0 !important;
+            padding: 6mm !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+
+            display: flex !important;
+            flex-direction: column !important;
+
+            border: 1px solid #111 !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      <div className="quote-sheet">
+        <button
+          type="button"
+          onClick={() => setShowQuotePreview(false)}
+          className="no-print float-right text-2xl text-gray-400"
+        >
+          ×
+        </button>
+
+        <header className="border-b-2 border-black pb-2 mb-2">
+          <div className="flex items-center gap-3">
+            <img
+              src="/goinfo.jpg"
+              alt="Goinfo"
+              className="h-10 object-contain"
+            />
+            <div className="text-xl font-bold">
+              高益電腦股份有限公司 Goinfo Auto Co., Ltd.
+            </div>
+          </div>
+
+          <table className="noborder compact mt-1">
+            <tbody>
+              <tr>
+                <td className="w-16">總公司台北</td>
+                <td>地址：台北市松山區復興北路333號9樓之3</td>
+                <td>電話：02-2713-7188</td>
+                <td>傳真：02-2713-4563</td>
+              </tr>
+              <tr>
+                <td>總公司台中</td>
+                <td>地址：台中市西屯區文心路三段241號16樓之9</td>
+                <td>電話：04-2298-1378</td>
+                <td>傳真：04-2298-1328</td>
+              </tr>
+              <tr>
+                <td>總公司高雄</td>
+                <td>地址：高雄市左營區大順一路93號5樓之5</td>
+                <td>電話：07-5580096</td>
+                <td>傳真：07-5580128</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h1 className="text-center text-xl font-bold mt-1">
+            軟體買賣報價單
+          </h1>
+          <div className="text-center font-semibold">QUOTATION</div>
+        </header>
+
+        <table className="mb-2">
+          <tbody>
+            <tr>
+              <td>
+                報價單號：{previewQuote.quote.QuotationNo}
+                （類型：{quoteStatusLabel(previewQuote.quote.Status)}）
+              </td>
+              <td>
+                報價日期：
+                {formatDateForInput(previewQuote.quote.QuoteDate)}
+              </td>
+            </tr>
+            <tr>
+              <td>客戶代號：{previewQuote.quote.CustomerCode || '－'}</td>
+              <td>
+                客戶電話：
+                {previewQuote.quote.Tel ||
+                  previewQuote.quote.CustomerTel ||
+                  '－'}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                客戶名稱：{previewQuote.quote.CustomerName || '－'}　
+                {previewQuote.quote.ContactName ||
+                  previewQuote.quote.Contacter ||
+                  ''}
+              </td>
+              <td>
+                客戶傳真：
+                {previewQuote.quote.Fax ||
+                  previewQuote.quote.CustomerFax ||
+                  '－'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="w-full">
+          <colgroup>
+            <col className="w-[47%]" />
+            <col className="w-[16%]" />
+            <col className="w-[7%]" />
+            <col className="w-[13%]" />
+            <col className="w-[17%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="text-center bg-gray-100">
+              <th>品名</th>
+              <th className="whitespace-nowrap">定價（未稅）</th>
+              <th>數量</th>
+              <th className="whitespace-nowrap">小計（未稅）</th>
+              <th>備註</th>
+            </tr>
+          </thead>
 
   <tbody>
     {previewQuote.items.map((item, index) => (
@@ -4862,10 +5055,10 @@ const renderUserManagement = () => {
     </h2>
 
     {previewQuote.items.map((item, index) => (
-  <div
-    key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
-    className="mt-1"
-  >
+      <div
+        key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
+        className="mt-1"
+      >
         <b className="block">
           {item.SystemCode}－{item.SystemName}：
         </b>
@@ -4875,154 +5068,159 @@ const renderUserManagement = () => {
         </span>
       </div>
     ))}
-
-    <h2 className="mt-3 border-b-2 border-black text-sm font-bold">
-  維護說明
-</h2>
-
-<ol className="list-decimal pl-5">
-  <li>
-    軟體系統自簽約日起
-    {' '}
-    {Number(previewQuote.warrantyMonths || 0) % 12 === 0
-      ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
-      : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
-    免費提供教育訓練及維護修復。保固期滿後年度維護費為
-    {' '}
-    NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
-    （含稅）
-    {previewQuote.maintenanceDiscountAmount !== null &&
-    previewQuote.maintenanceDiscountAmount !== undefined &&
-    previewQuote.maintenanceDiscountAmount !== ''
-      ? `，優惠金額為 NT$${Number(
-          previewQuote.maintenanceDiscountAmount
-        ).toLocaleString()}（含稅）`
-      : ''}
-    。
-
-    {(() => {
-      const maintenanceItems = previewQuote.items.filter(
-        (item) =>
-          Number(item.addUserMaintenanceTaxIncluded || 0) > 0
-      );
-
-      if (maintenanceItems.length === 0) {
-        return null;
-      }
-
-      return (
-        <>
-          日後若新增授權人數，各系統每增加一使用者維護費：
-          {' '}
-          {maintenanceItems.map((item, index) => (
-            <span key={`maintenance-${item.SystemId}-${index}`}>
-              {index > 0 ? '；' : ''}
-              {item.SystemCode || item.SystemName}
-              {' '}
-              NT$
-              {Number(
-                item.addUserMaintenanceTaxIncluded || 0
-              ).toLocaleString()}
-              （含稅）
-            </span>
-          ))}
-          。
-        </>
-      );
-    })()}
-  </li>
-
-  {(() => {
-    const licenseAddUserItems = previewQuote.items.filter(
-      (item) =>
-        Number(item.licenseAddUserTaxIncluded || 0) > 0
-    );
-
-    if (licenseAddUserItems.length === 0) {
-      return null;
-    }
-
-    return (
-      <li>
-        網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
-        {' '}
-        {licenseAddUserItems.map((item, index) => (
-          <span key={`license-${item.SystemId}-${index}`}>
-            {index > 0 ? '；' : ''}
-            {item.SystemCode || item.SystemName}
-            {' '}
-            NT$
-            {Number(
-              item.licenseAddUserTaxIncluded || 0
-            ).toLocaleString()}
-          </span>
-        ))}
-        。
-      </li>
-    );
-  })()}
-</ol>
-</section>
+  </section>
 )}
 
-<table className="mt-3 w-full">
-  <tbody>
-    <tr>
-      <th className="w-[34%] text-center">客戶確認簽章</th>
-      <th className="w-[30%] text-center">報價專用章</th>
-      <th className="w-[36%] text-center">承辦人資料</th>
-    </tr>
+<div className="mt-auto">
+  <section className="compact">
+    <h2 className="border-b-2 border-black text-sm font-bold">
+      維護說明
+    </h2>
 
-    <tr className="h-32">
-      <td></td>
+    <ol className="list-decimal pl-5">
+      <li>
+        軟體系統自簽約日起
+        {' '}
+        {Number(previewQuote.warrantyMonths || 0) % 12 === 0
+          ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
+          : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
+        免費提供教育訓練及維護修復。保固期滿後年度維護費為
+        {' '}
+        NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
+        （含稅）
+        {previewQuote.maintenanceDiscountAmount !== null &&
+        previewQuote.maintenanceDiscountAmount !== undefined &&
+        previewQuote.maintenanceDiscountAmount !== ''
+          ? `，優惠金額為 NT$${Number(
+              previewQuote.maintenanceDiscountAmount
+            ).toLocaleString()}（含稅）`
+          : ''}
+        。
 
-      <td className="text-center">
-        <img
-          src="/seal.JPG"
-          alt="報價專用章"
-          className="h-28 mx-auto object-contain"
-        />
-      </td>
+        {(() => {
+          const maintenanceItems = previewQuote.items.filter(
+            (item) =>
+              Number(item.addUserMaintenanceTaxIncluded || 0) > 0
+          );
 
-      <td className="p-0">
-        <table className="h-full w-full">
-          <tbody>
-            <tr>
-              <td className="w-16">承辦人</td>
-              <td>產品規劃部副理　鐘廷睿</td>
-            </tr>
+          if (maintenanceItems.length === 0) {
+            return null;
+          }
 
-            <tr>
-              <td>電話</td>
-              <td>(04)2298-1378#20</td>
-            </tr>
+          return (
+            <>
+              日後若新增授權人數，各系統每增加一使用者維護費：
+              {' '}
+              {maintenanceItems.map((item, index) => (
+                <span key={`maintenance-${item.SystemId}-${index}`}>
+                  {index > 0 ? '；' : ''}
+                  {item.SystemCode || item.SystemName}
+                  {' '}
+                  NT$
+                  {Number(
+                    item.addUserMaintenanceTaxIncluded || 0
+                  ).toLocaleString()}
+                  （含稅）
+                </span>
+              ))}
+              。
+            </>
+          );
+        })()}
+      </li>
 
-            <tr>
-              <td>傳真</td>
-              <td>(04)2298-1328</td>
-            </tr>
+      {(() => {
+        const licenseAddUserItems = previewQuote.items.filter(
+          (item) =>
+            Number(item.licenseAddUserTaxIncluded || 0) > 0
+        );
 
-            <tr>
-              <td>承辦人簽名</td>
-              <td>
-                <img
-                  src="/sign.jpg"
-                  alt="承辦人簽名"
-                  className="h-7 object-contain"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </td>
-    </tr>
-  </tbody>
-</table>
-            <div className="border-t border-black mt-2 pt-1 compact">
-              說明：1. 本報價單以上金額含稅，有效期至{' '}
-              {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
-              100%（30日到期票）。
-            </div>
+        if (licenseAddUserItems.length === 0) {
+          return null;
+        }
+
+        return (
+          <li>
+            網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
+            {' '}
+            {licenseAddUserItems.map((item, index) => (
+              <span key={`license-${item.SystemId}-${index}`}>
+                {index > 0 ? '；' : ''}
+                {item.SystemCode || item.SystemName}
+                {' '}
+                NT$
+                {Number(
+                  item.licenseAddUserTaxIncluded || 0
+                ).toLocaleString()}
+              </span>
+            ))}
+            。
+          </li>
+        );
+      })()}
+    </ol>
+  </section>
+
+  <table className="mt-3 w-full">
+    <tbody>
+      <tr>
+        <th className="w-[34%] text-center">客戶確認簽章</th>
+        <th className="w-[30%] text-center">報價專用章</th>
+        <th className="w-[36%] text-center">承辦人資料</th>
+      </tr>
+
+      <tr className="h-32">
+        <td></td>
+
+        <td className="text-center">
+          <img
+            src="/seal.JPG"
+            alt="報價專用章"
+            className="h-28 mx-auto object-contain"
+          />
+        </td>
+
+        <td className="p-0">
+          <table className="h-full w-full">
+            <tbody>
+              <tr>
+                <td className="w-16">承辦人</td>
+                <td>產品規劃部副理　鐘廷睿</td>
+              </tr>
+
+              <tr>
+                <td>電話</td>
+                <td>(04)2298-1378#20</td>
+              </tr>
+
+              <tr>
+                <td>傳真</td>
+                <td>(04)2298-1328</td>
+              </tr>
+
+              <tr>
+                <td>承辦人簽名</td>
+                <td>
+                  <img
+                    src="/sign.jpg"
+                    alt="承辦人簽名"
+                    className="h-7 object-contain"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div className="border-t border-black mt-2 pt-1 compact">
+    說明：1. 本報價單以上金額含稅，有效期至{' '}
+    {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
+    100%（30日到期票）。
+  </div>
+</div>
 
             <div className="no-print mt-4 flex justify-end gap-3">
               <button
