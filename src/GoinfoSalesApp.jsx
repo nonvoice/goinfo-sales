@@ -4602,111 +4602,112 @@ const renderUserManagement = () => {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <style>{`
-        /* 預覽視窗中的報價單樣式 */
-        .quote-sheet {
-          border: 1px solid #111;
-          padding: 6mm;
-          font-family: Arial, "Microsoft JhengHei", sans-serif;
-          font-size: 11px;
-          line-height: 1.3;
-        }
+       /* 預覽畫面的報價單：水平置中 */
+       .quote-print {
+         display: flex;
+         justify-content: center;
+       }
 
-        .quote-sheet table {
-          width: 100%;
-          border-collapse: collapse;
-        }
+       .quote-sheet {
+         width: 200mm;
+         min-height: 287mm;
+         box-sizing: border-box;
 
-        .quote-sheet th,
-        .quote-sheet td {
-          padding: 4px;
-          vertical-align: middle;
-          border: 1px solid #111;
-        }
+         margin: 0 auto;
+         border: 1px solid #111;
+         padding: 5mm;
 
-        .quote-sheet .noborder td {
-          padding: 1px;
-          border: 0;
-        }
+         font-family: Arial, "Microsoft JhengHei", sans-serif;
+         font-size: 11px;
+         line-height: 1.3;
 
-        .quote-sheet .compact {
-          font-size: 10px;
-          line-height: 1.25;
-        }
+         display: flex;
+         flex-direction: column;
+       }
 
-        /* 列印時才套用 */
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 5mm;
-          }
+       /* 列印時：A4 內上下左右置中 */
+       @media print {
+         @page {
+           size: A4 portrait;
+           margin: 5mm;
+         }
 
-          html,
-          body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            background: #fff !important;
-          }
+         html,
+         body {
+           width: 210mm;
+           height: 297mm;
+           margin: 0 !important;
+           padding: 0 !important;
+           overflow: hidden !important;
+           background: #fff !important;
+         }
 
-          body * {
-            visibility: hidden;
-          }
+         body * {
+           visibility: hidden;
+         }
 
-          .quote-print,
-          .quote-print * {
-            visibility: visible;
-          }
+         .quote-print,
+         .quote-print * {
+           visibility: visible;
+         }
 
-          .quote-print {
-            position: absolute;
-            top: 0;
-            left: 0;
+         .quote-print {
+           position: absolute;
+           top: 0;
+           left: 0;
 
-            /*
-              A4：210mm × 297mm
-              @page 上下左右 5mm 後，內容最大範圍：
-              寬 200mm、高 287mm
-            */
-            width: 200mm !important;
-            min-width: 200mm !important;
-            max-width: 200mm !important;
+           width: 210mm !important;
+           min-width: 210mm !important;
+           max-width: 210mm !important;
 
-            height: 287mm !important;
-            min-height: 287mm !important;
-            max-height: 287mm !important;
+           height: 297mm !important;
+           min-height: 297mm !important;
+           max-height: 297mm !important;
 
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            box-sizing: border-box !important;
+           display: flex !important;
+           align-items: center !important;
+           justify-content: center !important;
 
-            background: #fff !important;
-            box-shadow: none !important;
-          }
+           margin: 0 !important;
+           padding: 0 !important;
+           overflow: hidden !important;
+           box-sizing: border-box !important;
 
-          .quote-sheet {
-            width: 200mm !important;
-            height: 287mm !important;
-            min-height: 287mm !important;
-            max-height: 287mm !important;
+           background: #fff !important;
+           box-shadow: none !important;
+         }
 
-            margin: 0 !important;
-            padding: 6mm !important;
-            box-sizing: border-box !important;
-            overflow: hidden !important;
+         .quote-sheet {
+           /*
+             A4 210 × 297mm；
+             四邊保留 5mm，報價單本體為 200 × 287mm。
+             外層 flex 的 align-items / justify-content
+             會將它置於正中央。
+           */
+           width: 200mm !important;
+           min-width: 200mm !important;
+           max-width: 200mm !important;
 
-            display: flex !important;
-            flex-direction: column !important;
+           height: 287mm !important;
+           min-height: 287mm !important;
+           max-height: 287mm !important;
 
-            border: 1px solid #111 !important;
-          }
+           margin: 0 !important;
+           padding: 5mm !important;
+           box-sizing: border-box !important;
+           overflow: hidden !important;
 
-          .no-print {
-            display: none !important;
-          }
-        }
+           border: 1px solid #111 !important;
+           background: #fff !important;
+
+           display: flex !important;
+           flex-direction: column !important;
+         }
+
+         .no-print {
+           display: none !important;
+         }
+       }
       `}</style>
 
       <div className="quote-sheet">
