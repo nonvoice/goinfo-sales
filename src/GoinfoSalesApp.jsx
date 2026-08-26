@@ -5082,8 +5082,9 @@ const renderUserManagement = () => {
 
        .quote-sheet .compact {
          font-size: 10px;
-         line-height: 1.25; 
-           `}</style>
+         line-height: 1.25;
+       }
+       `}</style>
 
       <div className="quote-sheet">
         <button
@@ -5391,6 +5392,7 @@ const renderUserManagement = () => {
     </td>
   </tr>
 </tbody>
+</table>
 
 {previewQuote.isNewPurchase && (
   <section className="mt-3 compact">
