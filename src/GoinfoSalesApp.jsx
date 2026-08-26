@@ -1155,16 +1155,13 @@ const calculateManualFinalTaxIncludedAmount = (item) =>
     : calculateDiscountTaxIncludedAmount(item);
 
 /*
-  最終優惠（含稅）：
-  手動最終優惠金額／折數優惠金額，再扣升級折抵。
-  範例：116000 − 85000 ＝ 31000
+  細項最終優惠（含稅）：
+  有手動最終優惠價就用 specialPrice；
+  沒有才使用折數優惠。
+  注意：細項不扣升級折抵。
 */
 const calculateFinalTaxIncludedAmount = (item) =>
-  Math.max(
-    calculateManualFinalTaxIncludedAmount(item) -
-      getUpgradeCreditAmount(item),
-    0
-  );
+  calculateManualFinalTaxIncludedAmount(item);
 
 /* 相容舊畫面程式 */
 const calculateDiscountAmount = (item) =>
@@ -1195,22 +1192,23 @@ const calculateLineAmount = (item) =>
     優惠總計（含稅）：
     牌價 × 折數 × 1.05，再扣升級折抵。
   */
-  const discountTaxIncludedAmount = quoteItems.reduce(
-    (sum, item) =>
-      sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
-    0
-  );
+  const discountTaxIncludedAmount = Math.max(
+   quoteItems.reduce(
+     (sum, item) =>
+       sum + calculateDiscountTaxIncludedAmount(item),
+     0
+   ) - upgradeCreditAmount,
+   0
+ );
 
-  /*
-    最終優惠（含稅）：
-    specialPrice 優先，再扣升級折抵；
-    specialPrice 未填時，使用折數金額。
-  */
-  const finalOfferTaxIncludedAmount = quoteItems.reduce(
+ const finalOfferTaxIncludedAmount = Math.max(
+  quoteItems.reduce(
     (sum, item) =>
       sum + calculateFinalTaxIncludedAmount(item),
     0
-  );
+  ) - upgradeCreditAmount,
+  0
+);
 
   const discountTaxExcludedAmount = Math.round(
     discountTaxIncludedAmount / 1.05
@@ -2433,7 +2431,7 @@ const printQuoteSheet = () => {
               </label>
 
               <div className="font-bold text-blue-600 text-right p-2">
-                ${calculateAfterUpgradeCreditTaxIncludedAmount(item).toLocaleString()}
+                ${calculateManualFinalTaxIncludedAmount(item).toLocaleString()}
               </div>
             </div>
 
