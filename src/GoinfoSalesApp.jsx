@@ -5492,17 +5492,17 @@ const renderUserManagement = () => {
         <td className="p-0">
           <table className="h-full w-full">
             <tbody>
-              <tr style={{ height: '18px' }}>
+              <tr style={{ height: '19px' }}>
                 <td className="w-16">承辦人</td>
                 <td>產品規劃部副理　鐘廷睿</td>
               </tr>
 
-              <tr style={{ height: '18px' }}>
+              <tr style={{ height: '19px' }}>
                 <td>電話</td>
                 <td>(04)2298-1378#20</td>
               </tr>
 
-              <tr style={{ height: '18px' }}>
+              <tr style={{ height: '19px' }}>
                 <td>傳真</td>
                 <td>(04)2298-1328</td>
               </tr>
