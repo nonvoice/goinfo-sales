@@ -5303,94 +5303,160 @@ const renderUserManagement = () => {
     </tr>
   ))}
 
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      合計（未稅）
-    </td>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      NT${Number(previewQuote.quote.SubtotalAmount || 0).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+    {(() => {
+    const originalTaxIncludedAmount = previewQuote.items.reduce(
+      (sum, item) =>
+        sum + Number(item.DiscountAmount ?? item.discountAmount ?? 0),
+      0
+    );
 
-  <tr>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      營業稅（5%）
-    </td>
-    <td></td>
-    <td className="text-right whitespace-nowrap">
-      NT$
-      {Math.round(
-        Number(previewQuote.quote.SubtotalAmount || 0) * 0.05
-      ).toLocaleString()}
-    </td>
-    <td></td>
-  </tr>
+    const manualFinalTaxIncludedAmount = previewQuote.items.reduce(
+      (sum, item) => {
+        const specialPrice =
+          item.SpecialPrice ??
+          item.specialPrice ??
+          null;
 
-  <tr>
-    <td></td>
-    <td className="text-right font-bold whitespace-nowrap">
-      優惠總計（含稅）
-    </td>
-    <td></td>
-    <td className="text-right font-bold whitespace-nowrap">
-      NT$
-      {Number(
-        previewQuote.items.reduce(
-          (sum, item) => sum + Number(item.DiscountAmount || 0),
+        const finalAmount =
+          item.FinalAmount ??
+          item.finalAmount ??
+          null;
+
+        const upgradeCreditAmount = Number(
+          item.UpgradeCreditAmount ??
+          item.upgradeCreditAmount ??
           0
-        )
-      ).toLocaleString()}
-    </td>
-    <td>
-      {previewQuote.items.some(
-        (item) =>
-          item.SpecialPrice !== null ||
-          item.specialPrice !== null ||
-          item.FinalAmount !== null ||
-          item.finalAmount !== null
-      ) && (
-        <span className="font-semibold text-red-600 whitespace-nowrap">
-          NT$
-          {Number(
-            previewQuote.items.reduce((sum, item) => {
-              const specialPrice =
-                item.SpecialPrice ??
-                item.specialPrice ??
-                null;
+        );
 
-              const finalAmount =
-                item.FinalAmount ??
-                item.finalAmount ??
-                null;
+        const amount =
+          specialPrice !== null &&
+          specialPrice !== undefined &&
+          specialPrice !== ''
+            ? Number(specialPrice)
+            : finalAmount !== null &&
+              finalAmount !== undefined &&
+              finalAmount !== ''
+              ? Number(finalAmount) + upgradeCreditAmount
+              : Number(item.DiscountAmount ?? item.discountAmount ?? 0);
 
-              const upgradeCreditAmount = Number(
-                item.UpgradeCreditAmount ??
-                item.upgradeCreditAmount ??
-                0
-              );
+        return sum + amount;
+      },
+      0
+    );
 
-              const displayAmount =
-                specialPrice !== null &&
-                specialPrice !== undefined &&
-                specialPrice !== ''
-                  ? Number(specialPrice)
-                  : finalAmount !== null &&
-                    finalAmount !== undefined &&
-                    finalAmount !== ''
-                    ? Number(finalAmount) + upgradeCreditAmount
-                    : Number(item.DiscountAmount || 0);
+    const upgradeCreditItems = previewQuote.items.filter(
+      (item) =>
+        Number(
+          item.UpgradeCreditAmount ??
+          item.upgradeCreditAmount ??
+          0
+        ) > 0
+    );
 
-              return sum + displayAmount;
-            }, 0)
-          ).toLocaleString()}
-        </span>
-      )}
-    </td>
-  </tr>
+    const totalUpgradeCreditAmount = upgradeCreditItems.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.UpgradeCreditAmount ??
+          item.upgradeCreditAmount ??
+          0
+        ),
+      0
+    );
+
+    const afterCreditOriginalAmount =
+      originalTaxIncludedAmount - totalUpgradeCreditAmount;
+
+    const afterCreditFinalAmount =
+      manualFinalTaxIncludedAmount - totalUpgradeCreditAmount;
+
+    const hasManualFinalAmount =
+      manualFinalTaxIncludedAmount !== originalTaxIncludedAmount;
+
+    return (
+      <>
+        <tr>
+          <td colSpan={3}></td>
+
+          <td className="text-right font-bold whitespace-nowrap">
+            含稅金額
+          </td>
+
+          <td className="text-right whitespace-nowrap">
+            {hasManualFinalAmount ? (
+              <>
+                <span className="line-through text-red-600">
+                  NT${originalTaxIncludedAmount.toLocaleString()}
+                </span>
+                <br />
+                <span className="font-bold text-red-600">
+                  → NT${manualFinalTaxIncludedAmount.toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span className="font-bold">
+                NT${originalTaxIncludedAmount.toLocaleString()}
+              </span>
+            )}
+          </td>
+        </tr>
+
+        {upgradeCreditItems.map((item, index) => {
+          const description =
+            item.UpgradeCreditDescription ??
+            item.upgradeCreditDescription ??
+            '升級折抵';
+
+          const amount = Number(
+            item.UpgradeCreditAmount ??
+            item.upgradeCreditAmount ??
+            0
+          );
+
+          return (
+            <tr
+              key={`upgrade-credit-${item.QuotationItemId || item.SystemId}-${index}`}
+            >
+              <td colSpan={3}></td>
+
+              <td
+                colSpan={2}
+                className="text-right text-red-600 whitespace-nowrap"
+              >
+                扣：{description} −(NT${amount.toLocaleString()})
+              </td>
+            </tr>
+          );
+        })}
+
+        <tr>
+          <td colSpan={3}></td>
+
+          <td className="text-right font-bold whitespace-nowrap">
+            優惠金額
+          </td>
+
+          <td className="text-right whitespace-nowrap">
+            {hasManualFinalAmount ? (
+              <>
+                <span className="line-through text-red-600">
+                  NT${afterCreditOriginalAmount.toLocaleString()}
+                </span>
+                <br />
+                <span className="font-bold text-red-600">
+                  → NT${afterCreditFinalAmount.toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span className="font-bold">
+                NT${afterCreditOriginalAmount.toLocaleString()}
+              </span>
+            )}
+          </td>
+        </tr>
+      </>
+    );
+  })()}
 </tbody>
 </table>
 
