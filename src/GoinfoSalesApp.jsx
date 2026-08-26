@@ -5492,28 +5492,28 @@ const renderUserManagement = () => {
         <td className="p-0">
           <table className="h-full w-full">
             <tbody>
-              <tr>
+              <tr className="h-5">
                 <td className="w-16">承辦人</td>
                 <td>產品規劃部副理　鐘廷睿</td>
               </tr>
 
-              <tr>
+              <tr className="h-5">
                 <td>電話</td>
                 <td>(04)2298-1378#20</td>
               </tr>
 
-              <tr>
+              <tr className="h-5">
                 <td>傳真</td>
                 <td>(04)2298-1328</td>
               </tr>
 
-              <tr>
+              <tr className="h-7">
                 <td>承辦人簽名</td>
                 <td>
                   <img
                     src="/sign.jpg"
                     alt="承辦人簽名"
-                    className="h-8 object-contain"
+                    className="h-6 object-contain"
                   />
                 </td>
               </tr>
