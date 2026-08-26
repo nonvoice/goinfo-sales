@@ -1110,17 +1110,6 @@ const getDiscountPercent = (item) =>
 const calculateTaxIncludedListAmount = (item) =>
   Math.round(calculateListAmount(item) * 1.05);
 
-/* 優惠總計（含稅）：只由牌價與折數計算 */
-const calculateDiscountTaxIncludedAmount = (item) =>
-  Math.round(
-    calculateTaxIncludedListAmount(item) *
-      (getDiscountPercent(item) / 100)
-  );
-
-/* 相容舊畫面程式：原 calculateDiscountAmount 名稱仍可使用 */
-const calculateDiscountAmount = (item) =>
-  calculateDiscountTaxIncludedAmount(item);
-
 const hasFinalAmount = (item) =>
   item.specialPrice !== '' &&
   item.specialPrice !== null &&
