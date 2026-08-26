@@ -1422,7 +1422,6 @@ const printQuoteSheet = () => {
 
           .quote-sheet {
             width: 200mm;
-            height: 285mm;
             min-height: 285mm;
             margin: 1mm auto 0;
             padding: 5mm;
@@ -1675,7 +1674,6 @@ const printQuoteSheet = () => {
 
             .quote-sheet {
               width: 200mm;
-              height: 285mm;
               min-height: 285mm;
               margin: 1mm auto 0;
             }
@@ -4964,6 +4962,16 @@ const renderUserManagement = () => {
          width: 100%;
          border-collapse: collapse;
          border-spacing: 0;
+       }
+
+       .quote-sheet table {
+         break-inside: avoid;
+         page-break-inside: avoid;
+       }
+
+       .quote-sheet .mt-auto {
+         break-inside: avoid;
+         page-break-inside: avoid;
        }
 
        .quote-sheet table:not(.noborder) {
