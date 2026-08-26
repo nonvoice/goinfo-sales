@@ -1122,18 +1122,15 @@ const getUpgradeCreditAmount = (item) =>
   Math.max(Number(item.upgradeCreditAmount) || 0, 0);
 
 /*
-  優惠總計（含稅）：
-  有手動最終優惠價時，使用 specialPrice；
-  未填時，依折數計算。
-  注意：這裡尚未扣除升級折抵。
+  優惠金額（含稅）：
+  一律依「牌價 × 折數 × 1.05」計算。
+  specialPrice 不參與優惠總計，以免覆蓋折數計算。
 */
 const calculateDiscountTaxIncludedAmount = (item) =>
-  hasFinalAmount(item)
-    ? Math.round(Number(item.specialPrice))
-    : Math.round(
-        calculateTaxIncludedListAmount(item) *
-          getDiscountPercent(item) / 100
-      );
+  Math.round(
+    calculateTaxIncludedListAmount(item) *
+      getDiscountPercent(item) / 100
+  );
 
 /* 相容舊畫面程式：原 calculateDiscountAmount 名稱仍可使用 */
 const calculateDiscountAmount = (item) =>
