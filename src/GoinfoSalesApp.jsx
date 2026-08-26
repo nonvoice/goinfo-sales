@@ -1121,10 +1121,21 @@ const hasFinalAmount = (item) =>
 const getUpgradeCreditAmount = (item) =>
   Math.max(Number(item.upgradeCreditAmount) || 0, 0);
 
+const hasFinalAmount = (item) =>
+  item.specialPrice !== '' &&
+  item.specialPrice !== null &&
+  item.specialPrice !== undefined &&
+  Number.isFinite(Number(item.specialPrice)) &&
+  Number(item.specialPrice) >= 0;
+
+/* 升級折抵：輸入正數，例如 85000 */
+const getUpgradeCreditAmount = (item) =>
+  Math.max(Number(item.upgradeCreditAmount) || 0, 0);
+
 /*
-  優惠金額（含稅）：
-  一律依「牌價 × 折數 × 1.05」計算。
-  specialPrice 不參與優惠總計，以免覆蓋折數計算。
+  優惠總計計算基礎（含稅）：
+  一律使用「牌價 × 折數 × 1.05」，
+  不使用手動最終優惠價 specialPrice。
 */
 const calculateDiscountTaxIncludedAmount = (item) =>
   Math.round(
@@ -1132,14 +1143,10 @@ const calculateDiscountTaxIncludedAmount = (item) =>
       getDiscountPercent(item) / 100
   );
 
-/* 相容舊畫面程式：原 calculateDiscountAmount 名稱仍可使用 */
-const calculateDiscountAmount = (item) =>
-  calculateDiscountTaxIncludedAmount(item);
-
 /*
-  折後金額（含稅）：
-  優惠總計 − 升級折抵。
-  範例：116000 − 85000 ＝ 31000
+  優惠後金額（含稅）：
+  優惠總計基礎 − 升級折抵。
+  範例：180000 × 70% × 1.05 − 85000 ＝ 47300
 */
 const calculateAfterUpgradeCreditTaxIncludedAmount = (item) =>
   Math.max(
@@ -1149,15 +1156,35 @@ const calculateAfterUpgradeCreditTaxIncludedAmount = (item) =>
   );
 
 /*
+  手動最終優惠金額（含稅）：
+  有填 specialPrice 使用 specialPrice；
+  沒填則使用「牌價 × 折數 × 1.05」。
+*/
+const calculateManualFinalTaxIncludedAmount = (item) =>
+  hasFinalAmount(item)
+    ? Math.round(Number(item.specialPrice))
+    : calculateDiscountTaxIncludedAmount(item);
+
+/*
   最終優惠（含稅）：
-  與折後金額一致，即已扣除升級折抵後的實際金額。
+  手動最終優惠金額／折數優惠金額，再扣升級折抵。
+  範例：116000 − 85000 ＝ 31000
 */
 const calculateFinalTaxIncludedAmount = (item) =>
-  calculateAfterUpgradeCreditTaxIncludedAmount(item);
+  Math.max(
+    calculateManualFinalTaxIncludedAmount(item) -
+      getUpgradeCreditAmount(item),
+    0
+  );
 
-/* 最終優惠未稅金額 */
+/* 相容舊畫面程式 */
+const calculateDiscountAmount = (item) =>
+  calculateDiscountTaxIncludedAmount(item);
+
+/* 實際最終成交金額換算未稅 */
 const calculateLineAmount = (item) =>
   Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
+
   const getMaintenanceRule = (systemId) => {
     const today = new Date().toISOString().slice(0, 10);
     return pricingRuleList.filter(r => Number(r.SystemId) === Number(systemId) && String(r.RuleType).toUpperCase() === 'MAINTENANCE' && (r.IsActive === true || r.IsActive === 1 || r.IsActive === 'true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10) <= today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10) >= today)).sort((a,b) => String(b.EffectiveStartDate || '').localeCompare(String(a.EffectiveStartDate || '')))[0];
@@ -1177,26 +1204,22 @@ const calculateLineAmount = (item) =>
 
   /*
     優惠總計（含稅）：
-    未扣除升級折抵。
+    牌價 × 折數 × 1.05，再扣升級折抵。
   */
   const discountTaxIncludedAmount = quoteItems.reduce(
     (sum, item) =>
-      sum + calculateDiscountTaxIncludedAmount(item),
-    0
-  );
-
-  const upgradeCreditAmount = quoteItems.reduce(
-    (sum, item) =>
-      sum + getUpgradeCreditAmount(item),
+      sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
     0
   );
 
   /*
     最終優惠（含稅）：
-    優惠總計 − 升級折抵。
+    specialPrice 優先，再扣升級折抵；
+    specialPrice 未填時，使用折數金額。
   */
-  const finalOfferTaxIncludedAmount = Math.max(
-    discountTaxIncludedAmount - upgradeCreditAmount,
+  const finalOfferTaxIncludedAmount = quoteItems.reduce(
+    (sum, item) =>
+      sum + calculateFinalTaxIncludedAmount(item),
     0
   );
 
@@ -1207,12 +1230,18 @@ const calculateLineAmount = (item) =>
   const discountTaxAmount =
     discountTaxIncludedAmount - discountTaxExcludedAmount;
 
-  const taxExcludedAmount = Math.round(
+  const finalOfferTaxExcludedAmount = Math.round(
     finalOfferTaxIncludedAmount / 1.05
   );
 
-  const taxAmount =
-    finalOfferTaxIncludedAmount - taxExcludedAmount;
+  const finalOfferTaxAmount =
+    finalOfferTaxIncludedAmount - finalOfferTaxExcludedAmount;
+
+  const upgradeCreditAmount = quoteItems.reduce(
+    (sum, item) =>
+      sum + getUpgradeCreditAmount(item),
+    0
+  );
 
   const annualMaintenanceAmount = quoteItems.reduce(
     (sum, item) => {
@@ -1235,20 +1264,18 @@ const calculateLineAmount = (item) =>
     listAmount,
     taxIncludedListAmount,
 
+    upgradeCreditAmount,
+
+    /* 優惠總計：依折數 */
     discountAmount: discountTaxIncludedAmount,
     discountTaxIncludedAmount,
     discountTaxExcludedAmount,
     discountTaxAmount,
 
-    upgradeCreditAmount,
-
-    taxExcludedAmount,
-    taxAmount,
-
-    afterUpgradeCreditTaxIncludedAmount:
-      finalOfferTaxIncludedAmount,
-
+    /* 最終優惠：手動最終價優先 */
     finalOfferTaxIncludedAmount,
+    finalOfferTaxExcludedAmount,
+    finalOfferTaxAmount,
 
     annualMaintenanceAmount,
 
