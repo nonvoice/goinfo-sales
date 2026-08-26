@@ -5513,7 +5513,7 @@ const renderUserManagement = () => {
                   <img
                     src="/sign.jpg"
                     alt="承辦人簽名"
-                    className="h-7 object-contain"
+                    className="h-8 object-contain"
                   />
                 </td>
               </tr>
