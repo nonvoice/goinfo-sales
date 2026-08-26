@@ -1128,14 +1128,32 @@ const hasFinalAmount = (item) =>
   Number.isFinite(Number(item.specialPrice)) &&
   Number(item.specialPrice) >= 0;
 
-/* 升級折抵：輸入正數，例如 115000 */
+/* 升級折抵：輸入正數，例如 85000 */
 const getUpgradeCreditAmount = (item) =>
   Math.max(Number(item.upgradeCreditAmount) || 0, 0);
 
 /*
-  優惠後金額（含稅）：
-  優惠總計 - 升級折抵
-  例：183750 - 115000 = 68750
+  優惠總計（含稅）：
+  有手動最終優惠價時，使用 specialPrice；
+  未填時，依折數計算。
+  注意：這裡尚未扣除升級折抵。
+*/
+const calculateDiscountTaxIncludedAmount = (item) =>
+  hasFinalAmount(item)
+    ? Math.round(Number(item.specialPrice))
+    : Math.round(
+        calculateTaxIncludedListAmount(item) *
+          getDiscountPercent(item) / 100
+      );
+
+/* 相容舊畫面程式：原 calculateDiscountAmount 名稱仍可使用 */
+const calculateDiscountAmount = (item) =>
+  calculateDiscountTaxIncludedAmount(item);
+
+/*
+  折後金額（含稅）：
+  優惠總計 − 升級折抵。
+  範例：116000 − 85000 ＝ 31000
 */
 const calculateAfterUpgradeCreditTaxIncludedAmount = (item) =>
   Math.max(
@@ -1146,14 +1164,14 @@ const calculateAfterUpgradeCreditTaxIncludedAmount = (item) =>
 
 /*
   最終優惠（含稅）：
-  若業務手動填寫 specialPrice，就使用它；
-  未填時，使用「優惠後金額」。
+  與折後金額一致，即已扣除升級折抵後的實際金額。
 */
 const calculateFinalTaxIncludedAmount = (item) =>
-  hasFinalAmount(item)
-    ? Math.round(Number(item.specialPrice))
-    : calculateAfterUpgradeCreditTaxIncludedAmount(item);
-  const calculateLineAmount = (item) => Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
+  calculateAfterUpgradeCreditTaxIncludedAmount(item);
+
+/* 最終優惠未稅金額 */
+const calculateLineAmount = (item) =>
+  Math.round(calculateFinalTaxIncludedAmount(item) / 1.05);
   const getMaintenanceRule = (systemId) => {
     const today = new Date().toISOString().slice(0, 10);
     return pricingRuleList.filter(r => Number(r.SystemId) === Number(systemId) && String(r.RuleType).toUpperCase() === 'MAINTENANCE' && (r.IsActive === true || r.IsActive === 1 || r.IsActive === 'true') && (!r.EffectiveStartDate || String(r.EffectiveStartDate).slice(0,10) <= today) && (!r.EffectiveEndDate || String(r.EffectiveEndDate).slice(0,10) >= today)).sort((a,b) => String(b.EffectiveStartDate || '').localeCompare(String(a.EffectiveStartDate || '')))[0];
@@ -1171,39 +1189,51 @@ const calculateFinalTaxIncludedAmount = (item) =>
     0
   );
 
+  /*
+    優惠總計（含稅）：
+    未扣除升級折抵。
+  */
   const discountTaxIncludedAmount = quoteItems.reduce(
     (sum, item) =>
       sum + calculateDiscountTaxIncludedAmount(item),
     0
   );
 
-  const afterUpgradeCreditTaxIncludedAmount = quoteItems.reduce(
+  const upgradeCreditAmount = quoteItems.reduce(
     (sum, item) =>
-      sum + calculateAfterUpgradeCreditTaxIncludedAmount(item),
+      sum + getUpgradeCreditAmount(item),
     0
   );
 
-  const finalOfferTaxIncludedAmount = quoteItems.reduce(
-    (sum, item) =>
-      sum + calculateFinalTaxIncludedAmount(item),
+  /*
+    最終優惠（含稅）：
+    優惠總計 − 升級折抵。
+  */
+  const finalOfferTaxIncludedAmount = Math.max(
+    discountTaxIncludedAmount - upgradeCreditAmount,
     0
   );
 
-  const taxExcludedAmount = Math.round(
+  const discountTaxExcludedAmount = Math.round(
     discountTaxIncludedAmount / 1.05
   );
 
+  const discountTaxAmount =
+    discountTaxIncludedAmount - discountTaxExcludedAmount;
+
+  const taxExcludedAmount = Math.round(
+    finalOfferTaxIncludedAmount / 1.05
+  );
+
   const taxAmount =
-    discountTaxIncludedAmount - taxExcludedAmount;
+    finalOfferTaxIncludedAmount - taxExcludedAmount;
 
   const annualMaintenanceAmount = quoteItems.reduce(
     (sum, item) => {
       const rule = getMaintenanceRule(item.systemId);
       const users = Math.max(Number(item.userCount) || 0, 0);
 
-      if (!rule || !users) {
-        return sum;
-      }
+      if (!rule || !users) return sum;
 
       return (
         sum +
@@ -1216,26 +1246,26 @@ const calculateFinalTaxIncludedAmount = (item) =>
   );
 
   return {
-  listAmount,
-  taxIncludedListAmount,
+    listAmount,
+    taxIncludedListAmount,
 
-  discountAmount: discountTaxIncludedAmount,
+    discountAmount: discountTaxIncludedAmount,
+    discountTaxIncludedAmount,
+    discountTaxExcludedAmount,
+    discountTaxAmount,
 
-  /* 相容既有畫面：避免 quoteSummary.taxIncludedAmount 是 undefined */
-  taxIncludedAmount: discountTaxIncludedAmount,
+    upgradeCreditAmount,
 
-  /* 相容既有畫面：優惠後金額 */
-  afterUpgradeCreditAmount:
-    afterUpgradeCreditTaxIncludedAmount,
+    taxExcludedAmount,
+    taxAmount,
 
-  discountTaxIncludedAmount,
-  afterUpgradeCreditTaxIncludedAmount,
-  finalOfferTaxIncludedAmount,
+    afterUpgradeCreditTaxIncludedAmount:
+      finalOfferTaxIncludedAmount,
 
-  taxExcludedAmount,
-  taxAmount,
+    finalOfferTaxIncludedAmount,
 
     annualMaintenanceAmount,
+
     hasManualFinalPrice: quoteItems.some(hasFinalAmount),
   };
 }, [quoteItems, pricingRuleList]);
@@ -2401,7 +2431,7 @@ const printQuoteSheet = () => {
               </label>
 
               <div className="font-bold text-blue-600 text-right p-2">
-                ${calculateFinalTaxIncludedAmount(item).toLocaleString()}
+                ${calculateAfterUpgradeCreditTaxIncludedAmount(item).toLocaleString()}
               </div>
             </div>
 
@@ -2488,17 +2518,17 @@ const printQuoteSheet = () => {
 
             <div>
               優惠總計（未稅）：
-              ${quoteSummary.taxExcludedAmount.toLocaleString()}
+              ${quoteSummary.discountTaxExcludedAmount.toLocaleString()}
             </div>
 
             <div>
               營業稅（5%）：
-              ${quoteSummary.taxAmount.toLocaleString()}
+              ${quoteSummary.discountTaxAmount.toLocaleString()}
             </div>
 
             <div className="text-xl font-bold">
               優惠總計（含稅）：
-              ${quoteSummary.taxIncludedAmount.toLocaleString()}
+              ${quoteSummary.discountTaxIncludedAmount.toLocaleString()}
             </div>
 
             <div className="text-xl font-bold text-red-600">
@@ -5492,22 +5522,22 @@ const renderUserManagement = () => {
         <td className="p-0">
           <table className="h-full w-full">
             <tbody>
-              <tr style={{ height: '23px' }}>
+              <tr style={{ height: '25px' }}>
                 <td className="w-16">承辦人</td>
                 <td>產品規劃部副理　鐘廷睿</td>
               </tr>
 
-              <tr style={{ height: '23px' }}>
+              <tr style={{ height: '25px' }}>
                 <td>電話</td>
                 <td>(04)2298-1378#20</td>
               </tr>
 
-              <tr style={{ height: '23px' }}>
+              <tr style={{ height: '25px' }}>
                 <td>傳真</td>
                 <td>(04)2298-1328</td>
               </tr>
 
-              <tr style={{ height: '28px' }}>
+              <tr style={{ height: '30px' }}>
                 <td>承辦人簽名</td>
                 <td>
                   <img
