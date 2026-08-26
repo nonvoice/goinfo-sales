@@ -5302,6 +5302,69 @@ const renderUserManagement = () => {
 </tbody>
 </table>
 
+<div className="mt-3 flex justify-end">
+  <table className="w-[360px]">
+    <tbody>
+      <tr>
+        <td className="text-right font-semibold">
+          優惠總計（未稅）：
+        </td>
+        <td className="text-right whitespace-nowrap">
+          NT$
+          {Number(
+            previewQuote.quote.DiscountTaxExcludedAmount ??
+            previewQuote.quote.DiscountAmount ??
+            0
+          ).toLocaleString()}
+        </td>
+      </tr>
+
+      <tr>
+        <td className="text-right font-semibold">
+          營業稅（5%）：
+        </td>
+        <td className="text-right whitespace-nowrap">
+          NT$
+          {Number(
+            previewQuote.quote.DiscountTaxAmount ??
+            previewQuote.quote.TaxAmount ??
+            0
+          ).toLocaleString()}
+        </td>
+      </tr>
+
+      <tr>
+        <td className="text-right font-bold">
+          優惠總計（含稅）：
+        </td>
+        <td className="text-right font-bold whitespace-nowrap">
+          NT$
+          {Number(
+            previewQuote.quote.DiscountTaxIncludedAmount ??
+            previewQuote.quote.DiscountAmountTaxIncluded ??
+            0
+          ).toLocaleString()}
+        </td>
+      </tr>
+
+      <tr>
+        <td className="text-right text-red-600 font-bold">
+          最終優惠（含稅）：
+        </td>
+        <td className="text-right text-red-600 font-bold whitespace-nowrap">
+          NT$
+          {Number(
+            previewQuote.quote.FinalOfferTaxIncludedAmount ??
+            previewQuote.quote.FinalAmount ??
+            previewQuote.quote.TotalAmount ??
+            0
+          ).toLocaleString()}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 {previewQuote.isNewPurchase && (
   <section className="mt-3 compact">
     <h2 className="font-bold text-sm border-b-2 border-black">
