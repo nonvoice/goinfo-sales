@@ -5193,177 +5193,204 @@ const renderUserManagement = () => {
           </thead>
 
   <tbody>
-    {previewQuote.items.map((item, index) => (
-  <tr
-    key={
-      item.QuotationItemId ||
-      `${item.SystemId}-${item.ItemType || 'item'}-${index}`
-    }
-  >
+  {previewQuote.items.map((item, index) => (
+    <tr
+      key={
+        item.QuotationItemId ||
+        `${item.SystemId}-${item.ItemType || 'item'}-${index}`
+      }
+    >
+      <td>
+        {(() => {
+          const systemCode = String(item.SystemCode || '')
+            .replace(/\d+$/g, '')
+            .trim();
+
+          const systemName = String(item.SystemName || '').trim();
+
+          const isStandalone =
+            systemName.includes('單機版') ||
+            systemName.includes('單機');
+
+          const productName =
+            systemCode && systemName
+              ? `${systemCode}－${systemName}`
+              : systemName || systemCode || '－';
+
+          return isStandalone
+            ? productName
+            : `${productName}（網路 ${item.UserCount || 1} 人版）`;
+        })()}
+      </td>
+
+      <td className="text-right whitespace-nowrap">
+        NT${Number(item.LineAmount || 0).toLocaleString()}
+      </td>
+
+      <td className="text-center">1</td>
+
+      <td className="text-right whitespace-nowrap">
+        NT${Number(item.LineAmount || 0).toLocaleString()}
+      </td>
+
+      <td className="text-xs leading-tight">
+        折數 {item.Discount ?? 100}%<br />
+
+        {(() => {
+          const discountAmount = Number(
+            item.DiscountAmount ??
+            item.discountAmount ??
+            0
+          );
+
+          const specialPrice =
+            item.SpecialPrice ??
+            item.specialPrice ??
+            null;
+
+          const finalAmount =
+            item.FinalAmount ??
+            item.finalAmount ??
+            null;
+
+          const upgradeCreditAmount = Number(
+            item.UpgradeCreditAmount ??
+            item.upgradeCreditAmount ??
+            0
+          );
+
+          const displayFinalAmount =
+            specialPrice !== null &&
+            specialPrice !== undefined &&
+            specialPrice !== ''
+              ? Number(specialPrice)
+              : finalAmount !== null &&
+                finalAmount !== undefined &&
+                finalAmount !== ''
+                ? Number(finalAmount) + upgradeCreditAmount
+                : null;
+
+          const hasDisplayFinalAmount =
+            displayFinalAmount !== null &&
+            Number.isFinite(displayFinalAmount) &&
+            displayFinalAmount > 0;
+
+          return (
+            <>
+              <span
+                className={
+                  hasDisplayFinalAmount
+                    ? 'line-through text-red-600 whitespace-nowrap'
+                    : 'whitespace-nowrap'
+                }
+              >
+                優惠含稅 NT${discountAmount.toLocaleString()}
+              </span>
+
+              {hasDisplayFinalAmount && (
+                <>
+                  <br />
+                  <span className="font-semibold text-red-600 whitespace-nowrap">
+                    → NT${displayFinalAmount.toLocaleString()}
+                  </span>
+                </>
+              )}
+            </>
+          );
+        })()}
+      </td>
+    </tr>
+  ))}
+
+  <tr>
+    <td></td>
+    <td className="text-right whitespace-nowrap">
+      合計（未稅）
+    </td>
+    <td></td>
+    <td className="text-right whitespace-nowrap">
+      NT${Number(previewQuote.quote.SubtotalAmount || 0).toLocaleString()}
+    </td>
+    <td></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td className="text-right whitespace-nowrap">
+      營業稅（5%）
+    </td>
+    <td></td>
+    <td className="text-right whitespace-nowrap">
+      NT$
+      {Math.round(
+        Number(previewQuote.quote.SubtotalAmount || 0) * 0.05
+      ).toLocaleString()}
+    </td>
+    <td></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td className="text-right font-bold whitespace-nowrap">
+      優惠總計（含稅）
+    </td>
+    <td></td>
+    <td className="text-right font-bold whitespace-nowrap">
+      NT$
+      {Number(
+        previewQuote.items.reduce(
+          (sum, item) => sum + Number(item.DiscountAmount || 0),
+          0
+        )
+      ).toLocaleString()}
+    </td>
     <td>
-  {(() => {
-    const systemCode = String(item.SystemCode || '')
-      .replace(/\d+$/g, '')
-      .trim();
+      {previewQuote.items.some(
+        (item) =>
+          item.SpecialPrice !== null ||
+          item.specialPrice !== null ||
+          item.FinalAmount !== null ||
+          item.finalAmount !== null
+      ) && (
+        <span className="font-semibold text-red-600 whitespace-nowrap">
+          NT$
+          {Number(
+            previewQuote.items.reduce((sum, item) => {
+              const specialPrice =
+                item.SpecialPrice ??
+                item.specialPrice ??
+                null;
 
-    const systemName = String(item.SystemName || '').trim();
+              const finalAmount =
+                item.FinalAmount ??
+                item.finalAmount ??
+                null;
 
-    const isStandalone =
-      systemName.includes('單機版') ||
-      systemName.includes('單機');
+              const upgradeCreditAmount = Number(
+                item.UpgradeCreditAmount ??
+                item.upgradeCreditAmount ??
+                0
+              );
 
-    const productName =
-      systemCode && systemName
-        ? `${systemCode}－${systemName}`
-        : systemName || systemCode || '－';
+              const displayAmount =
+                specialPrice !== null &&
+                specialPrice !== undefined &&
+                specialPrice !== ''
+                  ? Number(specialPrice)
+                  : finalAmount !== null &&
+                    finalAmount !== undefined &&
+                    finalAmount !== ''
+                    ? Number(finalAmount) + upgradeCreditAmount
+                    : Number(item.DiscountAmount || 0);
 
-    return isStandalone
-      ? productName
-      : `${productName}（網路 ${item.UserCount || 1} 人版）`;
-  })()}
-</td>
-
-    <td className="text-right whitespace-nowrap">
-      NT${Number(item.LineAmount || 0).toLocaleString()}
-    </td>
-
-    <td className="text-center">1</td>
-
-    <td className="text-right whitespace-nowrap">
-      NT${Number(item.LineAmount || 0).toLocaleString()}
-    </td>
-
-    <td className="text-xs leading-tight">
-  折數 {item.Discount ?? 100}%<br />
-
-  {(() => {
-    const discountAmount = Number(
-      item.DiscountAmount ??
-      item.discountAmount ??
-      0
-    );
-
-    const storedFinalAmount =
-      item.SpecialPrice ??
-      item.specialPrice ??
-      item.FinalAmount ??
-      item.finalAmount ??
-      null;
-
-    const upgradeCreditAmount = Number(
-      item.UpgradeCreditAmount ??
-      item.upgradeCreditAmount ??
-      0
-    );
-
-    /*
-      舊報價 API 若未回傳 SpecialPrice，
-      而 FinalAmount 是已扣折抵後金額，
-      則加回升級折抵以顯示原始手動最終優惠價。
-    */
-    const displayFinalAmount =
-      storedFinalAmount !== null &&
-      storedFinalAmount !== undefined &&
-      storedFinalAmount !== ''
-        ? Number(storedFinalAmount) + upgradeCreditAmount
-        : null;
-
-    const hasDisplayFinalAmount =
-      displayFinalAmount !== null &&
-      Number.isFinite(displayFinalAmount) &&
-      displayFinalAmount > 0;
-
-    return (
-      <>
-        <span
-          className={
-            hasDisplayFinalAmount
-              ? 'line-through text-red-600 whitespace-nowrap'
-              : 'whitespace-nowrap'
-          }
-        >
-          優惠含稅 NT${discountAmount.toLocaleString()}
+              return sum + displayAmount;
+            }, 0)
+          ).toLocaleString()}
         </span>
-
-        {hasDisplayFinalAmount && (
-          <>
-            <br />
-            <span className="font-semibold text-red-600 whitespace-nowrap">
-              → NT${displayFinalAmount.toLocaleString()}
-            </span>
-          </>
-        )}
-      </>
-    );
-  })()}
-</td>
-</tr>
-))}
+      )}
+    </td>
+  </tr>
 </tbody>
-</table>
-
-<div className="mt-3 flex justify-end">
-  <table className="w-[360px]">
-    <tbody>
-      <tr>
-        <td className="text-right font-semibold">
-          優惠總計（未稅）：
-        </td>
-        <td className="text-right whitespace-nowrap">
-          NT$
-          {Number(
-            previewQuote.quote.DiscountTaxExcludedAmount ??
-            previewQuote.quote.DiscountAmount ??
-            0
-          ).toLocaleString()}
-        </td>
-      </tr>
-
-      <tr>
-        <td className="text-right font-semibold">
-          營業稅（5%）：
-        </td>
-        <td className="text-right whitespace-nowrap">
-          NT$
-          {Number(
-            previewQuote.quote.DiscountTaxAmount ??
-            previewQuote.quote.TaxAmount ??
-            0
-          ).toLocaleString()}
-        </td>
-      </tr>
-
-      <tr>
-        <td className="text-right font-bold">
-          優惠總計（含稅）：
-        </td>
-        <td className="text-right font-bold whitespace-nowrap">
-          NT$
-          {Number(
-            previewQuote.quote.DiscountTaxIncludedAmount ??
-            previewQuote.quote.DiscountAmountTaxIncluded ??
-            0
-          ).toLocaleString()}
-        </td>
-      </tr>
-
-      <tr>
-        <td className="text-right text-red-600 font-bold">
-          最終優惠（含稅）：
-        </td>
-        <td className="text-right text-red-600 font-bold whitespace-nowrap">
-          NT$
-          {Number(
-            previewQuote.quote.FinalOfferTaxIncludedAmount ??
-            previewQuote.quote.FinalAmount ??
-            previewQuote.quote.TotalAmount ??
-            0
-          ).toLocaleString()}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
 
 {previewQuote.isNewPurchase && (
   <section className="mt-3 compact">
