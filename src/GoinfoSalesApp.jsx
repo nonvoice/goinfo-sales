@@ -1398,287 +1398,303 @@ const printQuoteSheet = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>軟體買賣報價單</title>
 
-        <style>
-          @page {
-            size: A4 portrait;
-            margin: 5mm;
-          }
+       <style>
+  @page {
+    size: A4 portrait;
+    margin: 5mm;
+  }
 
-          * {
-            box-sizing: border-box;
-          }
+  * {
+    box-sizing: border-box;
+  }
 
-          html,
-          body {
-            margin: 0;
-            padding: 0;
-            background: #ffffff;
-            color: #000000;
-            font-family: Arial, "Microsoft JhengHei", sans-serif;
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #000000;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
 
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-          .quote-sheet {
-            width: 200mm;
-            min-height: 285mm;
-            margin: 1mm auto 0;
-            padding: 5mm;
-            box-sizing: border-box;
+  /*
+    報價單本體不設定固定高度。
+    系統較多時可以自然延伸到下一頁，避免切到簽章。
+  */
+  .quote-sheet {
+    width: 200mm;
+    margin: 0 auto;
+    padding: 5mm;
+    box-sizing: border-box;
 
-            border: 1px solid #111;
-            background: #fff;
+    border: 1px solid #111;
+    background: #fff;
 
-            font-family: Arial, "Microsoft JhengHei", sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
 
-            display: flex;
-            flex-direction: column;
-          }
+    display: block;
+    overflow: visible;
+  }
 
-          .quote-sheet table {
-            width: 100%;
-            border-collapse: collapse;
-            border-spacing: 0;
-          }
+  /* ===== 表格與格線 ===== */
+  .quote-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
 
-          .quote-sheet table:not(.noborder),
-          .quote-sheet table:not(.noborder) th,
-          .quote-sheet table:not(.noborder) td {
-            border: 1px solid #111;
-          }
+  .quote-sheet table:not(.noborder),
+  .quote-sheet table:not(.noborder) th,
+  .quote-sheet table:not(.noborder) td {
+    border: 1px solid #111;
+  }
 
-          .quote-sheet table:not(.noborder) th,
-          .quote-sheet table:not(.noborder) td {
-            padding: 4px;
-            vertical-align: middle;
-          }
+  .quote-sheet table:not(.noborder) th,
+  .quote-sheet table:not(.noborder) td {
+    padding: 4px;
+    vertical-align: middle;
+  }
 
-          .quote-sheet .noborder,
-          .quote-sheet .noborder th,
-          .quote-sheet .noborder td {
-            border: 0;
-            padding: 1px;
-          }
+  /* 公司名稱下方的地址／電話表格保留無格線 */
+  .quote-sheet .noborder,
+  .quote-sheet .noborder th,
+  .quote-sheet .noborder td {
+    border: 0;
+    padding: 1px;
+  }
 
-          .quote-sheet .compact {
-            font-size: 10px;
-            line-height: 1.25;
-          }
+  .quote-sheet .compact {
+    font-size: 10px;
+    line-height: 1.25;
+  }
 
-          .quote-sheet .mt-auto {
-            margin-top: auto;
-          }
+  /*
+    維護說明、簽章、條款不可被切成上下兩半。
+    若第一頁不足，整個區塊會移到第二頁。
+  */
+  .quote-footer,
+  .quote-footer table,
+  .quote-footer tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 
-          .quote-sheet .text-center {
-            text-align: center;
-          }
+  .quote-footer {
+    margin-top: 10mm;
+  }
 
-          .quote-sheet .text-right {
-            text-align: right;
-          }
+  /* ===== Tailwind 類別補足 ===== */
+  .quote-sheet .text-center {
+    text-align: center;
+  }
 
-          .quote-sheet .font-bold {
-            font-weight: 700;
-          }
+  .quote-sheet .text-right {
+    text-align: right;
+  }
 
-          .quote-sheet .font-semibold {
-            font-weight: 600;
-          }
+  .quote-sheet .font-bold {
+    font-weight: 700;
+  }
 
-          .quote-sheet .block {
-            display: block;
-          }
+  .quote-sheet .font-semibold {
+    font-weight: 600;
+  }
 
-          .quote-sheet .flex {
-            display: flex;
-          }
+  .quote-sheet .block {
+    display: block;
+  }
 
-          .quote-sheet .items-center {
-            align-items: center;
-          }
+  .quote-sheet .flex {
+    display: flex;
+  }
 
-          .quote-sheet .justify-center {
-            justify-content: center;
-          }
+  .quote-sheet .items-center {
+    align-items: center;
+  }
 
-          .quote-sheet .gap-3 {
-            gap: 0.75rem;
-          }
+  .quote-sheet .justify-center {
+    justify-content: center;
+  }
 
-          .quote-sheet .mt-1 {
-            margin-top: 0.25rem;
-          }
+  .quote-sheet .gap-3 {
+    gap: 0.75rem;
+  }
 
-          .quote-sheet .mt-2 {
-            margin-top: 0.5rem;
-          }
+  .quote-sheet .mt-1 {
+    margin-top: 0.25rem;
+  }
 
-          .quote-sheet .mt-3 {
-            margin-top: 0.75rem;
-          }
+  .quote-sheet .mt-2 {
+    margin-top: 0.5rem;
+  }
 
-          .quote-sheet .mb-2 {
-            margin-bottom: 0.5rem;
-          }
+  .quote-sheet .mt-3 {
+    margin-top: 0.75rem;
+  }
 
-          .quote-sheet .pb-2 {
-            padding-bottom: 0.5rem;
-          }
+  .quote-sheet .mb-2 {
+    margin-bottom: 0.5rem;
+  }
 
-          .quote-sheet .pt-1 {
-            padding-top: 0.25rem;
-          }
+  .quote-sheet .pb-2 {
+    padding-bottom: 0.5rem;
+  }
 
-          .quote-sheet .p-0 {
-            padding: 0;
-          }
+  .quote-sheet .pt-1 {
+    padding-top: 0.25rem;
+  }
 
-          .quote-sheet .border-b-2 {
-            border-bottom: 2px solid #111;
-          }
+  .quote-sheet .p-0 {
+    padding: 0;
+  }
 
-          .quote-sheet .border-t {
-            border-top: 1px solid #111;
-          }
+  .quote-sheet .border-b-2 {
+    border-bottom: 2px solid #111;
+  }
 
-          .quote-sheet .border-black {
-            border-color: #111;
-          }
+  .quote-sheet .border-t {
+    border-top: 1px solid #111;
+  }
 
-          .quote-sheet .h-10 {
-            height: 2.5rem;
-          }
+  .quote-sheet .border-black {
+    border-color: #111;
+  }
 
-          .quote-sheet .h-7 {
-            height: 1.75rem;
-          }
+  .quote-sheet .h-10 {
+    height: 2.5rem;
+  }
 
-          .quote-sheet .h-28 {
-            height: 7rem;
-          }
+  .quote-sheet .h-7 {
+    height: 1.75rem;
+  }
 
-          .quote-sheet .h-32 {
-            height: 8rem;
-          }
+  .quote-sheet .h-28 {
+    height: 7rem;
+  }
 
-          .quote-sheet .h-full {
-            height: 100%;
-          }
+  .quote-sheet .h-32 {
+    height: 8rem;
+  }
 
-          .quote-sheet .w-full {
-            width: 100%;
-          }
+  .quote-sheet .h-full {
+    height: 100%;
+  }
 
-          .quote-sheet .w-16 {
-            width: 4rem;
-          }
+  .quote-sheet .w-full {
+    width: 100%;
+  }
 
-          .quote-sheet .w-\\[34\\%\\] {
-            width: 34%;
-          }
+  .quote-sheet .w-16 {
+    width: 4rem;
+  }
 
-          .quote-sheet .w-\\[30\\%\\] {
-            width: 30%;
-          }
+  .quote-sheet .w-\[34\%\] {
+    width: 34%;
+  }
 
-          .quote-sheet .w-\\[36\\%\\] {
-            width: 36%;
-          }
+  .quote-sheet .w-\[30\%\] {
+    width: 30%;
+  }
 
-          .quote-sheet .w-\\[47\\%\\] {
-            width: 47%;
-          }
+  .quote-sheet .w-\[36\%\] {
+    width: 36%;
+  }
 
-          .quote-sheet .w-\\[16\\%\\] {
-            width: 16%;
-          }
+  .quote-sheet .w-\[47\%\] {
+    width: 47%;
+  }
 
-          .quote-sheet .w-\\[7\\%\\] {
-            width: 7%;
-          }
+  .quote-sheet .w-\[16\%\] {
+    width: 16%;
+  }
 
-          .quote-sheet .w-\\[13\\%\\] {
-            width: 13%;
-          }
+  .quote-sheet .w-\[7\%\] {
+    width: 7%;
+  }
 
-          .quote-sheet .w-\\[17\\%\\] {
-            width: 17%;
-          }
+  .quote-sheet .w-\[13\%\] {
+    width: 13%;
+  }
 
-          .quote-sheet .object-contain {
-            object-fit: contain;
-          }
+  .quote-sheet .w-\[17\%\] {
+    width: 17%;
+  }
 
-          .quote-sheet .mx-auto {
-            margin-left: auto;
-            margin-right: auto;
-          }
+  .quote-sheet .object-contain {
+    object-fit: contain;
+  }
 
-          .quote-sheet .whitespace-nowrap {
-            white-space: nowrap;
-          }
+  .quote-sheet .mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-          .quote-sheet .whitespace-pre-wrap {
-            white-space: pre-wrap;
-          }
+  .quote-sheet .whitespace-nowrap {
+    white-space: nowrap;
+  }
 
-          .quote-sheet .list-decimal {
-            list-style-type: decimal;
-          }
+  .quote-sheet .whitespace-pre-wrap {
+    white-space: pre-wrap;
+  }
 
-          .quote-sheet .pl-5 {
-            padding-left: 1.25rem;
-          }
+  .quote-sheet .list-decimal {
+    list-style-type: decimal;
+  }
 
-          .quote-sheet .text-xl {
-            font-size: 1.25rem;
-          }
+  .quote-sheet .pl-5 {
+    padding-left: 1.25rem;
+  }
 
-          .quote-sheet .text-sm {
-            font-size: 0.875rem;
-          }
+  .quote-sheet .text-xl {
+    font-size: 1.25rem;
+  }
 
-          .quote-sheet .text-red-600 {
-            color: #dc2626;
-          }
+  .quote-sheet .text-sm {
+    font-size: 0.875rem;
+  }
 
-          .quote-sheet .line-through {
-            text-decoration: line-through;
-          }
+  .quote-sheet .text-red-600 {
+    color: #dc2626;
+  }
 
-          .quote-sheet .bg-gray-100 {
-            background: #f3f4f6;
-          }
+  .quote-sheet .line-through {
+    text-decoration: line-through;
+  }
 
-          .quote-sheet img {
-            max-width: 100%;
-          }
+  .quote-sheet .bg-gray-100 {
+    background: #f3f4f6;
+  }
 
-          .quote-sheet .no-print,
-          .quote-sheet button {
-            display: none !important;
-          }
+  .quote-sheet img {
+    max-width: 100%;
+  }
 
-          @media print {
-            html,
-            body {
-              width: 210mm;
-              height: 297mm;
-              margin: 0;
-              padding: 0;
-              overflow: hidden;
-            }
+  /* 不列印預覽用控制元件 */
+  .quote-sheet .no-print,
+  .quote-sheet button {
+    display: none !important;
+  }
 
-            .quote-sheet {
-              width: 200mm;
-              min-height: 285mm;
-              margin: 1mm auto 0;
-            }
-          }
-        </style>
+  @media print {
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+
+    .quote-sheet {
+      width: 200mm;
+      margin: 0 auto;
+      overflow: visible;
+    }
+  }
+</style>
       </head>
 
       <body>
@@ -5359,7 +5375,7 @@ const renderUserManagement = () => {
   </section>
 )}
 
-<div className="mt-auto">
+<div className="quote-footer">
   <section className="compact">
     <h2 className="border-b-2 border-black text-sm font-bold">
       維護說明
