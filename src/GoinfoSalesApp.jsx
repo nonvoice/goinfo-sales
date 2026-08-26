@@ -1458,7 +1458,7 @@ const printQuoteSheet = () => {
 
   .quote-sheet table:not(.noborder) th,
   .quote-sheet table:not(.noborder) td {
-    padding: 4px;
+    padding: 2px 3px;
     vertical-align: middle;
   }
 
@@ -1472,7 +1472,7 @@ const printQuoteSheet = () => {
 
   .quote-sheet .compact {
     font-size: 10px;
-    line-height: 1.25;
+    line-height: 1.2;
   }
 
   /*
@@ -1536,19 +1536,19 @@ const printQuoteSheet = () => {
   }
 
   .quote-sheet .mt-1 {
-    margin-top: 0.25rem;
+    margin-top: 0.2rem;
   }
 
   .quote-sheet .mt-2 {
-    margin-top: 0.5rem;
+    margin-top: 0.45rem;
   }
 
   .quote-sheet .mt-3 {
-    margin-top: 0.75rem;
+    margin-top: 0.7rem;
   }
 
   .quote-sheet .mb-2 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.45rem;
   }
 
   .quote-sheet .pb-2 {
@@ -5076,7 +5076,7 @@ const renderUserManagement = () => {
           <div className="text-center font-semibold">QUOTATION</div>
         </header>
 
-        <table className="mb-2">
+        <table className="mb-1">
           <tbody>
             <tr>
               <td>
@@ -5181,7 +5181,7 @@ const renderUserManagement = () => {
       item.FinalAmount !== undefined ? (
         <>
           <span className="line-through text-red-600 whitespace-nowrap">
-            NT${Number(item.DiscountAmount || 0).toLocaleString()}
+            優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
           </span>
           <br />
 
@@ -5196,7 +5196,7 @@ const renderUserManagement = () => {
   </tbody>
 </table>
 
-<table className="mt-3 w-full">
+<table className="mt-1 w-full">
   <colgroup>
     <col className="w-[47%]" />
     <col className="w-[16%]" />
@@ -5470,7 +5470,7 @@ const renderUserManagement = () => {
     </ol>
   </section>
 
-  <table className="mt-3 w-full">
+  <table className="w-full">
     <tbody>
       <tr>
         <th className="w-[34%] text-center">客戶確認簽章</th>
