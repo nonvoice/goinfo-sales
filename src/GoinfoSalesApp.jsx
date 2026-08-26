@@ -5174,30 +5174,22 @@ const renderUserManagement = () => {
       NT${Number(item.LineAmount || 0).toLocaleString()}
     </td>
 
-    <td>
-      折數 {item.Discount ?? 100}%
-      <br />
-
-      <span
-        className={
-          item.FinalAmount !== null &&
-          item.FinalAmount !== undefined
-            ? 'line-through text-red-600'
-            : ''
-        }
-      >
-        優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
-      </span>
+    <td className="text-xs leading-tight">
+      折數 {item.Discount ?? 100}%<br />
 
       {item.FinalAmount !== null &&
-        item.FinalAmount !== undefined && (
-          <>
-            <br />
-            <span className="font-semibold text-red-600">
-              → 最終優惠含稅 NT${Number(item.FinalAmount).toLocaleString()}
-            </span>
-          </>
-        )}
+      item.FinalAmount !== undefined ? (
+        <>
+          <span className="line-through text-red-600 whitespace-nowrap">
+            NT${Number(item.DiscountAmount || 0).toLocaleString()}
+          </span>
+          <br />
+
+          <span className="font-semibold text-red-600 whitespace-nowrap">
+            → NT${Number(item.FinalAmount).toLocaleString()}
+          </span>
+        </>
+      ) : null}
     </td>
   </tr>
 ))}
