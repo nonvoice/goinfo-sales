@@ -1425,21 +1425,23 @@ const printQuoteSheet = () => {
     系統較多時可以自然延伸到下一頁，避免切到簽章。
   */
   .quote-sheet {
-    width: 200mm;
-    margin: 0 auto;
-    padding: 5mm;
-    box-sizing: border-box;
+   width: 200mm;
+   min-height: 287mm;
+   margin: 0 auto;
+   padding: 5mm;
+   box-sizing: border-box;
 
-    border: 1px solid #111;
-    background: #fff;
+   border: 1px solid #111;
+   background: #fff;
 
-    font-family: Arial, "Microsoft JhengHei", sans-serif;
-    font-size: 11px;
-    line-height: 1.3;
+   font-family: Arial, "Microsoft JhengHei", sans-serif;
+   font-size: 11px;
+   line-height: 1.3;
 
-    display: block;
-    overflow: visible;
-  }
+   display: flex;
+   flex-direction: column;
+   overflow: visible;
+}
 
   /* ===== 表格與格線 ===== */
   .quote-sheet table {
@@ -1478,15 +1480,23 @@ const printQuoteSheet = () => {
     若第一頁不足，整個區塊會移到第二頁。
   */
   .quote-footer,
-  .quote-footer table,
-  .quote-footer tr {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+.quote-footer table,
+.quote-footer tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 
-  .quote-footer {
-    margin-top: 10mm;
-  }
+.quote-footer {
+  /*
+    一、二個系統時：
+    自動吸收系統說明和維護說明之間的空白，
+    並將維護說明、簽章、條款推到紙張下緣。
+
+    三個以上系統時：
+    若第一頁空間不足，整塊 footer 會移到第二頁。
+  */
+  margin-top: auto;
+}
 
   /* ===== Tailwind 類別補足 ===== */
   .quote-sheet .text-center {
@@ -1681,19 +1691,22 @@ const printQuoteSheet = () => {
   }
 
   @media print {
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
-    }
-
-    .quote-sheet {
-      width: 200mm;
-      margin: 0 auto;
-      overflow: visible;
-    }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
   }
+
+  .quote-sheet {
+    width: 200mm;
+    min-height: 287mm;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+}
 </style>
       </head>
 
