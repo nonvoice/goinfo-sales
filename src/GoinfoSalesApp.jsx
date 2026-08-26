@@ -5298,8 +5298,7 @@ const renderUserManagement = () => {
   })()}
 </td>
 </tr>
-</>
-)}
+))}
 </tbody>
 </table>
 
