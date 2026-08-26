@@ -1121,17 +1121,6 @@ const hasFinalAmount = (item) =>
 const getUpgradeCreditAmount = (item) =>
   Math.max(Number(item.upgradeCreditAmount) || 0, 0);
 
-const hasFinalAmount = (item) =>
-  item.specialPrice !== '' &&
-  item.specialPrice !== null &&
-  item.specialPrice !== undefined &&
-  Number.isFinite(Number(item.specialPrice)) &&
-  Number(item.specialPrice) >= 0;
-
-/* 升級折抵：輸入正數，例如 85000 */
-const getUpgradeCreditAmount = (item) =>
-  Math.max(Number(item.upgradeCreditAmount) || 0, 0);
-
 /*
   優惠總計計算基礎（含稅）：
   一律使用「牌價 × 折數 × 1.05」，
