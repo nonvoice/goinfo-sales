@@ -5240,12 +5240,21 @@ const renderUserManagement = () => {
       item.FinalAmount !== undefined ? (
         <>
           <span className="line-through text-red-600 whitespace-nowrap">
-            優惠含稅 NT${Number(item.DiscountAmount || 0).toLocaleString()}
+            優惠含稅 NT$
+            {Number(item.DiscountAmount || 0).toLocaleString()}
           </span>
+
           <br />
 
           <span className="font-semibold text-red-600 whitespace-nowrap">
-            → NT${Number(item.FinalAmount).toLocaleString()}
+            → NT$
+            {Number(
+              item.SpecialPrice ??
+              item.specialPrice ??
+              item.FinalAmount ??
+              item.finalAmount ??
+              0
+            ).toLocaleString()}
           </span>
         </>
       ) : null}
