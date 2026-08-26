@@ -5234,66 +5234,72 @@ const renderUserManagement = () => {
     </td>
 
     <td className="text-xs leading-tight">
-      折數 {item.Discount ?? 100}%<br />
+  折數 {item.Discount ?? 100}%<br />
 
-      {(() => {
-        const discountAmount = Number(
-          item.DiscountAmount ??
-          item.discountAmount ??
-          0
-        );
+  {(() => {
+    const discountAmount = Number(
+      item.DiscountAmount ??
+      item.discountAmount ??
+      0
+    );
 
-        const storedFinalAmount =
-          item.SpecialPrice ??
-          item.specialPrice ??
-          item.FinalAmount ??
-          item.finalAmount ??
-          null;
+    const storedFinalAmount =
+      item.SpecialPrice ??
+      item.specialPrice ??
+      item.FinalAmount ??
+      item.finalAmount ??
+      null;
 
-        const upgradeCreditAmount = Number(
-          item.UpgradeCreditAmount ??
-          item.upgradeCreditAmount ??
-          0
-        );
+    const upgradeCreditAmount = Number(
+      item.UpgradeCreditAmount ??
+      item.upgradeCreditAmount ??
+      0
+    );
 
-        const savedFinalAmount =
-          storedFinalAmount !== null &&
-          storedFinalAmount !== undefined &&
-          storedFinalAmount !== ''
-            ? Number(storedFinalAmount) + upgradeCreditAmount
-            : null;
+    /*
+      舊報價 API 若未回傳 SpecialPrice，
+      而 FinalAmount 是已扣折抵後金額，
+      則加回升級折抵以顯示原始手動最終優惠價。
+    */
+    const displayFinalAmount =
+      storedFinalAmount !== null &&
+      storedFinalAmount !== undefined &&
+      storedFinalAmount !== ''
+        ? Number(storedFinalAmount) + upgradeCreditAmount
+        : null;
 
-        const hasManualFinalAmount =
-          savedFinalAmount !== null &&
-          savedFinalAmount !== undefined &&
-          savedFinalAmount !== '' &&
-          Number(savedFinalAmount) > 0;
+    const hasDisplayFinalAmount =
+      displayFinalAmount !== null &&
+      Number.isFinite(displayFinalAmount) &&
+      displayFinalAmount > 0;
 
-        return hasManualFinalAmount ? (
+    return (
+      <>
+        <span
+          className={
+            hasDisplayFinalAmount
+              ? 'line-through text-red-600 whitespace-nowrap'
+              : 'whitespace-nowrap'
+          }
+        >
+          優惠含稅 NT${discountAmount.toLocaleString()}
+        </span>
+
+        {hasDisplayFinalAmount && (
           <>
-            <span className="line-through text-red-600 whitespace-nowrap">
-              優惠含稅 NT${discountAmount.toLocaleString()}
-            </span>
-
             <br />
-
             <span className="font-semibold text-red-600 whitespace-nowrap">
-              → NT${Number(savedFinalAmount).toLocaleString()}
+              → NT${displayFinalAmount.toLocaleString()}
             </span>
-          </>
-        ) : (
-          <span className="whitespace-nowrap">
-            優惠含稅 NT${discountAmount.toLocaleString()}
-          </span>
-        );
-      })()}
-    </td>
-            </tr>
           </>
         )}
       </>
     );
   })()}
+</td>
+</tr>
+</>
+)}
 </tbody>
 </table>
 
