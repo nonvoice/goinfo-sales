@@ -5251,8 +5251,6 @@ const renderUserManagement = () => {
             {Number(
               item.SpecialPrice ??
               item.specialPrice ??
-              item.FinalAmount ??
-              item.finalAmount ??
               0
             ).toLocaleString()}
           </span>
