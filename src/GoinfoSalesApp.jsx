@@ -5492,28 +5492,35 @@ const renderUserManagement = () => {
         <td className="p-0">
           <table className="h-full w-full">
             <tbody>
-              <tr className="h-5">
+              <tr style={{ height: '18px' }}>
                 <td className="w-16">承辦人</td>
                 <td>產品規劃部副理　鐘廷睿</td>
               </tr>
 
-              <tr className="h-5">
+              <tr style={{ height: '18px' }}>
                 <td>電話</td>
                 <td>(04)2298-1378#20</td>
               </tr>
 
-              <tr className="h-5">
+              <tr style={{ height: '18px' }}>
                 <td>傳真</td>
                 <td>(04)2298-1328</td>
               </tr>
 
-              <tr className="h-7">
+              <tr style={{ height: '28px' }}>
                 <td>承辦人簽名</td>
                 <td>
                   <img
                     src="/sign.jpg"
                     alt="承辦人簽名"
-                    className="h-6 object-contain"
+                    style={{
+                      display: 'block',
+                      width: '72px',
+                      height: '24px',
+                      maxWidth: '72px',
+                      maxHeight: '24px',
+                      objectFit: 'contain',
+                    }}
                   />
                 </td>
               </tr>
