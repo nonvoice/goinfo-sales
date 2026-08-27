@@ -5112,10 +5112,11 @@ const renderUserManagement = () => {
          line-height: 1.25;
        }
        /* 僅預覽：外框依實際內容高度延伸到最下方說明 */
+       /* 僅預覽：外框必須包住系統說明、維護說明、簽章與最下方條款 */
        .quote-print .quote-sheet {
          min-height: 0 !important;
          height: auto !important;
-         display: block !important;
+         display: flow-root !important;
          overflow: visible !important;
        }
 
