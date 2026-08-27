@@ -5605,190 +5605,190 @@ const renderUserManagement = () => {
   </section>
 )}
 
-<div className="quote-footer">
-  <section className="compact">
-    <h2 className="border-b-2 border-black text-sm font-bold">
-      維護說明
-    </h2>
+        <div className="quote-footer">
+          <section className="compact">
+            <h2 className="border-b-2 border-black text-sm font-bold">
+              維護說明
+            </h2>
 
-    <ol className="list-decimal pl-5">
-      <li>
-        軟體系統自簽約日起
-        {' '}
-        {Number(previewQuote.warrantyMonths || 0) % 12 === 0
-          ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
-          : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
-        免費提供教育訓練及維護修復。保固期滿後年度維護費為
-        {' '}
-        NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
-        （含稅）
-        {previewQuote.maintenanceDiscountAmount !== null &&
-        previewQuote.maintenanceDiscountAmount !== undefined &&
-        previewQuote.maintenanceDiscountAmount !== ''
-          ? `，優惠金額為 NT$${Number(
-              previewQuote.maintenanceDiscountAmount
-            ).toLocaleString()}（含稅）`
-          : ''}
-        。
-
-        {(() => {
-          const maintenanceItems = previewQuote.items.filter((item) => {
-            const itemType = String(
-              item.ItemType ??
-              item.itemType ??
-              ''
-            ).toUpperCase();
-
-            return (
-              itemType !== 'MAINTENANCE' &&
-              Number(item.addUserMaintenanceTaxIncluded || 0) > 0
-            );
-          });
-
-          if (maintenanceItems.length === 0) {
-            return null;
-          }
-
-          return (
-            <>
-              日後若新增授權人數，各系統每增加一使用者維護費：
-              {' '}
-              {maintenanceItems.map((item, index) => (
-                <span key={`maintenance-${item.SystemId}-${index}`}>
-                  {index > 0 ? '；' : ''}
-                  {formatQuoteSystemCode(
-                    item.SystemCode ?? item.systemCode
-                  ) || item.SystemName}
-                  {' '}
-                  NT$
-                  {Number(
-                    item.addUserMaintenanceTaxIncluded || 0
-                  ).toLocaleString()}
-                  （含稅）
-                </span>
-              ))}
-              。
-            </>
-          );
-        })()}
-      </li>
-
-      {(() => {
-        const licenseAddUserItems = previewQuote.items.filter((item) => {
-          const itemType = String(
-            item.ItemType ??
-            item.itemType ??
-            ''
-          ).toUpperCase();
-
-          const systemCode = formatQuoteSystemCode(
-            item.SystemCode ?? item.systemCode
-          );
-
-          const isPtsSystem = /^PTS-/i.test(systemCode);
-
-          return (
-            itemType !== 'MAINTENANCE' &&
-            !isPtsSystem &&
-            Number(item.licenseAddUserTaxIncluded || 0) > 0
-          );
-        });
-
-        if (licenseAddUserItems.length === 0) {
-          return null;
-        }
-
-        return (
-          <li>
-            網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
-            {' '}
-            {licenseAddUserItems.map((item, index) => (
-              <span key={`license-${item.SystemId}-${index}`}>
-                {index > 0 ? '；' : ''}
-                {formatQuoteSystemCode(
-                  item.SystemCode ?? item.systemCode
-                ) || item.SystemName}
+            <ol className="list-decimal pl-5">
+              <li>
+                軟體系統自簽約日起
                 {' '}
-                NT$
-                {Number(
-                  item.licenseAddUserTaxIncluded || 0
-                ).toLocaleString()}
-              </span>
-            ))}
-            。
-          </li>
-        );
-      })()}
-    </ol>
-  </section>
+                {Number(previewQuote.warrantyMonths || 0) % 12 === 0
+                  ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
+                  : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
+                免費提供教育訓練及維護修復。保固期滿後年度維護費為
+                {' '}
+                NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
+                （含稅）
+                {previewQuote.maintenanceDiscountAmount !== null &&
+                previewQuote.maintenanceDiscountAmount !== undefined &&
+                previewQuote.maintenanceDiscountAmount !== ''
+                  ? `，優惠金額為 NT$${Number(
+                      previewQuote.maintenanceDiscountAmount
+                    ).toLocaleString()}（含稅）`
+                  : ''}
+                。
 
-  <table className="w-full">
-    <tbody>
-      <tr>
-        <th className="w-[34%] text-center">客戶確認簽章</th>
-        <th className="w-[30%] text-center">報價專用章</th>
-        <th className="w-[36%] text-center">承辦人資料</th>
-      </tr>
+                {(() => {
+                  const maintenanceItems = previewQuote.items.filter((item) => {
+                    const itemType = String(
+                      item.ItemType ??
+                      item.itemType ??
+                      ''
+                    ).toUpperCase();
 
-      <tr className="h-32">
-        <td></td>
+                    return (
+                      itemType !== 'MAINTENANCE' &&
+                      Number(item.addUserMaintenanceTaxIncluded || 0) > 0
+                    );
+                  });
 
-        <td className="text-center">
-          <img
-            src="/seal.JPG"
-            alt="報價專用章"
-            className="h-28 mx-auto object-contain"
-          />
-        </td>
+                  if (maintenanceItems.length === 0) {
+                    return null;
+                  }
+        
+                  return (
+                    <>
+                      日後若新增授權人數，各系統每增加一使用者維護費：
+                      {' '}
+                      {maintenanceItems.map((item, index) => (
+                        <span key={`maintenance-${item.SystemId}-${index}`}>
+                          {index > 0 ? '；' : ''}
+                          {formatQuoteSystemCode(
+                            item.SystemCode ?? item.systemCode
+                          ) || item.SystemName}
+                          {' '}
+                          NT$
+                          {Number(
+                            item.addUserMaintenanceTaxIncluded || 0
+                          ).toLocaleString()}
+                          （含稅）
+                        </span>
+                      ))}
+                      。
+                    </>
+                  );
+                })()}
+              </li>
 
-        <td className="p-0">
-          <table className="h-full w-full">
+              {(() => {
+                const licenseAddUserItems = previewQuote.items.filter((item) => {
+                  const itemType = String(
+                    item.ItemType ??
+                    item.itemType ??
+                    ''
+                  ).toUpperCase();
+
+                  const systemCode = formatQuoteSystemCode(
+                    item.SystemCode ?? item.systemCode
+                  );
+
+                  const isPtsSystem = /^PTS-/i.test(systemCode);
+
+                  return (
+                    itemType !== 'MAINTENANCE' &&
+                    !isPtsSystem &&
+                    Number(item.licenseAddUserTaxIncluded || 0) > 0
+                  );
+                });
+
+                if (licenseAddUserItems.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <li>
+                    網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
+                    {' '}
+                    {licenseAddUserItems.map((item, index) => (
+                      <span key={`license-${item.SystemId}-${index}`}>
+                        {index > 0 ? '；' : ''}
+                        {formatQuoteSystemCode(
+                          item.SystemCode ?? item.systemCode
+                        ) || item.SystemName}
+                        {' '}
+                        NT$
+                        {Number(
+                          item.licenseAddUserTaxIncluded || 0
+                        ).toLocaleString()}
+                      </span>
+                    ))}
+                    。
+                  </li>
+                );
+              })()}
+            </ol>
+          </section>
+
+        <table className="w-full">
             <tbody>
-              <tr style={{ height: '25px' }}>
-                <td className="w-16">承辦人</td>
-                <td>產品規劃部副理　鐘廷睿</td>
+              <tr>
+                <th className="w-[34%] text-center">客戶確認簽章</th>
+                <th className="w-[30%] text-center">報價專用章</th>
+                <th className="w-[36%] text-center">承辦人資料</th>
               </tr>
 
-              <tr style={{ height: '25px' }}>
-                <td>電話</td>
-                <td>(04)2298-1378#20</td>
-              </tr>
+              <tr className="h-32">
+                <td></td>
 
-              <tr style={{ height: '25px' }}>
-                <td>傳真</td>
-                <td>(04)2298-1328</td>
-              </tr>
-
-              <tr style={{ height: '30px' }}>
-                <td>承辦人簽名</td>
-                <td>
+                <td className="text-center">
                   <img
-                    src="/sign.jpg"
-                    alt="承辦人簽名"
-                    style={{
-                      display: 'block',
-                      width: '72px',
-                      height: '24px',
-                      maxWidth: '72px',
-                      maxHeight: '24px',
-                      objectFit: 'contain',
-                    }}
+                    src="/seal.JPG"
+                    alt="報價專用章"
+                    className="h-28 mx-auto object-contain"
                   />
+                </td>
+
+                <td className="p-0">
+                  <table className="h-full w-full">
+                    <tbody>
+                      <tr style={{ height: '25px' }}>
+                        <td className="w-16">承辦人</td>
+                        <td>產品規劃部副理　鐘廷睿</td>
+                      </tr>
+
+                      <tr style={{ height: '25px' }}>
+                        <td>電話</td>
+                        <td>(04)2298-1378#20</td>
+                      </tr>
+
+                      <tr style={{ height: '25px' }}>
+                        <td>傳真</td>
+                        <td>(04)2298-1328</td>
+                      </tr>
+
+                      <tr style={{ height: '30px' }}>
+                        <td>承辦人簽名</td>
+                        <td>
+                          <img
+                            src="/sign.jpg"
+                            alt="承辦人簽名"
+                            style={{
+                              display: 'block',
+                              width: '72px',
+                              height: '24px',
+                              maxWidth: '72px',
+                              maxHeight: '24px',
+                              objectFit: 'contain',
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             </tbody>
           </table>
-        </td>
-      </tr>
-    </tbody>
-  </table>
 
-  <div className="border-t border-black mt-2 pt-1 compact">
-    說明：1. 本報價單以上金額含稅，有效期至{' '}
-    {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
-    100%（30日到期票）。
-  </div>
-</div>
+          <div className="border-t border-black mt-2 pt-1 compact">
+              說明：1. 本報價單以上金額含稅，有效期至{' '}
+              {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
+              100%（30日到期票）。
+            </div>
+          </div>
 
             <div className="no-print mt-4 flex justify-end gap-3">
               <button
