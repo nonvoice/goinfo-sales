@@ -1776,7 +1776,7 @@ const printQuoteSheet = () => {
   }
 }
 
-  @media print {
+@media print {
   html,
   body {
     margin: 0;
@@ -1792,7 +1792,42 @@ const printQuoteSheet = () => {
     flex-direction: column;
     overflow: visible;
   }
+
+  /* 列印時：預覽外框不顯示，仍用 quote-sheet 原本外框 */
+  .quote-preview-frame {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: block;
+  }
 }
+
+/* ===== 預覽專用：加在所有 @media print 的外面 ===== */
+.quote-preview-frame {
+  width: 200mm;
+  margin: 0 auto;
+  padding: 5mm;
+  box-sizing: border-box;
+
+  border: 1px solid #111;
+  background: #fff;
+
+  display: flow-root;
+}
+
+/* 預覽時，外框由 quote-preview-frame 負責 */
+.quote-preview-frame .quote-sheet {
+  width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  display: block !important;
+  overflow: visible !important;
+}
+
 </style>
       </head>
 
@@ -5126,51 +5161,34 @@ const renderUserManagement = () => {
          overflow-x: auto !important;
        }
 
-       /* 預覽專用：外框由完整內容高度決定 */
-       .quote-print .quote-sheet-preview-frame {
+       /* 預覽專用：外框由內容高度自動撐開，按鈕不包含在外框 */
+       .quote-preview-frame {
+         width: 200mm;
+         margin: 0 auto;
+         padding: 5mm;
+         box-sizing: border-box;
+
+         border: 1px solid #111;
+         background: #fff;
+
+         display: flow-root;
+       }
+
+       /* 預覽時，內層不要再畫第二層框線 */
+       .quote-preview-frame .quote-sheet {
+         width: 100%;
          min-height: 0 !important;
          height: auto !important;
+         margin: 0;
+         padding: 0;
+         border: 0 !important;
          display: block !important;
          overflow: visible !important;
-
-         border: 0 !important;
        }
+             `}</style>
 
-       /*
-         使用外層偽元素繪製框線：
-         不會受 A4 最小高度或內部表格／分頁設定影響，
-         外框會延伸到最後一行「說明」文字的下方。
-       */
-       .quote-print .quote-sheet-preview-frame::after {
-         content: '';
-         display: block;
-         clear: both;
-         height: 0;
-         border-bottom: 1px solid #111;
-       }
-
-       .quote-print .quote-sheet-preview-frame {
-         position: relative;
-         border-left: 1px solid #111 !important;
-         border-right: 1px solid #111 !important;
-         border-top: 1px solid #111 !important;
-         padding-bottom: 5mm;
-       }
-
-       /* 預覽用底線在列印時關閉，維持你原本列印結果 */
-       @media print {
-         .quote-sheet-preview-frame {
-           border: 1px solid #111 !important;
-           padding-bottom: 5mm;
-         }
-
-         .quote-sheet-preview-frame::after {
-           display: none !important;
-         }
-       }
-       `}</style>
-
-      <div className="quote-sheet quote-sheet-preview-frame">
+      <div className="quote-preview-frame">
+        <div className="quote-sheet">
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
@@ -5833,7 +5851,7 @@ const renderUserManagement = () => {
             </div>
           </div>
 
-            <div className="no-print mt-4 flex justify-end gap-3">
+          <div className="no-print mt-4 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={printQuoteSheet}
