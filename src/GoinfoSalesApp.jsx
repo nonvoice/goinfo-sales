@@ -1484,23 +1484,23 @@ const printQuoteSheet = () => {
     系統較多時可以自然延伸到下一頁，避免切到簽章。
   */
   .quote-sheet {
-   width: 200mm;
-   min-height: 287mm;
-   margin: 0 auto;
-   padding: 5mm;
-   box-sizing: border-box;
+    width: 200mm;
+    min-height: 287mm;
+    height: max-content;
+    margin: 0 auto;
+    padding: 5mm;
+    box-sizing: border-box;
 
-   border: 1px solid #111;
-   background: #fff;
+    border: 1px solid #111;
+    background: #fff;
 
-   font-family: Arial, "Microsoft JhengHei", sans-serif;
-   font-size: 11px;
-   line-height: 1.3;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
 
-   display: flex;
-   flex-direction: column;
-   overflow: visible;
-}
+    display: block;
+    overflow: visible;
+  }
 
   /* ===== 表格與格線 ===== */
   .quote-sheet table {
@@ -5045,7 +5045,7 @@ const renderUserManagement = () => {
     onMouseDown={() => setShowQuotePreview(false)}
   >
     <div
-      className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
+      className="quote-print w-full max-w-5xl h-full max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <style>{`
@@ -5578,7 +5578,9 @@ const renderUserManagement = () => {
         className="mt-1"
       >
         <b className="block">
-          {item.SystemCode}－{item.SystemName}：
+          {formatQuoteSystemCode(
+            item.SystemCode ?? item.systemCode
+          )}－{item.SystemName}：
         </b>
 
         <span className="block whitespace-pre-wrap">
@@ -5640,7 +5642,9 @@ const renderUserManagement = () => {
               {maintenanceItems.map((item, index) => (
                 <span key={`maintenance-${item.SystemId}-${index}`}>
                   {index > 0 ? '；' : ''}
-                  {item.SystemCode || item.SystemName}
+                  {formatQuoteSystemCode(
+                    item.SystemCode ?? item.systemCode
+                  ) || item.SystemName}
                   {' '}
                   NT$
                   {Number(
@@ -5687,7 +5691,9 @@ const renderUserManagement = () => {
             {licenseAddUserItems.map((item, index) => (
               <span key={`license-${item.SystemId}-${index}`}>
                 {index > 0 ? '；' : ''}
-                {item.SystemCode || item.SystemName}
+                {formatQuoteSystemCode(
+                  item.SystemCode ?? item.systemCode
+                ) || item.SystemName}
                 {' '}
                 NT$
                 {Number(
