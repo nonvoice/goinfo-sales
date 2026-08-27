@@ -5057,7 +5057,7 @@ const renderUserManagement = () => {
 
        .quote-sheet {
          width: 200mm;
-         min-height: 287mm;
+         min-height: 0;
          box-sizing: border-box;
 
          margin: 0 auto;
@@ -5110,6 +5110,19 @@ const renderUserManagement = () => {
        .quote-sheet .compact {
          font-size: 10px;
          line-height: 1.25;
+       }
+       /* 僅預覽：外框依實際內容高度延伸到最下方說明 */
+       .quote-print .quote-sheet {
+         min-height: 0 !important;
+         height: auto !important;
+         display: block !important;
+         overflow: visible !important;
+       }
+
+       /* 預覽容器可捲動，但不得裁切報價單本體 */
+       .quote-print {
+         overflow-y: auto !important;
+         overflow-x: auto !important;
        }
        `}</style>
 
