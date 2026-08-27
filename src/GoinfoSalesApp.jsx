@@ -5125,9 +5125,52 @@ const renderUserManagement = () => {
          overflow-y: auto !important;
          overflow-x: auto !important;
        }
+
+       /* 預覽專用：外框由完整內容高度決定 */
+       .quote-print .quote-sheet-preview-frame {
+         min-height: 0 !important;
+         height: auto !important;
+         display: block !important;
+         overflow: visible !important;
+
+         border: 0 !important;
+       }
+
+       /*
+         使用外層偽元素繪製框線：
+         不會受 A4 最小高度或內部表格／分頁設定影響，
+         外框會延伸到最後一行「說明」文字的下方。
+       */
+       .quote-print .quote-sheet-preview-frame::after {
+         content: '';
+         display: block;
+         clear: both;
+         height: 0;
+         border-bottom: 1px solid #111;
+       }
+
+       .quote-print .quote-sheet-preview-frame {
+         position: relative;
+         border-left: 1px solid #111 !important;
+         border-right: 1px solid #111 !important;
+         border-top: 1px solid #111 !important;
+         padding-bottom: 5mm;
+       }
+
+       /* 預覽用底線在列印時關閉，維持你原本列印結果 */
+       @media print {
+         .quote-sheet-preview-frame {
+           border: 1px solid #111 !important;
+           padding-bottom: 5mm;
+         }
+
+         .quote-sheet-preview-frame::after {
+           display: none !important;
+         }
+       }
        `}</style>
 
-      <div className="quote-sheet">
+      <div className="quote-sheet quote-sheet-preview-frame">
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
