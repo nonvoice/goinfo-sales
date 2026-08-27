@@ -5431,7 +5431,7 @@ const renderUserManagement = () => {
             優惠小計
           </td>
 
-          <td className="text-left whitespace-nowrap">
+          <td className="text-right whitespace-nowrap">
             <span
               className={
                 hasManualFinalAmount
@@ -5443,7 +5443,7 @@ const renderUserManagement = () => {
             </span>
           </td>
 
-          <td className="text-right whitespace-nowrap">
+          <td className="text-left whitespace-nowrap">
             {hasManualFinalAmount && (
               <span className="font-bold text-red-600">
                 → NT${beforeCreditFinalAmount.toLocaleString()}
