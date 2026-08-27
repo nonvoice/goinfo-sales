@@ -5379,23 +5379,25 @@ const renderUserManagement = () => {
           <td colSpan={3}></td>
 
           <td className="text-right font-bold whitespace-nowrap">
-            含稅金額
+            優惠小計
           </td>
 
           <td className="text-right whitespace-nowrap">
-            {hasManualFinalAmount ? (
-              <>
-                <span className="line-through text-red-600">
-                  NT${originalTaxIncludedAmount.toLocaleString()}
-                </span>
-                <br />
-                <span className="font-bold text-red-600">
-                  → NT${manualFinalTaxIncludedAmount.toLocaleString()}
-                </span>
-              </>
-            ) : (
-              <span className="font-bold">
-                NT${originalTaxIncludedAmount.toLocaleString()}
+            <span
+              className={
+                hasManualFinalAmount
+                  ? 'line-through text-red-600'
+                  : ''
+              }
+            >
+              NT${discountSubtotal.toLocaleString()}
+            </span>
+          </td>
+
+          <td className="text-right whitespace-nowrap">
+            {hasManualFinalAmount && (
+              <span className="font-bold text-red-600">
+                → NT${beforeCreditFinalAmount.toLocaleString()}
               </span>
             )}
           </td>
@@ -5430,26 +5432,28 @@ const renderUserManagement = () => {
         })}
 
         <tr>
-          <td colSpan={3}></td>
+          <td colSpan={2}></td>
 
           <td className="text-right font-bold whitespace-nowrap">
-            優惠金額
+            最終優惠
           </td>
 
           <td className="text-right whitespace-nowrap">
-            {hasManualFinalAmount ? (
-              <>
-                <span className="line-through text-red-600">
-                  NT${afterCreditOriginalAmount.toLocaleString()}
-                </span>
-                <br />
-                <span className="font-bold text-red-600">
-                  → NT${afterCreditFinalAmount.toLocaleString()}
-                </span>
-              </>
-            ) : (
-              <span className="font-bold">
-                NT${afterCreditOriginalAmount.toLocaleString()}
+            <span
+              className={
+                hasManualFinalAmount
+                  ? 'line-through text-red-600'
+                  : 'font-bold'
+              }
+            >
+              NT${afterCreditOriginalAmount.toLocaleString()}
+            </span>
+          </td>
+
+          <td className="text-right whitespace-nowrap">
+            {hasManualFinalAmount && (
+              <span className="font-bold text-red-600">
+                → NT${afterCreditFinalAmount.toLocaleString()}
               </span>
             )}
           </td>
