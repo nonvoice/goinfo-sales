@@ -5303,14 +5303,19 @@ const renderUserManagement = () => {
     </tr>
   ))}
 
-    {(() => {
-    const originalTaxIncludedAmount = previewQuote.items.reduce(
+  {(() => {
+    const discountSubtotal = previewQuote.items.reduce(
       (sum, item) =>
-        sum + Number(item.DiscountAmount ?? item.discountAmount ?? 0),
+        sum +
+        Number(
+          item.DiscountAmount ??
+          item.discountAmount ??
+          0
+        ),
       0
     );
 
-    const manualFinalTaxIncludedAmount = previewQuote.items.reduce(
+    const beforeCreditFinalAmount = previewQuote.items.reduce(
       (sum, item) => {
         const specialPrice =
           item.SpecialPrice ??
@@ -5328,7 +5333,7 @@ const renderUserManagement = () => {
           0
         );
 
-        const amount =
+        const itemBeforeCreditAmount =
           specialPrice !== null &&
           specialPrice !== undefined &&
           specialPrice !== ''
@@ -5337,9 +5342,13 @@ const renderUserManagement = () => {
               finalAmount !== undefined &&
               finalAmount !== ''
               ? Number(finalAmount) + upgradeCreditAmount
-              : Number(item.DiscountAmount ?? item.discountAmount ?? 0);
+              : Number(
+                  item.DiscountAmount ??
+                  item.discountAmount ??
+                  0
+                );
 
-        return sum + amount;
+        return sum + itemBeforeCreditAmount;
       },
       0
     );
@@ -5364,19 +5373,19 @@ const renderUserManagement = () => {
       0
     );
 
-    const afterCreditOriginalAmount =
-      originalTaxIncludedAmount - totalUpgradeCreditAmount;
-
-    const afterCreditFinalAmount =
-      manualFinalTaxIncludedAmount - totalUpgradeCreditAmount;
+    const finalOfferAmount =
+      beforeCreditFinalAmount - totalUpgradeCreditAmount;
 
     const hasManualFinalAmount =
-      manualFinalTaxIncludedAmount !== originalTaxIncludedAmount;
+      beforeCreditFinalAmount > 0 &&
+      beforeCreditFinalAmount !== discountSubtotal;
 
     return (
       <>
         <tr>
-          <td colSpan={3}></td>
+          <td></td>
+
+          <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
             優惠小計
@@ -5387,17 +5396,17 @@ const renderUserManagement = () => {
               className={
                 hasManualFinalAmount
                   ? 'line-through text-red-600'
-                  : ''
+                  : 'font-bold'
               }
             >
-              NT${afterCreditOriginalAmount.toLocaleString()}
+              NT${discountSubtotal.toLocaleString()}
             </span>
           </td>
 
           <td className="text-right whitespace-nowrap">
             {hasManualFinalAmount && (
               <span className="font-bold text-red-600">
-                → NT${afterCreditFinalAmount.toLocaleString()}
+                → NT${beforeCreditFinalAmount.toLocaleString()}
               </span>
             )}
           </td>
@@ -5417,22 +5426,31 @@ const renderUserManagement = () => {
 
           return (
             <tr
-              key={`upgrade-credit-${item.QuotationItemId || item.SystemId}-${index}`}
+              key={`upgrade-credit-${
+                item.QuotationItemId || item.SystemId
+              }-${index}`}
             >
-              <td colSpan={3}></td>
+              <td></td>
 
-              <td
-                colSpan={2}
-                className="text-right text-red-600 whitespace-nowrap"
-              >
-                扣：{description} −(NT${amount.toLocaleString()})
+              <td></td>
+
+              <td className="text-right whitespace-nowrap">
+                扣：{description}
               </td>
+
+              <td className="text-right text-red-600 whitespace-nowrap">
+                −(NT${amount.toLocaleString()})
+              </td>
+
+              <td></td>
             </tr>
           );
         })}
 
         <tr>
-          <td colSpan={2}></td>
+          <td></td>
+
+          <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
             最終優惠
@@ -5441,19 +5459,19 @@ const renderUserManagement = () => {
           <td className="text-right whitespace-nowrap">
             <span
               className={
-                hasManualFinalAmount
+                totalUpgradeCreditAmount > 0
                   ? 'line-through text-red-600'
                   : 'font-bold'
               }
             >
-              NT${afterCreditOriginalAmount.toLocaleString()}
+              NT${beforeCreditFinalAmount.toLocaleString()}
             </span>
           </td>
 
           <td className="text-right whitespace-nowrap">
-            {hasManualFinalAmount && (
+            {totalUpgradeCreditAmount > 0 && (
               <span className="font-bold text-red-600">
-                → NT${afterCreditFinalAmount.toLocaleString()}
+                → NT${finalOfferAmount.toLocaleString()}
               </span>
             )}
           </td>
