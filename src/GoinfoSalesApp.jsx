@@ -1375,7 +1375,7 @@ const loadSalesUserOptions = async () => {
   };
 
   const formatQuoteSystemCode = (systemCode) =>
-  String(systemCode || '')
+  String(systemCode ?? '')
     .replace(/\d+$/g, '')
     .trim();
 
@@ -1554,7 +1554,7 @@ const printQuoteSheet = () => {
     三個以上系統時：
     若第一頁空間不足，整塊 footer 會移到第二頁。
   */
-  margin-top: auto;
+  margin-top: 0;
 }
 
   /* ===== Tailwind 類別補足 ===== */
@@ -1748,6 +1748,33 @@ const printQuoteSheet = () => {
   .quote-sheet button {
     display: none !important;
   }
+
+@media print {
+  .quote-print {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .quote-sheet {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .quote-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-top: 0;
+  }
+
+  .quote-footer > section,
+  .quote-footer > table,
+  .quote-footer > div,
+  .quote-footer table,
+  .quote-footer tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
 
   @media print {
   html,
@@ -5203,9 +5230,9 @@ const renderUserManagement = () => {
     >
       <td>
         {(() => {
-          const systemCode = String(item.SystemCode || '')
-            .replace(/\d+$/g, '')
-            .trim();
+          const systemCode = formatQuoteSystemCode(
+            item.SystemCode ?? item.systemCode
+          );
 
           const systemName = String(item.SystemName || '').trim();
 
@@ -5238,9 +5265,9 @@ const renderUserManagement = () => {
                   ''
                 ).toUpperCase();
 
-                const rowSystemCode = String(row.SystemCode || '')
-                  .replace(/\d+$/g, '')
-                  .trim();
+                const rowSystemCode = formatQuoteSystemCode(
+                  row.SystemCode ?? row.systemCode
+                );
 
                 return (
                   rowType === 'MAINTENANCE' &&
@@ -5522,7 +5549,8 @@ const renderUserManagement = () => {
 </tbody>
 </table>
 
-previewQuote.items.some(
+{previewQuote.isNewPurchase &&
+   previewQuote.items.some(
     (item) =>
       String(
         item.ItemType ??
@@ -5635,9 +5663,9 @@ previewQuote.items.some(
             ''
           ).toUpperCase();
 
-          const systemCode = String(item.SystemCode || '')
-            .replace(/\d+$/g, '')
-            .trim();
+          const systemCode = formatQuoteSystemCode(
+            item.SystemCode ?? item.systemCode
+          );
 
           const isPtsSystem = /^PTS-/i.test(systemCode);
 
