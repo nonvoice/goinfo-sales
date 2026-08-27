@@ -5209,6 +5209,16 @@ const renderUserManagement = () => {
 
           const systemName = String(item.SystemName || '').trim();
 
+          const itemType = String(
+            item.ItemType ??
+            item.itemType ??
+            ''
+          ).toUpperCase();
+
+          const isMaintenance = itemType === 'MAINTENANCE';
+
+          const isPtsSystem = /^PTS-/i.test(systemCode);
+
           const isStandalone =
             systemName.includes('單機版') ||
             systemName.includes('單機');
@@ -5217,10 +5227,40 @@ const renderUserManagement = () => {
             systemCode && systemName
               ? `${systemCode}－${systemName}`
               : systemName || systemCode || '－';
+        
+          if (isMaintenance) {
+            const maintenanceIndex = previewQuote.items
+              .slice(0, index + 1)
+              .filter((row) => {
+                const rowType = String(
+                  row.ItemType ??
+                  row.itemType ??
+                  ''
+                ).toUpperCase();
 
-          return isStandalone
-            ? productName
-            : `${productName}（網路 ${item.UserCount || 1} 人版）`;
+                const rowSystemCode = String(row.SystemCode || '')
+                  .replace(/\d+$/g, '')
+                  .trim();
+
+                return (
+                  rowType === 'MAINTENANCE' &&
+                  rowSystemCode === systemCode
+                );
+              }).length;
+
+            const maintenanceLabel =
+              maintenanceIndex === 1
+                ? '維護費-本期'
+                : '維護費-未簽約各期';
+
+            return `${productName}（${maintenanceLabel}）`;
+          }
+
+          if (isPtsSystem || isStandalone) {
+            return productName;
+          }
+
+          return `${productName}（網路 ${item.UserCount || 1} 人版）`;
         })()}
       </td>
 
@@ -5391,7 +5431,7 @@ const renderUserManagement = () => {
             優惠小計
           </td>
 
-          <td className="text-right whitespace-nowrap">
+          <td className="text-left whitespace-nowrap">
             <span
               className={
                 hasManualFinalAmount
@@ -5468,7 +5508,7 @@ const renderUserManagement = () => {
             </span>
           </td>
 
-          <td className="text-right whitespace-nowrap">
+          <td className="text-left whitespace-nowrap">
             {totalUpgradeCreditAmount > 0 && (
               <span className="font-bold text-red-600">
                 → NT${finalOfferAmount.toLocaleString()}
@@ -5482,13 +5522,29 @@ const renderUserManagement = () => {
 </tbody>
 </table>
 
-{previewQuote.isNewPurchase && (
+previewQuote.items.some(
+    (item) =>
+      String(
+        item.ItemType ??
+        item.itemType ??
+        ''
+      ).toUpperCase() !== 'MAINTENANCE'
+  ) && (
   <section className="mt-3 compact">
     <h2 className="font-bold text-sm border-b-2 border-black">
       系統說明
     </h2>
 
-    {previewQuote.items.map((item, index) => (
+    {previewQuote.items
+      .filter(
+        (item) =>
+          String(
+            item.ItemType ??
+            item.itemType ??
+            ''
+          ).toUpperCase() !== 'MAINTENANCE'
+      )
+      .map((item, index) => (
       <div
         key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
         className="mt-1"
@@ -5532,10 +5588,18 @@ const renderUserManagement = () => {
         。
 
         {(() => {
-          const maintenanceItems = previewQuote.items.filter(
-            (item) =>
+          const maintenanceItems = previewQuote.items.filter((item) => {
+            const itemType = String(
+              item.ItemType ??
+              item.itemType ??
+              ''
+            ).toUpperCase();
+
+            return (
+              itemType !== 'MAINTENANCE' &&
               Number(item.addUserMaintenanceTaxIncluded || 0) > 0
-          );
+            );
+          });
 
           if (maintenanceItems.length === 0) {
             return null;
@@ -5564,10 +5628,25 @@ const renderUserManagement = () => {
       </li>
 
       {(() => {
-        const licenseAddUserItems = previewQuote.items.filter(
-          (item) =>
+        const licenseAddUserItems = previewQuote.items.filter((item) => {
+          const itemType = String(
+            item.ItemType ??
+            item.itemType ??
+            ''
+          ).toUpperCase();
+
+          const systemCode = String(item.SystemCode || '')
+            .replace(/\d+$/g, '')
+            .trim();
+
+          const isPtsSystem = /^PTS-/i.test(systemCode);
+
+          return (
+            itemType !== 'MAINTENANCE' &&
+            !isPtsSystem &&
             Number(item.licenseAddUserTaxIncluded || 0) > 0
-        );
+          );
+        });
 
         if (licenseAddUserItems.length === 0) {
           return null;
