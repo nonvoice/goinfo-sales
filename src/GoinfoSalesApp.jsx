@@ -1486,7 +1486,6 @@ const printQuoteSheet = () => {
   .quote-sheet {
     width: 200mm;
     min-height: 287mm;
-    height: max-content;
     margin: 0 auto;
     padding: 5mm;
     box-sizing: border-box;
@@ -1792,38 +1791,7 @@ const printQuoteSheet = () => {
     flex-direction: column;
     overflow: visible;
   }
-
-  /* 列印時：預覽外框不顯示，仍用 quote-sheet 原本外框 */
-  .quote-preview-frame {
-    width: auto;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    display: block;
-  }
 }
-
-/* ===== 預覽專用：加在所有 @media print 的外面 ===== */
-  .quote-preview-frame {
-    width: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    display: block !important;
-  }
-
-/* 預覽時，外框由 quote-preview-frame 負責 */
-.quote-preview-frame .quote-sheet {
-  width: 100%;
-  min-height: 0 !important;
-  height: auto !important;
-  margin: 0;
-  padding: 0;
-  border: 0 !important;
-  display: block !important;
-  overflow: visible !important;
-}
-
 </style>
       </head>
 
@@ -5076,7 +5044,7 @@ const renderUserManagement = () => {
     onMouseDown={() => setShowQuotePreview(false)}
   >
     <div
-      className="quote-print w-full max-w-5xl h-full max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
+      className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <style>{`
@@ -5161,38 +5129,9 @@ const renderUserManagement = () => {
 
          display: flow-root;
        }
+       `}</style>
 
-         /* ===== 僅預覽畫面使用：外框包住全部報價內容 ===== */
-         .quote-print .quote-preview-frame {
-           width: 200mm;
-           margin: 0 auto;
-           padding: 5mm;
-           box-sizing: border-box;
-           background: #fff;
-           border: 1px solid #111;
-
-           /* 讓高度由內部所有內容自然撐開 */
-           display: flow-root;
-           min-height: 0;
-           height: auto;
-         }
-
-         .quote-print .quote-preview-frame .quote-sheet {
-           width: 100%;
-           margin: 0;
-           padding: 0;
-           border: 0;
-           min-height: 0;
-           height: auto;
-
-           /* 不可再使用 flex，否則會受 min-height 和 auto margin 影響 */
-           display: block;
-           overflow: visible;
-         }
-                   `}</style>
-
-      <div className="quote-preview-frame">
-        <div className="quote-sheet">
+      <div className="quote-sheet">
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
@@ -5884,7 +5823,6 @@ const renderUserManagement = () => {
             </button>
           </div>
 
-          </div>
           </div>
           )}
 
