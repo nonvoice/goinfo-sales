@@ -1501,14 +1501,25 @@ const printQuoteSheet = () => {
     overflow: visible;
   }
 
-  .quote-print .clear-both {
-    clear: both;
+  /* 預覽操作列：固定在視窗右下，與報價內容寬度無關 */
+  .quote-preview-actions {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 70;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
   }
 
-  .quote-print > .no-print {
-    width: 100%;
-    clear: both;
-  }
+/* 預覽時右上角 X 仍保留，操作列不影響報價外框 */
+.quote-preview-actions button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
 
   /* ===== 表格與格線 ===== */
   .quote-sheet table {
@@ -5808,7 +5819,7 @@ const renderUserManagement = () => {
           </div>
           </div>
 
-          <div className="no-print mt-4 flex justify-end gap-3 clear-both w-full">
+          <div className="quote-preview-actions no-print">
             <button
               type="button"
               onClick={printQuoteSheet}
@@ -5833,7 +5844,6 @@ const renderUserManagement = () => {
               關閉
             </button>
           </div>
-
           </div>
           )}
 
