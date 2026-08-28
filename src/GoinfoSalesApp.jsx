@@ -5853,6 +5853,9 @@ const renderUserManagement = () => {
             {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
             100%（30日到期票）。
           </div>
+
+          </div>
+          </div>
           </div>
 
           <div className="no-print mt-4 flex justify-end gap-3">
@@ -5863,7 +5866,7 @@ const renderUserManagement = () => {
             >
               列印
             </button>
-          
+
             <button
               type="button"
               onClick={() => editQuote(previewQuote.quote)}
@@ -5880,6 +5883,7 @@ const renderUserManagement = () => {
               關閉
             </button>
           </div>
+
           </div>
           </div>
           )}
