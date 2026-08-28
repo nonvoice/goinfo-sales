@@ -1804,17 +1804,13 @@ const printQuoteSheet = () => {
 }
 
 /* ===== 預覽專用：加在所有 @media print 的外面 ===== */
-.quote-preview-frame {
-  width: 200mm;
-  margin: 0 auto;
-  padding: 5mm;
-  box-sizing: border-box;
-
-  border: 1px solid #111;
-  background: #fff;
-
-  display: flow-root;
-}
+  .quote-preview-frame {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    display: block !important;
+  }
 
 /* 預覽時，外框由 quote-preview-frame 負責 */
 .quote-preview-frame .quote-sheet {
@@ -5146,15 +5142,7 @@ const renderUserManagement = () => {
          font-size: 10px;
          line-height: 1.25;
        }
-       /* 僅預覽：外框依實際內容高度延伸到最下方說明 */
-       /* 僅預覽：外框必須包住系統說明、維護說明、簽章與最下方條款 */
-       .quote-print .quote-sheet {
-         min-height: 0 !important;
-         height: auto !important;
-         display: flow-root !important;
-         overflow: visible !important;
-       }
-
+      
        /* 預覽容器可捲動，但不得裁切報價單本體 */
        .quote-print {
          overflow-y: auto !important;
@@ -5174,18 +5162,34 @@ const renderUserManagement = () => {
          display: flow-root;
        }
 
-       /* 預覽時，內層不要再畫第二層框線 */
-       .quote-preview-frame .quote-sheet {
-         width: 100%;
-         min-height: 0 !important;
-         height: auto !important;
-         margin: 0;
-         padding: 0;
-         border: 0 !important;
-         display: block !important;
-         overflow: visible !important;
-       }
-             `}</style>
+         /* ===== 僅預覽畫面使用：外框包住全部報價內容 ===== */
+         .quote-print .quote-preview-frame {
+           width: 200mm;
+           margin: 0 auto;
+           padding: 5mm;
+           box-sizing: border-box;
+           background: #fff;
+           border: 1px solid #111;
+
+           /* 讓高度由內部所有內容自然撐開 */
+           display: flow-root;
+           min-height: 0;
+           height: auto;
+         }
+
+         .quote-print .quote-preview-frame .quote-sheet {
+           width: 100%;
+           margin: 0;
+           padding: 0;
+           border: 0;
+           min-height: 0;
+           height: auto;
+
+           /* 不可再使用 flex，否則會受 min-height 和 auto margin 影響 */
+           display: block;
+           overflow: visible;
+         }
+                   `}</style>
 
       <div className="quote-preview-frame">
         <div className="quote-sheet">
