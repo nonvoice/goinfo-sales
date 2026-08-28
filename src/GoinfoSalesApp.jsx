@@ -1479,13 +1479,9 @@ const printQuoteSheet = () => {
     print-color-adjust: exact;
   }
 
-  /*
-    報價單本體不設定固定高度。
-    系統較多時可以自然延伸到下一頁，避免切到簽章。
-  */
+   /* ===== 預覽畫面：外框依報價單內容自然延伸 ===== */
   .quote-sheet {
     width: 200mm;
-    min-height: 287mm;
     margin: 0 auto;
     padding: 5mm;
     box-sizing: border-box;
@@ -1497,28 +1493,18 @@ const printQuoteSheet = () => {
     font-size: 11px;
     line-height: 1.3;
 
+    /* 不固定 A4 高度；內容愈長，外框愈長 */
     display: block;
-    overflow: visible;
+    height: auto;
+    min-height: 0;
+    overflow: auto;
   }
 
-  /* 預覽操作列：固定在視窗右下，與報價內容寬度無關 */
-  .quote-preview-actions {
-    position: fixed;
-    right: 24px;
-    bottom: 24px;
-    z-index: 70;
-
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-
-/* 預覽時右上角 X 仍保留，操作列不影響報價外框 */
-.quote-preview-actions button {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
+/* 讓右上角 × 的浮動不影響外框高度與後方按鈕位置 */
+.quote-sheet::after {
+  content: '';
+  display: table;
+  clear: both;
 }
 
   /* ===== 表格與格線 ===== */
@@ -5819,7 +5805,7 @@ const renderUserManagement = () => {
           </div>
           </div>
 
-          <div className="quote-preview-actions no-print">
+          <div className="no-print mt-4 flex justify-end gap-3">
             <button
               type="button"
               onClick={printQuoteSheet}
