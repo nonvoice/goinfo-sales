@@ -1501,6 +1501,15 @@ const printQuoteSheet = () => {
     overflow: visible;
   }
 
+  .quote-print .clear-both {
+    clear: both;
+  }
+
+  .quote-print > .no-print {
+    width: 100%;
+    clear: both;
+  }
+
   /* ===== 表格與格線 ===== */
   .quote-sheet table {
     width: 100%;
@@ -5056,19 +5065,21 @@ const renderUserManagement = () => {
 
        .quote-sheet {
          width: 200mm;
-         min-height: 0;
+         margin: 0 auto;
+         padding: 5mm;
          box-sizing: border-box;
 
-         margin: 0 auto;
          border: 1px solid #111;
-         padding: 5mm;
+         background: #fff;
 
          font-family: Arial, "Microsoft JhengHei", sans-serif;
          font-size: 11px;
          line-height: 1.3;
 
-         display: flex;
-         flex-direction: column;
+         display: flow-root;
+         height: auto;
+         min-height: 0;
+         overflow: visible;
        }
 
        /* ===== 預覽畫面：恢復報價表格格線 ===== */
@@ -5797,7 +5808,7 @@ const renderUserManagement = () => {
           </div>
           </div>
 
-          <div className="no-print mt-4 flex justify-end gap-3">
+          <div className="no-print mt-4 flex justify-end gap-3 clear-both w-full">
             <button
               type="button"
               onClick={printQuoteSheet}
