@@ -4656,24 +4656,30 @@ const renderUserManagement = () => {
       </div>
       
       {showQuotePreview && previewQuote && (
-  <div
-    className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
-    onMouseDown={() => setShowQuotePreview(false)}
-  >
-    <div
-      className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowQuotePreview(false);
+            }
+          }}
+        >
+        <div
+          className="quote-print w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-white shadow-2xl p-4 text-black"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
       <style>{`
       /* ===== 預覽畫面 ===== */
       .quote-print {
-        display: block;
-        width: 100%;
-        max-height: 94vh;
-        overflow: auto;
-        padding: 16px;
-        box-sizing: border-box;
-      }
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          max-height: 94vh;
+          overflow: auto;
+          padding: 16px;
+          box-sizing: border-box;
+        }
 
       /* 預覽報價內容：不限制 A4 高度，外框依內容自動延伸 */
       .quote-sheet {
@@ -4681,14 +4687,11 @@ const renderUserManagement = () => {
         margin: 0 auto;
         padding: 5mm;
         box-sizing: border-box;
-
         border: 1px solid #111;
         background: #fff;
-
         font-family: Arial, "Microsoft JhengHei", sans-serif;
         font-size: 11px;
         line-height: 1.3;
-
         display: flow-root;
         min-height: 0;
         height: auto;
@@ -4726,58 +4729,68 @@ const renderUserManagement = () => {
         line-height: 1.25;
       }
 
-      /* 按鈕：一定排在報價外框下方，與外框同寬 */
-      .quote-actions {
-        width: 200mm;
-        margin: 12px auto 0;
-        padding: 0;
-
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 12px;
-        clear: both;
-      }
-
-      /* ===== 列印：維持原先 A4 行為 ===== */
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 5mm;
-        }
-
-        body {
-          margin: 0;
-          padding: 0;
-          background: #fff;
-        }
-
-        .quote-print {
-          width: auto;
-          max-height: none;
-          overflow: visible;
-          padding: 0;
-          box-shadow: none;
-        }
-
-        .quote-sheet {
+       /* 控制按鈕：位於報價外框下方 */
+        .quote-actions {
           width: 200mm;
-          min-height: 287mm;
-          margin: 0 auto;
-          padding: 5mm;
-
-          border: 1px solid #111;
-          display: block;
-          overflow: visible;
+          max-width: 100%;
+          margin: 12px auto 0;
+          padding: 0;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 12px;
+          position: static;
+          float: none;
+          clear: both;
         }
 
-        .quote-actions,
-        .no-print,
-        .quote-sheet button {
-          display: none !important;
+        .quote-actions button {
+          position: static;
+          float: none;
         }
-      }
-       `}</style>
+
+        /* ===== 列印：維持 A4 行為 ===== */
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 5mm;
+          }
+
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+
+          .quote-print {
+            display: block;
+            width: auto;
+            max-height: none;
+            overflow: visible;
+            padding: 0;
+            box-shadow: none;
+          }
+
+          .quote-sheet {
+            width: 200mm;
+            max-width: none;
+            min-height: 287mm;
+            margin: 0 auto;
+            padding: 5mm;
+            border: 1px solid #111;
+            display: block;
+            overflow: visible;
+          }
+
+          .quote-actions,
+          .no-print,
+          .quote-sheet button {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       <div className="quote-sheet">
         <button
@@ -5445,34 +5458,37 @@ const renderUserManagement = () => {
           </div>
           </div>
 
-          <div className="quote-actions no-print">
-            <button
-              type="button"
-              onClick={printQuoteSheet}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
-              列印
-            </button>
+      <div
+        className="quote-actions no-print"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={printQuoteSheet}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        >
+          列印
+        </button>
 
-            <button
-              type="button"
-              onClick={() => editQuote(previewQuote.quote)}
-              className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg"
-            >
-              帶入修改
-            </button>
+        <button
+          type="button"
+          onClick={() => editQuote(previewQuote.quote)}
+          className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg"
+        >
+          帶入修改
+        </button>
 
-            <button
-              type="button"
-              onClick={() => setShowQuotePreview(false)}
-              className="px-4 py-2 border rounded-lg"
-            >
-              關閉
-            </button>
-          </div>
-          </div>
-          )}
-
+        <button
+          type="button"
+          onClick={() => setShowQuotePreview(false)}
+          className="px-4 py-2 border rounded-lg"
+        >
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
