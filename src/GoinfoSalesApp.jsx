@@ -5440,47 +5440,48 @@ const renderUserManagement = () => {
             </tbody>
           </table>
 
-          <div className="border-t border-black mt-2 pt-1 compact">
-            說明：1. 本報價單以上金額含稅，有效期至{' '}
-            {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
-            100%（30日到期票）。
-          </div>
+      <div className="border-t border-black mt-2 pt-1 compact">
+          說明：1. 本報價單以上金額含稅，有效期至{' '}
+          {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
+          100%（30日到期票）。
+      </div>
 
-          </div>
-          </div>
-          </div>
+         </div> {/* quote-footer */}
+         </div> {/* quote-sheet */}
 
       <div
-        className="quote-actions no-print"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={printQuoteSheet}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-        >
-          列印
-        </button>
+           className="quote-actions no-print"
+           onMouseDown={(event) => event.stopPropagation()}
+       >
+       <button
+           type="button"
+           onClick={printQuoteSheet}
+           className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+         >
+           列印
+       </button>
 
-        <button
-          type="button"
-          onClick={() => editQuote(previewQuote.quote)}
-          className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg"
-        >
-          帶入修改
-        </button>
+       <button
+           type="button"
+           onClick={() => editQuote(previewQuote.quote)}
+           className="px-4 py-2 border border-amber-500 text-amber-600 rounded-lg"
+         >
+           帶入修改
+       </button>
 
-        <button
-          type="button"
-          onClick={() => setShowQuotePreview(false)}
+       <button
+           type="button"
+           onClick={() => setShowQuotePreview(false)}
           className="px-4 py-2 border rounded-lg"
         >
-          關閉
-        </button>
+           關閉
+         </button>
       </div> {/* quote-actions */}
-    </div> {/* quote-print */}
-  </div> {/* fixed overlay */}
-)}
+
+      </div> {/* quote-print */}
+      </div> {/* fixed overlay */}
+       )}
+
       {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
