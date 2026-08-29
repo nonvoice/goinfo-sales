@@ -4654,7 +4654,8 @@ const renderUserManagement = () => {
           {activeTab === 'quotemaint' && renderQuotationForm('6. 維護合約報價單', 'MAINTENANCE', 'CreateMaintenanceQuote')}
          </div>
       </div>
-      
+
+   <>      
       {showQuotePreview && previewQuote && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
@@ -5561,6 +5562,7 @@ const renderUserManagement = () => {
           </div>
         </div>
       )}
+   </>
     </div>
   );
 }
