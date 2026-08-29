@@ -1427,8 +1427,9 @@ const previewQuoteById = async (quotationId) => {
 };
 
   const printQuoteSheet = () => {
-    window.print();
+     window.print();
   };
+
   if (!sheet) {
     alert('找不到報價單內容，請先重新開啟報價預覽後再列印。');
     return;
@@ -5054,145 +5055,118 @@ const renderUserManagement = () => {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <style>{`
-       /* 預覽畫面的報價單：水平置中 */
-       .quote-print {
-         display: flex;
-         justify-content: center;
-       }
+      /* ===== 預覽畫面 ===== */
+      .quote-print {
+        display: block;
+        width: 100%;
+        max-height: 94vh;
+        overflow: auto;
+        padding: 16px;
+        box-sizing: border-box;
+      }
 
-       .quote-sheet {
-         width: 200mm;
-         margin: 0 auto;
-         padding: 5mm;
-         box-sizing: border-box;
+      /* 預覽報價內容：不限制 A4 高度，外框依內容自動延伸 */
+      .quote-sheet {
+        width: 200mm;
+        margin: 0 auto;
+        padding: 5mm;
+        box-sizing: border-box;
 
-         border: 1px solid #111;
-         background: #fff;
+        border: 1px solid #111;
+        background: #fff;
 
-         font-family: Arial, "Microsoft JhengHei", sans-serif;
-         font-size: 11px;
-         line-height: 1.3;
+        font-family: Arial, "Microsoft JhengHei", sans-serif;
+        font-size: 11px;
+        line-height: 1.3;
 
-         display: flow-root;
-         height: auto;
-         min-height: 0;
-         overflow: visible;
-       }
+        display: flow-root;
+        min-height: 0;
+        height: auto;
+        overflow: visible;
+      }
 
-       /* ===== 預覽畫面：恢復報價表格格線 ===== */
-       .quote-sheet table {
-         width: 100%;
-         border-collapse: collapse;
-         border-spacing: 0;
-       }
+      /* 明細表及合計表 */
+      .quote-sheet table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
 
-       .quote-sheet table {
-         break-inside: avoid;
-         page-break-inside: avoid;
-       }
+      .quote-sheet table:not(.noborder) {
+        border: 1px solid #111;
+      }
 
-       .quote-sheet .mt-auto {
-         break-inside: avoid;
-         page-break-inside: avoid;
-       }
+      .quote-sheet table:not(.noborder) th,
+      .quote-sheet table:not(.noborder) td {
+        border: 1px solid #111;
+        padding: 4px;
+        vertical-align: middle;
+      }
 
-       .quote-sheet table:not(.noborder) {
-         border: 1px solid #111;
-       }
+      /* 公司地址聯絡資料不顯示表格線 */
+      .quote-sheet .noborder,
+      .quote-sheet .noborder th,
+      .quote-sheet .noborder td {
+        border: 0;
+        padding: 1px;
+      }
 
-       .quote-sheet table:not(.noborder) th,
-       .quote-sheet table:not(.noborder) td {
-         border: 1px solid #111;
-         padding: 4px;
-         vertical-align: middle;
-       }
+      .quote-sheet .compact {
+        font-size: 10px;
+        line-height: 1.25;
+      }
 
-       /* 公司資料／地址表格保留無格線 */
-       .quote-sheet .noborder,
-       .quote-sheet .noborder th,
-       .quote-sheet .noborder td {
-         border: 0;
-       }
+      /* 按鈕：一定排在報價外框下方，與外框同寬 */
+      .quote-actions {
+        width: 200mm;
+        margin: 12px auto 0;
+        padding: 0;
 
-       .quote-sheet .compact {
-         font-size: 10px;
-         line-height: 1.25;
-       }
-      
-       /* 預覽容器可捲動，但不得裁切報價單本體 */
-       .quote-print {
-         overflow-y: auto !important;
-         overflow-x: auto !important;
-       }
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        clear: both;
+      }
 
-       /* 預覽專用：外框由內容高度自動撐開，按鈕不包含在外框 */
-       .quote-preview-frame {
-         width: 200mm;
-         margin: 0 auto;
-         padding: 5mm;
-         box-sizing: border-box;
+      /* ===== 列印：維持原先 A4 行為 ===== */
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 5mm;
+        }
 
-         border: 1px solid #111;
-         background: #fff;
-
-         display: flow-root;
-       }
-
-       /* ===== 預覽專用：報價內容可延伸，按鈕固定在外框下方 ===== */
-       @media screen {
-         .quote-print {
-           display: block !important;
-           overflow-x: auto !important;
-         }
-
-         .quote-print .quote-sheet {
-           width: 200mm;
-           min-height: 0 !important;
-           height: auto !important;
-           margin: 0 auto;
-           padding: 5mm;
-           box-sizing: border-box;
-
-           display: flow-root !important;
-           overflow: visible !important;
-
-           border: 1px solid #111;
-         }
-
-         /*
-           關鍵：按鈕列清除 quote-sheet 可能殘留的 float，
-           用 block 佔滿一整行，因此一定在外框正下方。
-         */
-         .quote-print > .no-print {
-           clear: both !important;
-           display: flex !important;
-           width: 200mm !important;
-           margin: 16px auto 0 !important;
-           justify-content: flex-end !important;
-           align-items: center;
-           gap: 12px;
-         }
-       }
-
-        /* 預覽操作鈕：寬度與報價單相同，固定在外框正下方 */
-        .quote-print .quote-actions {
-          width: 200mm;
-          margin: 12px auto 0;
+        body {
+          margin: 0;
           padding: 0;
-
-          clear: both;
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          gap: 12px;
+          background: #fff;
         }
 
-        /* 列印時操作鈕不出現 */
-        @media print {
-          .quote-print .quote-actions {
-            display: none !important;
-          }
+        .quote-print {
+          width: auto;
+          max-height: none;
+          overflow: visible;
+          padding: 0;
+          box-shadow: none;
         }
+
+        .quote-sheet {
+          width: 200mm;
+          min-height: 287mm;
+          margin: 0 auto;
+          padding: 5mm;
+
+          border: 1px solid #111;
+          display: block;
+          overflow: visible;
+        }
+
+        .quote-actions,
+        .no-print,
+        .quote-sheet button {
+          display: none !important;
+        }
+      }
        `}</style>
 
       <div className="quote-sheet">
