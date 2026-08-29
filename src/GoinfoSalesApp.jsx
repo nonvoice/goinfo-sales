@@ -4793,14 +4793,6 @@ const renderUserManagement = () => {
       `}</style>
 
       <div className="quote-sheet">
-        <button
-          type="button"
-          onClick={() => setShowQuotePreview(false)}
-          className="no-print float-right text-2xl text-gray-400"
-        >
-          ×
-        </button>
-
         <header className="border-b-2 border-black pb-2 mb-2">
           <div className="flex items-center gap-3">
             <img
