@@ -1426,9 +1426,9 @@ const previewQuoteById = async (quotationId) => {
   }
 };
 
-const printQuoteSheet = () => {
-  const sheet = document.querySelector('.quote-sheet');
-
+  const printQuoteSheet = () => {
+    window.print();
+  };
   if (!sheet) {
     alert('找不到報價單內容，請先重新開啟報價預覽後再列印。');
     return;
@@ -5173,6 +5173,26 @@ const renderUserManagement = () => {
            gap: 12px;
          }
        }
+
+        /* 預覽操作鈕：寬度與報價單相同，固定在外框正下方 */
+        .quote-print .quote-actions {
+          width: 200mm;
+          margin: 12px auto 0;
+          padding: 0;
+
+          clear: both;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 12px;
+        }
+
+        /* 列印時操作鈕不出現 */
+        @media print {
+          .quote-print .quote-actions {
+            display: none !important;
+          }
+        }
        `}</style>
 
       <div className="quote-sheet">
@@ -5841,7 +5861,7 @@ const renderUserManagement = () => {
           </div>
           </div>
 
-          <div className="no-print mt-4 flex justify-end gap-3">
+          <div className="quote-actions no-print">
             <button
               type="button"
               onClick={printQuoteSheet}
