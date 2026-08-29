@@ -4655,6 +4655,7 @@ const renderUserManagement = () => {
          </div>
       </div>
 
+   <>      
       {showQuotePreview && previewQuote && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
@@ -5562,6 +5563,5 @@ const renderUserManagement = () => {
         </div>
       )}
    </>
-    </div>
   );
 }
