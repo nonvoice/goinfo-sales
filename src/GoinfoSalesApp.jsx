@@ -5137,6 +5137,42 @@ const renderUserManagement = () => {
 
          display: flow-root;
        }
+
+       /* ===== 預覽專用：報價內容可延伸，按鈕固定在外框下方 ===== */
+       @media screen {
+         .quote-print {
+           display: block !important;
+           overflow-x: auto !important;
+         }
+
+         .quote-print .quote-sheet {
+           width: 200mm;
+           min-height: 0 !important;
+           height: auto !important;
+           margin: 0 auto;
+           padding: 5mm;
+           box-sizing: border-box;
+
+           display: flow-root !important;
+           overflow: visible !important;
+
+           border: 1px solid #111;
+         }
+
+         /*
+           關鍵：按鈕列清除 quote-sheet 可能殘留的 float，
+           用 block 佔滿一整行，因此一定在外框正下方。
+         */
+         .quote-print > .no-print {
+           clear: both !important;
+           display: flex !important;
+           width: 200mm !important;
+           margin: 16px auto 0 !important;
+           justify-content: flex-end !important;
+           align-items: center;
+           gap: 12px;
+         }
+       }
        `}</style>
 
       <div className="quote-sheet">
