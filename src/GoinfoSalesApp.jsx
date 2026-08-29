@@ -5220,47 +5220,48 @@ const renderUserManagement = () => {
 </table>
 
 {previewQuote.isNewPurchase &&
-   previewQuote.items.some(
-    (item) =>
-      String(
-        item.ItemType ??
-        item.itemType ??
-        ''
-      ).toUpperCase() !== 'MAINTENANCE'
-  ) && (
-  <section className="mt-3 compact">
-    <h2 className="font-bold text-sm border-b-2 border-black">
-      系統說明
-    </h2>
+  previewQuote.items.some((item) => {
+    const itemType = String(
+      item.ItemType ??
+      item.itemType ??
+      ''
+    ).toUpperCase();
 
-    {previewQuote.items
-      .filter(
-        (item) =>
-          String(
+    return itemType !== 'MAINTENANCE';
+  }) && (
+    <section className="mt-3 compact">
+      <h2 className="font-bold text-sm border-b-2 border-black">
+        系統說明
+      </h2>
+
+      {previewQuote.items
+        .filter((item) => {
+          const itemType = String(
             item.ItemType ??
             item.itemType ??
             ''
-          ).toUpperCase() !== 'MAINTENANCE'
-      )
-      .map((item, index) => (
-      <div
-        key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
-        className="mt-1"
-      >
-        <b className="block">
-          {formatQuoteSystemCode(
-            item.SystemCode ?? item.systemCode
-          )}－{item.SystemName}：
-        </b>
+          ).toUpperCase();
 
-        <span className="block whitespace-pre-wrap">
-          {item.Note || '尚未設定系統內容說明'}
-        </span>
-      </div>
-    ))}
-  </section>
-)}
+          return itemType !== 'MAINTENANCE';
+        })
+        .map((item, index) => (
+          <div
+            key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
+            className="mt-1"
+          >
+            <b className="block">
+              {formatQuoteSystemCode(
+                item.SystemCode ?? item.systemCode
+              )}－{item.SystemName}：
+            </b>
 
+            <span className="block whitespace-pre-wrap">
+              {item.Note || '尚未設定系統內容說明'}
+            </span>
+          </div>
+        ))}
+    </section>
+  )}
         <div className="quote-footer">
           <section className="compact">
             <h2 className="border-b-2 border-black text-sm font-bold">
