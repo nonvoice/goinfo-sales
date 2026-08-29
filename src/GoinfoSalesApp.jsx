@@ -5187,7 +5187,6 @@ const renderUserManagement = () => {
 
         <tr>
           <td></td>
-
           <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
@@ -5482,7 +5481,7 @@ const renderUserManagement = () => {
       </div> {/* fixed overlay */}
        )}
 
-      {showCustomerPicker && (
+      {showQuotePreview && previewQuote && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
           onMouseDown={() => setShowCustomerPicker(false)}
