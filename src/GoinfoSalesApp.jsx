@@ -5477,9 +5477,9 @@ const renderUserManagement = () => {
         >
           關閉
         </button>
-      </div>
-    </div>
-  </div>
+      </div> {/* quote-actions */}
+    </div> {/* quote-print */}
+  </div> {/* fixed overlay */}
 )}
       {showCustomerPicker && (
         <div
