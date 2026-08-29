@@ -4655,7 +4655,7 @@ const renderUserManagement = () => {
          </div>
       </div>
       
-      {showCustomerPicker && (
+      {showQuotePreview && previewQuote && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 print:p-0 print:bg-white"
           onMouseDown={(event) => {
@@ -5482,7 +5482,7 @@ const renderUserManagement = () => {
       </div> {/* fixed overlay */}
        )}
 
-      {showQuotePreview && previewQuote && (
+     {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
           onMouseDown={() => setShowCustomerPicker(false)}
