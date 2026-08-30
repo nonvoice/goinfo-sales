@@ -4657,7 +4657,7 @@ const renderUserManagement = () => {
       
       {showQuotePreview && previewQuote && (
   <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
+    className="quote-preview-modal fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
     onMouseDown={() => setShowQuotePreview(false)}
   >
     
@@ -4742,76 +4742,139 @@ const renderUserManagement = () => {
       }
 
       @media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
+        @page {
+          size: A4 portrait;
+          margin: 0;
+        }
 
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-  }
+        html,
+        body {
+          width: 210mm !important;
+          height: 297mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          background: #fff !important;
+        }
 
-  /*
-   * 列印時不要用 Flex + min-height 撐出 A4 空白。
-   * 這只保留在預覽畫面使用。
-   */
-  .quote-sheet {
-    display: block !important;
-    width: 200mm !important;
-    min-height: 0 !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    padding: 5mm !important;
-    box-sizing: border-box !important;
-    border: 1px solid #111 !important;
-    overflow: visible !important;
-  }
+        /*
+         * 先隱藏整個 React 後台，
+         * 再只放行報價單列印範圍。
+         */
+        body * {
+          visibility: hidden !important;
+        }
 
-  /*
-   * 列印時移除預覽專用的自動空白。
-   * 維護說明會緊接系統說明印出，但可避免產生空白分頁。
-   */
-  .quote-spacer {
-    display: none !important;
-  }
+        #quote-print-area,
+        #quote-print-area * {
+          visibility: visible !important;
+        }
 
-  .quote-main-content,
-  .quote-footer {
-    display: block !important;
-    min-height: 0 !important;
-  }
+        /*
+         * 關鍵修正：
+         * 取消預覽彈窗中間區的 overflow-auto、flex 高度與捲軸。
+         */
+        .quote-preview-scroll {
+          display: block !important;
+          flex: none !important;
+          width: auto !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: auto !important;
+          max-height: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          overflow-x: visible !important;
+          overflow-y: visible !important;
+          background: #fff !important;
+        }
 
-  .quote-footer {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
+        /*
+         * 關閉白色預覽外框的 Flex 高度與 overflow-hidden，
+         * 否則它仍可能生成隱性多頁。
+         */
+        .quote-preview-modal,
+        .quote-preview-modal > div {
+          display: block !important;
+          width: auto !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: auto !important;
+          max-height: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          background: #fff !important;
+          box-shadow: none !important;
+        }
 
-  /*
-   * 列印範圍只保留報價內容。
-   */
-  #quote-print-area {
-    position: static !important;
-    width: auto !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-  }
+        /*
+         * 報價單列印範圍：
+         * 不使用 position:absolute 或 transform。
+         */
+        #quote-print-area {
+          display: block !important;
+          position: static !important;
+          width: auto !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: auto !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          background: #fff !important;
+          box-shadow: none !important;
+          transform: none !important;
+        }
 
-  .no-print,
-  .quote-actions,
-  .quote-sheet button {
-    display: none !important;
-  }
-}
-    `}</style>
+        /*
+         * 列印時不使用預覽的 Flex 留白高度。
+         * 防止 quote-spacer 和 min-height 產生空白分頁。
+         */
+        .quote-sheet {
+          display: block !important;
+          width: 200mm !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: auto !important;
+          margin: 0 auto !important;
+          padding: 5mm !important;
+          box-sizing: border-box !important;
+          border: 1px solid #111 !important;
+          overflow: visible !important;
+          transform: none !important;
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+        }
+
+        .quote-main-content,
+        .quote-footer {
+          display: block !important;
+          min-height: 0 !important;
+          height: auto !important;
+        }
+
+        .quote-spacer {
+          display: none !important;
+        }
+
+        .quote-footer {
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
+
+        /*
+         * 列印時不要顯示按鈕、標題列或彈窗操作區。
+         */
+        .no-print,
+        .quote-actions,
+        .quote-sheet button {
+          display: none !important;
+        }
+      }    
+`}</style>
 
     <div
       className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[1450px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
@@ -4839,7 +4902,7 @@ const renderUserManagement = () => {
       </div>
 
       {/* 中間內容區：只有此區塊可捲動 */}
-      <div className="flex-1 overflow-auto bg-gray-200 p-4 sm:p-6">
+      <div className="quote-preview-scroll flex-1 overflow-auto bg-gray-200 p-4 sm:p-6">
         <div
           id="quote-print-area"
           className="mx-auto w-fit min-w-[210mm] bg-white shadow-sm"
