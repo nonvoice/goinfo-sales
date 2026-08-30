@@ -4688,7 +4688,9 @@ const renderUserManagement = () => {
 
       /* 上方內容：抬頭、客戶資訊、明細、系統說明 */
       .quote-main-content {
-        flex: 0 0 auto;
+        display: block !important;
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
       }
 
       /* 中間自動空白區：上方系統說明越少，空白越大 */
@@ -4699,9 +4701,12 @@ const renderUserManagement = () => {
 
       /* 下方固定區：維護說明、簽章、付款條件 */
       .quote-footer {
-        flex: 0 0 auto;
-        break-inside: avoid;
-        page-break-inside: avoid;
+        display: block !important;
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       /* 表格格線：保留你原本漂亮的版面 */
@@ -4744,7 +4749,7 @@ const renderUserManagement = () => {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 5mm;
+          margin: 4mm 5mm;
         }
 
         html,
@@ -4834,17 +4839,28 @@ const renderUserManagement = () => {
          * 防止 quote-spacer 和 min-height 產生空白分頁。
          */
         .quote-sheet {
-          display: block !important;
+          display: flex !important;
+          flex-direction: column !important;
+
           width: 200mm !important;
           min-width: 0 !important;
-          min-height: 0 !important;
-          height: auto !important;
+
+          /*
+           * A4 297mm - 上下頁邊距各 4mm = 289mm。
+           * box-sizing: border-box 表示 padding / border 都包含在 289mm 內，
+           * 因此外框底線不會被裁掉。
+           */
+          min-height: 289mm !important;
+          height: 289mm !important;
+
           margin: 0 auto !important;
           padding: 5mm !important;
           box-sizing: border-box !important;
+
           border: 1px solid #111 !important;
-          overflow: visible !important;
+          overflow: hidden !important;
           transform: none !important;
+
           print-color-adjust: exact !important;
           -webkit-print-color-adjust: exact !important;
         }
@@ -4857,7 +4873,9 @@ const renderUserManagement = () => {
         }
 
         .quote-spacer {
-          display: none !important;
+          display: block !important;
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
         }
 
         .quote-footer {
