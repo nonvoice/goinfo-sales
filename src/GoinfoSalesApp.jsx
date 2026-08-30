@@ -4657,14 +4657,61 @@ const renderUserManagement = () => {
       
       {showQuotePreview && previewQuote && (
   <div
-    className="quote-preview-modal fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 print:bg-white print:p-0"
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
     onMouseDown={() => setShowQuotePreview(false)}
   >
     <style>{`
-      /*
-       * 只控制外框與列印範圍。
-       * 不要在這裡覆蓋原本 .quote-sheet 的版型、字級或表格欄位。
-       */
+      .quote-sheet {
+        width: 200mm;
+        min-height: 287mm;
+        margin: 0 auto;
+        padding: 5mm;
+        box-sizing: border-box;
+        border: 1px solid #111;
+        background: #fff;
+        color: #000;
+        font-family: Arial, "Microsoft JhengHei", sans-serif;
+        font-size: 11px;
+        line-height: 1.3;
+        overflow: visible;
+      }
+
+      .quote-sheet table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+
+      .quote-sheet table:not(.noborder) {
+        border: 1px solid #111;
+      }
+
+      .quote-sheet table:not(.noborder) th,
+      .quote-sheet table:not(.noborder) td {
+        border: 1px solid #111;
+        padding: 4px;
+        vertical-align: middle;
+      }
+
+      .quote-sheet .noborder,
+      .quote-sheet .noborder th,
+      .quote-sheet .noborder td {
+        border: 0;
+      }
+
+      .quote-sheet .noborder td {
+        padding: 1px;
+      }
+
+      .quote-sheet .compact {
+        font-size: 10px;
+        line-height: 1.25;
+      }
+
+      .quote-sheet img {
+        max-width: 100%;
+      }
+
       @media print {
         @page {
           size: A4 portrait;
@@ -4692,34 +4739,37 @@ const renderUserManagement = () => {
           top: 0 !important;
           left: 0 !important;
           width: 100% !important;
-          max-width: none !important;
           margin: 0 !important;
           padding: 0 !important;
-          overflow: visible !important;
           background: #fff !important;
           box-shadow: none !important;
         }
 
+        .quote-sheet {
+          width: 200mm !important;
+          min-height: 287mm !important;
+          margin: 0 auto !important;
+          padding: 5mm !important;
+          border: 1px solid #111 !important;
+          box-shadow: none !important;
+        }
+
         .no-print,
-        .no-print *,
         .quote-actions,
-        .quote-actions *,
-        button {
+        .quote-sheet button {
           display: none !important;
         }
       }
     `}</style>
 
-    {/* 外層彈窗：負責固定上方標題、下方按鈕 */}
     <div
       className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[1450px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
       onMouseDown={(event) => event.stopPropagation()}
     >
-      {/* 預覽標題：不列印 */}
+      {/* 上方標題列：螢幕顯示，列印時隱藏 */}
       <div className="no-print flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3">
         <div>
           <h3 className="text-lg font-bold text-gray-800">報價單預覽</h3>
-
           <p className="mt-0.5 text-xs text-gray-500">
             {previewQuote.quote?.QuotationNo || ""}
           </p>
@@ -4728,7 +4778,7 @@ const renderUserManagement = () => {
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
-          className="text-2xl leading-none text-gray-400 transition hover:text-gray-700"
+          className="text-2xl leading-none text-gray-400 hover:text-gray-700"
           title="關閉"
           aria-label="關閉預覽"
         >
@@ -4736,7 +4786,7 @@ const renderUserManagement = () => {
         </button>
       </div>
 
-      {/* 中間：只讓這一區可捲動 */}
+      {/* 報價單內容可捲動 */}
       <div className="flex-1 overflow-auto bg-gray-200 p-4 sm:p-6">
         <div
           id="quote-print-area"
@@ -5399,42 +5449,41 @@ const renderUserManagement = () => {
           </table>
 
           <div className="border-t border-black mt-2 pt-1 compact">
-            說明：1. 本報價單以上金額含稅，有效期至{' '}
+            說明：1. 本報價單以上金額含稅，有效期至{" "}
             {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
             100%（30日到期票）。
           </div>
-          </div>
         </div>
       </div>
+    </div>
 
-      {/* 下方固定操作列：不列印 */}
-      <div className="quote-actions no-print flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
-        <button
-          type="button"
-          onClick={printQuoteSheet}
-          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow transition hover:bg-blue-700"
-        >
-          列印
-        </button>
+    <div className="quote-actions no-print flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
+      <button
+        type="button"
+        onClick={printQuoteSheet}
+        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-700"
+      >
+        列印
+      </button>
 
-        <button
-          type="button"
-          onClick={() => editQuote(previewQuote.quote)}
-          className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 transition hover:bg-amber-50"
-        >
-          帶入修改
-        </button>
+      <button
+        type="button"
+        onClick={() => editQuote(previewQuote.quote)}
+        className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-50"
+      >
+        帶入修改
+      </button>
 
-        <button
-          type="button"
-          onClick={() => setShowQuotePreview(false)}
-          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-        >
-          關閉
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setShowQuotePreview(false)}
+        className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+      >
+        關閉
+      </button>
     </div>
   </div>
+</div>
 )}
       {showCustomerPicker && (
         <div
