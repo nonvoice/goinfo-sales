@@ -5317,16 +5317,15 @@ const renderUserManagement = () => {
                 </section>
               )}
 
-            {/* 維護與簽章區 */}
-            <div className="quote-sheet">
-              <div className="quote-main-content">
-                  {/* 抬頭、客戶資料、品項明細、系統說明 */}
-             </div>
+           {/* 主內容到此結束 */}
+          </div>
 
-             <div className="quote-spacer" />
+          {/* 自動填滿系統說明與維護說明之間的空白 */}
+          <div className="quote-spacer" />
 
-             <div className="quote-footer">
-              <section className="compact">
+          {/* 維護、簽章、付款資訊固定靠近 A4 底部 */}
+          <div className="quote-footer">
+            <section className="compact">
                 <h2 className="border-b-2 border-black text-sm font-bold">
                   維護說明
                 </h2>
