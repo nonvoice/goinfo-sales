@@ -4744,12 +4744,8 @@ const renderUserManagement = () => {
 
       /* 中間自動空白區：上方系統說明越少，空白越大 */
       .quote-spacer {
-        /*
-         * 高度由 React 依實際內容動態寫入 inline style。
-         * 不再使用 flex: 1，避免空白被錯誤撐到頁底或產生溢出頁。
-         */
-        flex: 0 0 auto;
-        min-height: 4mm;
+        flex: 0 0 auto !important;
+        min-height: 4mm !important;
       }
 
       /* 下方固定區：維護說明、簽章、付款條件 */
