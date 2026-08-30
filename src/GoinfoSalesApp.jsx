@@ -1427,14 +1427,7 @@ const previewQuoteById = async (quotationId) => {
 };
 
   const printQuoteSheet = () => {
-    if (!previewQuote) {
-      alert("目前沒有可列印的報價單。");
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      window.print();
-    });
+     window.print();
   };
 
   const voidQuote = async (quote) => {
@@ -4664,16 +4657,74 @@ const renderUserManagement = () => {
       
       {showQuotePreview && previewQuote && (
   <div
-    className="quote-print fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    className="quote-preview-modal fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 print:bg-white print:p-0"
     onMouseDown={() => setShowQuotePreview(false)}
   >
     <style>{`
+      /*
+       * 螢幕預覽與列印共用的報價單樣式
+       * 注意：這裡保留原本報價單的格線與尺寸設定
+       */
+      .quote-sheet {
+        width: 200mm;
+        min-height: 287mm;
+        margin: 0 auto;
+        padding: 5mm;
+        box-sizing: border-box;
+        border: 1px solid #111;
+        background: #fff;
+        color: #000;
+        font-family: Arial, "Microsoft JhengHei", sans-serif;
+        font-size: 11px;
+        line-height: 1.3;
+      }
+
+      .quote-sheet table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+
+      .quote-sheet table:not(.noborder) {
+        border: 1px solid #111;
+      }
+
+      .quote-sheet table:not(.noborder) th,
+      .quote-sheet table:not(.noborder) td {
+        border: 1px solid #111;
+        padding: 4px;
+        vertical-align: middle;
+      }
+
+      .quote-sheet .noborder,
+      .quote-sheet .noborder th,
+      .quote-sheet .noborder td {
+        border: 0;
+      }
+
+      .quote-sheet .noborder td {
+        padding: 1px;
+      }
+
+      .quote-sheet .compact {
+        font-size: 10px;
+        line-height: 1.25;
+      }
+
+      .quote-sheet img {
+        max-width: 100%;
+      }
+
+      /*
+       * 列印時只保留 #quote-print-area 的內容
+       */
       @media print {
         @page {
           size: A4 portrait;
           margin: 5mm;
         }
 
+        html,
         body {
           margin: 0 !important;
           padding: 0 !important;
@@ -4691,14 +4742,27 @@ const renderUserManagement = () => {
 
         #quote-print-area {
           position: absolute !important;
-          left: 0 !important;
           top: 0 !important;
+          left: 0 !important;
           width: 100% !important;
           max-width: none !important;
           margin: 0 !important;
           padding: 0 !important;
-          box-shadow: none !important;
+          overflow: visible !important;
           background: #fff !important;
+          box-shadow: none !important;
+        }
+
+        .quote-sheet {
+          width: 200mm !important;
+          min-height: 287mm !important;
+          margin: 0 auto !important;
+          padding: 5mm !important;
+          border: 1px solid #111 !important;
+          box-shadow: none !important;
+          overflow: visible !important;
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
         }
 
         .no-print,
@@ -4709,55 +4773,6 @@ const renderUserManagement = () => {
           display: none !important;
         }
 
-        .quote-sheet {
-          width: 200mm !important;
-          min-height: 287mm !important;
-          margin: 0 auto !important;
-          padding: 5mm !important;
-          box-sizing: border-box !important;
-          border: 1px solid #111 !important;
-          background: #fff !important;
-          color: #000 !important;
-          font-family: Arial, "Microsoft JhengHei", sans-serif !important;
-          font-size: 11px !important;
-          line-height: 1.3 !important;
-          overflow: visible !important;
-        }
-
-        .quote-sheet table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          border-spacing: 0 !important;
-        }
-
-        .quote-sheet table:not(.noborder) {
-          border: 1px solid #111 !important;
-        }
-
-        .quote-sheet table:not(.noborder) th,
-        .quote-sheet table:not(.noborder) td {
-          border: 1px solid #111 !important;
-          padding: 4px !important;
-          vertical-align: middle !important;
-        }
-
-        .quote-sheet .noborder,
-        .quote-sheet .noborder th,
-        .quote-sheet .noborder td {
-          border: 0 !important;
-        }
-
-        .quote-sheet .compact {
-          font-size: 10px !important;
-          line-height: 1.25 !important;
-        }
-
-        .quote-sheet img {
-          max-width: 100% !important;
-          print-color-adjust: exact !important;
-          -webkit-print-color-adjust: exact !important;
-        }
-
         .quote-footer {
           break-inside: avoid;
           page-break-inside: avoid;
@@ -4765,11 +4780,12 @@ const renderUserManagement = () => {
       }
     `}</style>
 
+    {/* 預覽外框：保留新版固定按鈕與捲動架構 */}
     <div
-      className="flex max-h-[calc(100vh-2rem)] w-full max-w-[1450px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+      className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[1450px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
       onMouseDown={(event) => event.stopPropagation()}
     >
-      {/* 上方標題列：不列印 */}
+      {/* 上方標題列，不列印 */}
       <div className="no-print flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3">
         <div>
           <h3 className="text-lg font-bold text-gray-800">報價單預覽</h3>
@@ -4781,7 +4797,7 @@ const renderUserManagement = () => {
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
-          className="text-2xl leading-none text-gray-400 hover:text-gray-700"
+          className="text-2xl leading-none text-gray-400 transition hover:text-gray-700"
           title="關閉"
           aria-label="關閉預覽"
         >
@@ -4789,24 +4805,17 @@ const renderUserManagement = () => {
         </button>
       </div>
 
-      {/* 中段：只有報價單內容可捲動 */}
+      {/* 中間報價單內容：只有這個區塊捲動 */}
       <div className="flex-1 overflow-auto bg-gray-200 p-4 sm:p-6">
         <div
           id="quote-print-area"
-          className="mx-auto w-full max-w-[210mm] bg-white p-4 shadow-sm sm:p-7"
+          className="mx-auto w-full max-w-[210mm] bg-white shadow-sm"
         >
-          <div className="quote-sheet mx-auto w-full bg-white text-black">
-            {/* 右上角關閉按鈕：螢幕顯示、列印時隱藏 */}
-            <button
-              type="button"
-              onClick={() => setShowQuotePreview(false)}
-              className="no-print float-right text-2xl leading-none text-gray-400 hover:text-gray-700"
-              title="關閉"
-              aria-label="關閉預覽"
-            >
-              ×
-            </button>
-
+          {/* =========================================================
+              以下為原本正式報價單內容：
+              保留原始格線、資料欄位、說明、印章及簽章區
+             ========================================================= */}
+          <div className="quote-sheet">
             {/* 公司抬頭 */}
             <header className="mb-2 border-b-2 border-black pb-2">
               <div className="flex items-center gap-3">
@@ -4821,25 +4830,14 @@ const renderUserManagement = () => {
                 </div>
               </div>
 
+              {/* 原本公司資料：不要改成台北／台中／高雄資料表 */}
               <table className="noborder compact mt-1">
                 <tbody>
                   <tr>
-                    <td className="w-16">台北</td>
-                    <td>33393</td>
-                    <td>02-2713-7188</td>
-                    <td>02-2713-4563</td>
-                  </tr>
-                  <tr>
-                    <td>台中</td>
-                    <td>241169</td>
+                    <td className="w-16">電話</td>
                     <td>04-2298-1378</td>
+                    <td className="w-16">傳真</td>
                     <td>04-2298-1328</td>
-                  </tr>
-                  <tr>
-                    <td>高雄</td>
-                    <td>9355</td>
-                    <td>07-5580096</td>
-                    <td>07-5580128</td>
                   </tr>
                 </tbody>
               </table>
@@ -4848,26 +4846,20 @@ const renderUserManagement = () => {
               <div className="text-center font-semibold">QUOTATION</div>
             </header>
 
-            {/* 報價單與客戶資料 */}
-            <table className="mb-1 w-full">
+            {/* 報價基本資料：保留原有格線表格 */}
+            <table className="mb-1">
               <tbody>
                 <tr>
-                  <td className="w-1/6 bg-gray-100 font-medium">報價單號</td>
-                  <td className="w-1/3">
-                    {previewQuote.quote?.QuotationNo || ""}
-                  </td>
-                  <td className="w-1/6 bg-gray-100 font-medium">報價日期</td>
-                  <td className="w-1/3">
-                    {formatDateForInput(previewQuote.quote?.QuoteDate)}
-                  </td>
+                  <td className="w-20 font-semibold">報價單號</td>
+                  <td>{previewQuote.quote?.QuotationNo || ""}</td>
+                  <td className="w-20 font-semibold">報價日期</td>
+                  <td>{formatDateForInput(previewQuote.quote?.QuoteDate)}</td>
                 </tr>
 
                 <tr>
-                  <td className="bg-gray-100 font-medium">客戶代號</td>
-                  <td>
-                    {previewQuote.quote?.CustomerCode || ""}
-                  </td>
-                  <td className="bg-gray-100 font-medium">電話</td>
+                  <td className="font-semibold">客戶代號</td>
+                  <td>{previewQuote.quote?.CustomerCode || ""}</td>
+                  <td className="font-semibold">電話</td>
                   <td>
                     {previewQuote.quote?.Tel ||
                       previewQuote.quote?.CustomerTel ||
@@ -4876,14 +4868,14 @@ const renderUserManagement = () => {
                 </tr>
 
                 <tr>
-                  <td className="bg-gray-100 font-medium">客戶名稱</td>
+                  <td className="font-semibold">客戶名稱</td>
                   <td>
                     {previewQuote.quote?.CustomerName ||
                       previewQuote.quote?.ContactName ||
                       previewQuote.quote?.Contacter ||
                       ""}
                   </td>
-                  <td className="bg-gray-100 font-medium">傳真</td>
+                  <td className="font-semibold">傳真</td>
                   <td>
                     {previewQuote.quote?.Fax ||
                       previewQuote.quote?.CustomerFax ||
@@ -4893,7 +4885,7 @@ const renderUserManagement = () => {
               </tbody>
             </table>
 
-            {/* 品項明細 */}
+            {/* 品項明細：原始漂亮格線 */}
             <table className="w-full">
               <colgroup>
                 <col className="w-[47%]" />
@@ -4909,7 +4901,7 @@ const renderUserManagement = () => {
                   <th className="whitespace-nowrap">定價</th>
                   <th>數量</th>
                   <th className="whitespace-nowrap">金額</th>
-                  <th>折扣／特價</th>
+                  <th className="whitespace-nowrap">折扣／特價</th>
                 </tr>
               </thead>
 
@@ -4959,10 +4951,10 @@ const renderUserManagement = () => {
                         );
                       }).length;
 
-                    const maintenanceLabel =
-                      maintenanceIndex > 1 ? ` - 第 ${maintenanceIndex} 年` : "";
-
-                    displayName = `${productName}${maintenanceLabel}`;
+                    displayName =
+                      maintenanceIndex > 1
+                        ? `${productName}－第 ${maintenanceIndex} 年`
+                        : productName;
                   } else if (isPtsSystem || isStandalone) {
                     displayName = productName;
                   } else {
@@ -5014,9 +5006,7 @@ const renderUserManagement = () => {
                       key={
                         item.QuotationItemId ??
                         item.quotationItemId ??
-                        item.SystemId ??
-                        item.systemId ??
-                        `${itemType}-${index}`
+                        `${item.SystemId ?? item.systemId}-${index}`
                       }
                     >
                       <td>{displayName}</td>
@@ -5025,21 +5015,27 @@ const renderUserManagement = () => {
                         NT$ {lineAmount.toLocaleString()}
                       </td>
 
-                      <td className="text-center">
-                        {item.UserCount ?? item.userCount ?? 1}
-                      </td>
+                      <td className="text-center">1</td>
 
                       <td className="whitespace-nowrap text-right">
                         NT$ {lineAmount.toLocaleString()}
                       </td>
 
                       <td className="text-xs leading-tight">
+                        <span className="whitespace-nowrap">
+                          {item.Discount ?? item.discount ?? 100}%
+                        </span>
+
+                        <br />
+
                         {hasDisplayFinalAmount ? (
                           <>
                             <span className="whitespace-nowrap text-red-600 line-through">
                               NT$ {discountAmount.toLocaleString()}
                             </span>
+
                             <br />
+
                             <span className="whitespace-nowrap font-semibold text-red-600">
                               NT$ {displayFinalAmount.toLocaleString()}
                             </span>
@@ -5132,7 +5128,9 @@ const renderUserManagement = () => {
                   return (
                     <>
                       <tr>
-                        <td colSpan="2"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                         <td className="whitespace-nowrap text-right font-bold">
                           合計
                         </td>
@@ -5147,20 +5145,13 @@ const renderUserManagement = () => {
                             NT$ {discountSubtotal.toLocaleString()}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap text-left">
-                          {hasManualFinalAmount && (
-                            <span className="font-bold text-red-600">
-                              NT$ {beforeCreditFinalAmount.toLocaleString()}
-                            </span>
-                          )}
-                        </td>
                       </tr>
 
                       {upgradeCreditItems.map((item, index) => {
                         const description =
                           item.UpgradeCreditDescription ??
                           item.upgradeCreditDescription ??
-                          "升級折抵";
+                          "";
 
                         const amount = Number(
                           item.UpgradeCreditAmount ??
@@ -5178,38 +5169,39 @@ const renderUserManagement = () => {
                               index
                             }`}
                           >
-                            <td colSpan="3"></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td className="whitespace-nowrap text-right">
                               {description}
                             </td>
                             <td className="whitespace-nowrap text-right text-red-600">
-                              - NT$ {amount.toLocaleString()}
+                              NT$ -{amount.toLocaleString()}
                             </td>
                           </tr>
                         );
                       })}
 
                       <tr>
-                        <td colSpan="2"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                         <td className="whitespace-nowrap text-right font-bold">
                           總計
                         </td>
                         <td className="whitespace-nowrap text-right">
-                          <span
-                            className={
-                              totalUpgradeCreditAmount > 0
-                                ? "font-bold text-red-600 line-through"
-                                : "font-bold"
-                            }
-                          >
-                            NT$ {beforeCreditFinalAmount.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap text-left">
                           {totalUpgradeCreditAmount > 0 ? (
-                            <span className="font-bold text-red-600">
-                              NT$ {finalOfferAmount.toLocaleString()}
-                            </span>
+                            <>
+                              <span className="font-bold text-red-600 line-through">
+                                NT$ {beforeCreditFinalAmount.toLocaleString()}
+                              </span>
+
+                              <br />
+
+                              <span className="font-bold text-red-600">
+                                NT$ {finalOfferAmount.toLocaleString()}
+                              </span>
+                            </>
                           ) : (
                             <span className="font-bold">
                               NT$ {beforeCreditFinalAmount.toLocaleString()}
@@ -5223,16 +5215,16 @@ const renderUserManagement = () => {
               </tbody>
             </table>
 
-            {/* 系統功能說明：僅新購、且有非維護項目時顯示 */}
+            {/* 這段只保留原本的新購系統說明 */}
             {previewQuote.isNewPurchase &&
               (previewQuote.items || []).some(
                 (item) =>
                   String(item.ItemType ?? item.itemType ?? "").toUpperCase() !==
                   "MAINTENANCE"
               ) && (
-                <section className="compact mt-3">
+                <section className="mt-3 compact">
                   <h2 className="border-b-2 border-black text-sm font-bold">
-                    系統功能說明
+                    系統說明
                   </h2>
 
                   {(previewQuote.items || [])
@@ -5268,135 +5260,37 @@ const renderUserManagement = () => {
                 </section>
               )}
 
-            {/* 報價條件、保固與維護說明 */}
+            {/* =====================================================
+                報價說明：
+                只保留你原始程式碼中已有的內容。
+                不再加上「維護優惠價」、「加購使用者年度維護費」等內容。
+               ===================================================== */}
             <div className="quote-footer">
-              <section className="compact mt-3">
+              <section className="compact">
                 <h2 className="border-b-2 border-black text-sm font-bold">
                   報價說明
                 </h2>
 
                 <ol className="list-decimal pl-5">
                   <li>
-                    報價有效期限至：
-                    {quoteValidDate(previewQuote.quote)}
+                    {Number(previewQuote.warrantyMonths ?? 0) === 12 ||
+                    Number(previewQuote.warrantyMonths ?? 0) === 0
+                      ? "保固期為 12 個月。"
+                      : `保固期為 ${Number(
+                          previewQuote.warrantyMonths
+                        )} 個月。`}
                   </li>
 
                   <li>
-                    軟體保固：
-                    {Number(previewQuote.warrantyMonths ?? 0) === 0
-                      ? "12 個月"
-                      : `${Number(previewQuote.warrantyMonths)} 個月`}
-                  </li>
-
-                  <li>
-                    年度維護費：
-                    NT${" "}
+                    年度維護費：NT${" "}
                     {Number(
                       previewQuote.maintenanceTotal ?? 0
                     ).toLocaleString()}
                   </li>
-
-                  {previewQuote.maintenanceDiscountAmount !== null &&
-                    previewQuote.maintenanceDiscountAmount !== undefined &&
-                    previewQuote.maintenanceDiscountAmount !== "" && (
-                      <li>
-                        維護優惠價：NT${" "}
-                        {Number(
-                          previewQuote.maintenanceDiscountAmount
-                        ).toLocaleString()}
-                      </li>
-                    )}
-
-                  {(() => {
-                    const maintenanceItems = (previewQuote.items || []).filter(
-                      (item) => {
-                        const itemType = String(
-                          item.ItemType ?? item.itemType ?? ""
-                        ).toUpperCase();
-
-                        return (
-                          itemType !== "MAINTENANCE" &&
-                          Number(
-                            item.addUserMaintenanceTaxIncluded ?? 0
-                          ) > 0
-                        );
-                      }
-                    );
-
-                    if (maintenanceItems.length === 0) return null;
-
-                    return (
-                      <li>
-                        加購使用者年度維護費：
-                        {maintenanceItems.map((item, index) => (
-                          <span
-                            key={`maintenance-item-${
-                              item.SystemId ?? item.systemId ?? index
-                            }`}
-                          >
-                            {index > 0 ? "、" : ""}
-                            {formatQuoteSystemCode(
-                              item.SystemCode ?? item.systemCode
-                            )}{" "}
-                            {item.SystemName ?? item.systemName ?? ""} NT${" "}
-                            {Number(
-                              item.addUserMaintenanceTaxIncluded ?? 0
-                            ).toLocaleString()}
-                          </span>
-                        ))}
-                      </li>
-                    );
-                  })()}
-
-                  {(() => {
-                    const licenseAddUserItems = (
-                      previewQuote.items || []
-                    ).filter((item) => {
-                      const itemType = String(
-                        item.ItemType ?? item.itemType ?? ""
-                      ).toUpperCase();
-
-                      const systemCode = formatQuoteSystemCode(
-                        item.SystemCode ?? item.systemCode
-                      );
-
-                      const isPtsSystem = /^PTS-/i.test(systemCode);
-
-                      return (
-                        itemType !== "MAINTENANCE" &&
-                        !isPtsSystem &&
-                        Number(item.licenseAddUserTaxIncluded ?? 0) > 0
-                      );
-                    });
-
-                    if (licenseAddUserItems.length === 0) return null;
-
-                    return (
-                      <li>
-                        加購使用者授權費：
-                        {licenseAddUserItems.map((item, index) => (
-                          <span
-                            key={`license-item-${
-                              item.SystemId ?? item.systemId ?? index
-                            }`}
-                          >
-                            {index > 0 ? "、" : ""}
-                            {formatQuoteSystemCode(
-                              item.SystemCode ?? item.systemCode
-                            )}{" "}
-                            {item.SystemName ?? item.systemName ?? ""} NT${" "}
-                            {Number(
-                              item.licenseAddUserTaxIncluded ?? 0
-                            ).toLocaleString()}
-                          </span>
-                        ))}
-                      </li>
-                    );
-                  })()}
                 </ol>
               </section>
 
-              {/* 簽核區 */}
+              {/* 原本底部簽章表格 */}
               <table className="mt-3 w-full">
                 <tbody>
                   <tr>
@@ -5458,6 +5352,7 @@ const renderUserManagement = () => {
                 </tbody>
               </table>
 
+              {/* 原始最下方條款 */}
               <div className="compact mt-2 border-t border-black pt-1">
                 1. 本報價單有效期限至 {quoteValidDate(previewQuote.quote)}
                 <br />
@@ -5468,12 +5363,12 @@ const renderUserManagement = () => {
         </div>
       </div>
 
-      {/* 下方操作列：固定在彈窗內，不會被內容捲走 */}
+      {/* 下方固定操作按鈕：不列印 */}
       <div className="quote-actions no-print flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
         <button
           type="button"
           onClick={printQuoteSheet}
-          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow transition hover:bg-blue-700"
         >
           列印
         </button>
@@ -5481,7 +5376,7 @@ const renderUserManagement = () => {
         <button
           type="button"
           onClick={() => editQuote(previewQuote.quote)}
-          className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-50"
+          className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 transition hover:bg-amber-50"
         >
           帶入修改
         </button>
@@ -5489,7 +5384,7 @@ const renderUserManagement = () => {
         <button
           type="button"
           onClick={() => setShowQuotePreview(false)}
-          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
         >
           關閉
         </button>
