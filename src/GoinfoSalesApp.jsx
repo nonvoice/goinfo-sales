@@ -4742,59 +4742,75 @@ const renderUserManagement = () => {
       }
 
       @media print {
-        @page {
-          size: A4 portrait;
-          margin: 0mm;
-        }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
 
-        html,
-        body {
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #fff !important;
-        }
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
 
-        body * {
-          visibility: hidden !important;
-        }
+  /*
+   * 列印時不要用 Flex + min-height 撐出 A4 空白。
+   * 這只保留在預覽畫面使用。
+   */
+  .quote-sheet {
+    display: block !important;
+    width: 200mm !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 5mm !important;
+    box-sizing: border-box !important;
+    border: 1px solid #111 !important;
+    overflow: visible !important;
+  }
 
-        #quote-print-area,
-        #quote-print-area * {
-          visibility: visible !important;
-        }
+  /*
+   * 列印時移除預覽專用的自動空白。
+   * 維護說明會緊接系統說明印出，但可避免產生空白分頁。
+   */
+  .quote-spacer {
+    display: none !important;
+  }
 
-        #quote-print-area {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #fff !important;
-          box-shadow: none !important;
-          overflow: visible !important;
-     transform: scale(0.93) !important;
-          transform-origin: top left !important;
-          width: 107.5269% !important;
-        }
+  .quote-main-content,
+  .quote-footer {
+    display: block !important;
+    min-height: 0 !important;
+  }
 
-        .quote-sheet {
-          width: 200mm !important;
-          min-height: 287mm !important;
-          margin: 0 auto !important;
-          padding: 5mm !important;
-          border: 1px solid #111 !important;
-          box-shadow: none !important;
-          overflow: visible !important;
-          print-color-adjust: exact !important;
-          -webkit-print-color-adjust: exact !important;
-        }
+  .quote-footer {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 
-        .no-print,
-        .quote-actions,
-        .quote-sheet button {
-          display: none !important;
-        }
-      }
+  /*
+   * 列印範圍只保留報價內容。
+   */
+  #quote-print-area {
+    position: static !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .no-print,
+  .quote-actions,
+  .quote-sheet button {
+    display: none !important;
+  }
+}
     `}</style>
 
     <div
