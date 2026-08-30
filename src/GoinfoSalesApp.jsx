@@ -4744,7 +4744,7 @@ const renderUserManagement = () => {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 5mm;
+          margin: 0mm;
         }
 
         html,
@@ -4767,12 +4767,14 @@ const renderUserManagement = () => {
           position: absolute !important;
           top: 0 !important;
           left: 0 !important;
-          width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
           background: #fff !important;
           box-shadow: none !important;
           overflow: visible !important;
+     transform: scale(0.93) !important;
+          transform-origin: top left !important;
+          width: 107.5269% !important;
         }
 
         .quote-sheet {
@@ -4785,10 +4787,6 @@ const renderUserManagement = () => {
           overflow: visible !important;
           print-color-adjust: exact !important;
           -webkit-print-color-adjust: exact !important;
-     transform: scale(0.93) !important;
-          transform-origin: top center !important;
-          width: 215.054mm !important;
-          min-height: 308.602mm !important;
         }
 
         .no-print,
