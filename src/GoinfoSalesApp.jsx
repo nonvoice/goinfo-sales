@@ -4891,156 +4891,142 @@ const renderUserManagement = () => {
               <th>備註</th>
             </tr>
           </thead>
-
   <tbody>
-  {previewQuote.items.map((item, index) => (
-    <tr
-      key={
-        item.QuotationItemId ||
-        `${item.SystemId}-${item.ItemType || 'item'}-${index}`
-      }
-    >
-      <td>
-        {(() => {
-          const systemCode = formatQuoteSystemCode(
-            item.SystemCode ?? item.systemCode
-          );
+  {previewQuote.items.map((item, index) => {
+    const systemCode = formatQuoteSystemCode(
+      item.SystemCode ?? item.systemCode
+    );
 
-          const systemName = String(item.SystemName || '').trim();
+    const systemName = String(
+      item.SystemName ?? item.systemName ?? ''
+    ).trim();
 
-          const itemType = String(
-            item.ItemType ??
-            item.itemType ??
-            ''
-          ).toUpperCase();
+    const itemType = String(
+      item.ItemType ?? item.itemType ?? ''
+    ).toUpperCase();
 
-          const isMaintenance = itemType === 'MAINTENANCE';
+    const isMaintenance = itemType === 'MAINTENANCE';
 
-          const isPtsSystem = /^PTS-/i.test(systemCode);
+    const isPtsSystem = /^PTS-/i.test(systemCode);
 
-          const isStandalone =
-            systemName.includes('單機版') ||
-            systemName.includes('單機');
+    const isStandalone =
+      systemName.includes('單機版') ||
+      systemName.includes('單機');
 
-          const productName =
-            systemCode && systemName
-              ? `${systemCode}－${systemName}`
-              : systemName || systemCode || '－';
-        
-          if (isMaintenance) {
-            const maintenanceIndex = previewQuote.items
-              .slice(0, index + 1)
-              .filter((row) => {
-                const rowType = String(
-                  row.ItemType ??
-                  row.itemType ??
-                  ''
-                ).toUpperCase();
+    const productName =
+      systemCode && systemName
+        ? `${systemCode}－${systemName}`
+        : systemName || systemCode || '－';
 
-                const rowSystemCode = formatQuoteSystemCode(
-                  row.SystemCode ?? row.systemCode
-                );
+    const maintenanceIndex = previewQuote.items
+      .slice(0, index + 1)
+      .filter((row) => {
+        const rowType = String(
+          row.ItemType ?? row.itemType ?? ''
+        ).toUpperCase();
 
-                return (
-                  rowType === 'MAINTENANCE' &&
-                  rowSystemCode === systemCode
-                );
-              }).length;
+        const rowSystemCode = formatQuoteSystemCode(
+          row.SystemCode ?? row.systemCode
+        );
 
-            const maintenanceLabel =
-              maintenanceIndex === 1
-                ? '維護費-本期'
-                : '維護費-未簽約各期';
+        return (
+          rowType === 'MAINTENANCE' &&
+          rowSystemCode === systemCode
+        );
+      }).length;
 
-            return `${productName}（${maintenanceLabel}）`;
-          }
+    const productLabel = isMaintenance
+      ? `${productName}（${
+          maintenanceIndex === 1
+            ? '維護費-本期'
+            : '維護費-未簽約各期'
+        }）`
+      : isPtsSystem || isStandalone
+        ? productName
+        : `${productName}（網路 ${
+            item.UserCount ?? item.userCount ?? 1
+          } 人版）`;
 
-          if (isPtsSystem || isStandalone) {
-            return productName;
-          }
+    const lineAmount = Number(
+      item.LineAmount ?? item.lineAmount ?? 0
+    );
 
-          return `${productName}（網路 ${item.UserCount || 1} 人版）`;
-        })()}
-      </td>
+    const discount = Number(
+      item.Discount ?? item.discount ?? 100
+    );
 
-      <td className="text-right whitespace-nowrap">
-        NT${Number(item.LineAmount || 0).toLocaleString()}
-      </td>
+    const discountAmount = Number(
+      item.DiscountAmount ?? item.discountAmount ?? 0
+    );
 
-      <td className="text-center">1</td>
+    const specialPrice =
+      item.SpecialPrice ?? item.specialPrice ?? null;
 
-      <td className="text-right whitespace-nowrap">
-        NT${Number(item.LineAmount || 0).toLocaleString()}
-      </td>
+    const finalAmount =
+      item.FinalAmount ?? item.finalAmount ?? null;
 
-      <td className="text-xs leading-tight">
-        折數 {item.Discount ?? 100}%<br />
+    const upgradeCreditAmount = Number(
+      item.UpgradeCreditAmount ??
+      item.upgradeCreditAmount ??
+      0
+    );
 
-        {(() => {
-          const discountAmount = Number(
-            item.DiscountAmount ??
-            item.discountAmount ??
-            0
-          );
+    const displayFinalAmount =
+      specialPrice !== null &&
+      specialPrice !== undefined &&
+      specialPrice !== ''
+        ? Number(specialPrice)
+        : finalAmount !== null &&
+            finalAmount !== undefined &&
+            finalAmount !== ''
+          ? Number(finalAmount) + upgradeCreditAmount
+          : null;
 
-          const specialPrice =
-            item.SpecialPrice ??
-            item.specialPrice ??
-            null;
+    const hasDisplayFinalAmount =
+      displayFinalAmount !== null &&
+      Number.isFinite(displayFinalAmount) &&
+      displayFinalAmount > 0;
 
-          const finalAmount =
-            item.FinalAmount ??
-            item.finalAmount ??
-            null;
+    return (
+      <tr
+        key={
+          item.QuotationItemId ??
+          item.quotationItemId ??
+          `${systemCode}-${itemType || 'item'}-${index}`
+        }
+      >
+        <td>
+          {productLabel}
+        </td>
 
-          const upgradeCreditAmount = Number(
-            item.UpgradeCreditAmount ??
-            item.upgradeCreditAmount ??
-            0
-          );
+        <td className="text-right whitespace-nowrap">
+          NT${lineAmount.toLocaleString()}
+        </td>
 
-          const displayFinalAmount =
-            specialPrice !== null &&
-            specialPrice !== undefined &&
-            specialPrice !== ''
-              ? Number(specialPrice)
-              : finalAmount !== null &&
-                finalAmount !== undefined &&
-                finalAmount !== ''
-                ? Number(finalAmount) + upgradeCreditAmount
-                : null;
+        <td className="text-center">
+          1
+        </td>
 
-          const hasDisplayFinalAmount =
-            displayFinalAmount !== null &&
-            Number.isFinite(displayFinalAmount) &&
-            displayFinalAmount > 0;
+        <td className="text-right whitespace-nowrap">
+          NT${lineAmount.toLocaleString()}
+        </td>
 
-          return (
-            <>
-              <span
-                className={
-                  hasDisplayFinalAmount
-                    ? 'line-through text-red-600 whitespace-nowrap'
-                    : 'whitespace-nowrap'
-                }
-              >
-                優惠含稅 NT${discountAmount.toLocaleString()}
-              </span>
+        <td className="border px-2 py-2 align-top text-sm">
+          折數 {discount}%
 
-              {hasDisplayFinalAmount && (
-                <>
-                  <br />
-                  <span className="font-semibold text-red-600 whitespace-nowrap">
-                    → NT${displayFinalAmount.toLocaleString()}
-                  </span>
-                </>
-              )}
-            </>
-          );
-        })()}
-      </td>
-    </tr>
-  ))}
+          <span className="ml-1">
+            優惠含稅 NT${discountAmount.toLocaleString()}
+          </span>
+
+          {hasDisplayFinalAmount && (
+            <span className="ml-1">
+              → NT${displayFinalAmount.toLocaleString()}
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  })}
 
   {(() => {
     const discountSubtotal = previewQuote.items.reduce(
@@ -5078,8 +5064,8 @@ const renderUserManagement = () => {
           specialPrice !== ''
             ? Number(specialPrice)
             : finalAmount !== null &&
-              finalAmount !== undefined &&
-              finalAmount !== ''
+                finalAmount !== undefined &&
+                finalAmount !== ''
               ? Number(finalAmount) + upgradeCreditAmount
               : Number(
                   item.DiscountAmount ??
@@ -5112,8 +5098,10 @@ const renderUserManagement = () => {
       0
     );
 
-    const finalOfferAmount =
-      beforeCreditFinalAmount - totalUpgradeCreditAmount;
+    const finalOfferAmount = Math.max(
+      beforeCreditFinalAmount - totalUpgradeCreditAmount,
+      0
+    );
 
     const hasManualFinalAmount =
       beforeCreditFinalAmount > 0 &&
@@ -5166,7 +5154,11 @@ const renderUserManagement = () => {
           return (
             <tr
               key={`upgrade-credit-${
-                item.QuotationItemId || item.SystemId
+                item.QuotationItemId ??
+                item.quotationItemId ??
+                item.SystemId ??
+                item.systemId ??
+                'item'
               }-${index}`}
             >
               <td></td>
@@ -5188,6 +5180,7 @@ const renderUserManagement = () => {
 
         <tr>
           <td></td>
+
           <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
@@ -5217,8 +5210,7 @@ const renderUserManagement = () => {
       </>
     );
   })()}
-</tbody>
-</table>
+</tbody>  </table>
 
 {previewQuote.isNewPurchase &&
   previewQuote.items.some((item) => {
