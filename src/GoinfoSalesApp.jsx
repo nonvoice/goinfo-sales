@@ -4660,7 +4660,9 @@ const renderUserManagement = () => {
     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
     onMouseDown={() => setShowQuotePreview(false)}
   >
-    <style>{`
+    
+<style>{`
+      /* 報價單本體：固定 A4 的可用最小高度 */
       .quote-sheet {
         width: 200mm;
         min-height: 287mm;
@@ -4674,8 +4676,35 @@ const renderUserManagement = () => {
         font-size: 11px;
         line-height: 1.3;
         overflow: visible;
+
+        /*
+         * 關鍵：使報價單垂直排列。
+         * quote-spacer 會自動吃掉剩餘高度，
+         * 並把 quote-footer 推到 A4 最下方。
+         */
+        display: flex;
+        flex-direction: column;
       }
 
+      /* 上方內容：抬頭、客戶資訊、明細、系統說明 */
+      .quote-main-content {
+        flex: 0 0 auto;
+      }
+
+      /* 中間自動空白區：上方系統說明越少，空白越大 */
+      .quote-spacer {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      /* 下方固定區：維護說明、簽章、付款條件 */
+      .quote-footer {
+        flex: 0 0 auto;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* 表格格線：保留你原本漂亮的版面 */
       .quote-sheet table {
         width: 100%;
         border-collapse: collapse;
@@ -4710,11 +4739,6 @@ const renderUserManagement = () => {
 
       .quote-sheet img {
         max-width: 100%;
-      }
-
-      .quote-footer {
-        break-inside: avoid;
-        page-break-inside: avoid;
       }
 
       @media print {
@@ -4803,6 +4827,7 @@ const renderUserManagement = () => {
           className="mx-auto w-fit min-w-[210mm] bg-white shadow-sm"
         >
           <div className="quote-sheet">
+        <div className="quote-main-content">
             {/* 原報價單內的關閉按鈕：螢幕顯示，列印隱藏 */}
             <button
               type="button"
@@ -5293,7 +5318,14 @@ const renderUserManagement = () => {
               )}
 
             {/* 維護與簽章區 */}
-            <div className="quote-footer">
+            <div className="quote-sheet">
+              <div className="quote-main-content">
+                  {/* 抬頭、客戶資料、品項明細、系統說明 */}
+             </div>
+
+             <div className="quote-spacer" />
+
+             <div className="quote-footer">
               <section className="compact">
                 <h2 className="border-b-2 border-black text-sm font-bold">
                   維護說明
