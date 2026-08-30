@@ -5483,7 +5483,7 @@ const renderUserManagement = () => {
       </div> {/* fixed overlay */}
       )}
 
-     {showCustomerPicker && (
+      {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
           onMouseDown={() => setShowCustomerPicker(false)}
@@ -5493,9 +5493,7 @@ const renderUserManagement = () => {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between p-5 border-b">
-              <h2 className="text-xl font-bold text-gray-800">
-                選擇客戶
-              </h2>
+              <h2 className="text-xl font-bold text-gray-800">選擇客戶</h2>
 
               <button
                 type="button"
@@ -5562,6 +5560,6 @@ const renderUserManagement = () => {
           </div>
         </div>
       )}
-   </>
+    </>
   );
 }
