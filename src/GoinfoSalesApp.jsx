@@ -4744,7 +4744,7 @@ const renderUserManagement = () => {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 5mm;
+          margin: 0mm;
         }
 
         html,
@@ -4775,22 +4775,6 @@ const renderUserManagement = () => {
           overflow: visible !important;
         }
 
-        /*
-         * 固定列印縮放為 93%：
-         * 避免瀏覽器將 A4 報價單誤判成多頁。
-         * 預覽畫面不受影響。
-         */
-        #quote-print-area {
-          transform: scale(0.93) !important;
-          transform-origin: top left !important;
-
-          /*
-           * 反向補償縮放後的可視寬度，
-           * 避免 transform 只縮視覺、但排版仍以原寬高計算。
-           */
-          width: 107.5269% !important;
-        }
-
         .quote-sheet {
           width: 200mm !important;
           min-height: 287mm !important;
@@ -4801,6 +4785,10 @@ const renderUserManagement = () => {
           overflow: visible !important;
           print-color-adjust: exact !important;
           -webkit-print-color-adjust: exact !important;
+     transform: scale(0.93) !important;
+          transform-origin: top center !important;
+          width: 215.054mm !important;
+          min-height: 308.602mm !important;
         }
 
         .no-print,
