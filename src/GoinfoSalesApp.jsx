@@ -4712,6 +4712,11 @@ const renderUserManagement = () => {
         max-width: 100%;
       }
 
+      .quote-footer {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
       @media print {
         @page {
           size: A4 portrait;
@@ -4743,6 +4748,7 @@ const renderUserManagement = () => {
           padding: 0 !important;
           background: #fff !important;
           box-shadow: none !important;
+          overflow: visible !important;
         }
 
         .quote-sheet {
@@ -4752,6 +4758,9 @@ const renderUserManagement = () => {
           padding: 5mm !important;
           border: 1px solid #111 !important;
           box-shadow: none !important;
+          overflow: visible !important;
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
         }
 
         .no-print,
@@ -4766,10 +4775,11 @@ const renderUserManagement = () => {
       className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[1450px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
       onMouseDown={(event) => event.stopPropagation()}
     >
-      {/* 上方標題列：螢幕顯示，列印時隱藏 */}
+      {/* 上方標題列：只在螢幕預覽顯示 */}
       <div className="no-print flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3">
         <div>
           <h3 className="text-lg font-bold text-gray-800">報價單預覽</h3>
+
           <p className="mt-0.5 text-xs text-gray-500">
             {previewQuote.quote?.QuotationNo || ""}
           </p>
@@ -4786,705 +4796,735 @@ const renderUserManagement = () => {
         </button>
       </div>
 
-      {/* 報價單內容可捲動 */}
+      {/* 中間內容區：只有此區塊可捲動 */}
       <div className="flex-1 overflow-auto bg-gray-200 p-4 sm:p-6">
         <div
           id="quote-print-area"
           className="mx-auto w-fit min-w-[210mm] bg-white shadow-sm"
         >
           <div className="quote-sheet">
-        <button
-          type="button"
-          onClick={() => setShowQuotePreview(false)}
-          className="no-print float-right text-2xl text-gray-400"
-        >
-          ×
-        </button>
-
-        <header className="border-b-2 border-black pb-2 mb-2">
-          <div className="flex items-center gap-3">
-            <img
-              src="/goinfo.jpg"
-              alt="Goinfo"
-              className="h-10 object-contain"
-            />
-            <div className="text-xl font-bold">
-              高益電腦股份有限公司 Goinfo Auto Co., Ltd.
-            </div>
-          </div>
-
-          <table className="noborder compact mt-1">
-            <tbody>
-              <tr>
-                <td className="w-16">總公司台北</td>
-                <td>地址：台北市松山區復興北路333號9樓之3</td>
-                <td>電話：02-2713-7188</td>
-                <td>傳真：02-2713-4563</td>
-              </tr>
-              <tr>
-                <td>總公司台中</td>
-                <td>地址：台中市西屯區文心路三段241號16樓之9</td>
-                <td>電話：04-2298-1378</td>
-                <td>傳真：04-2298-1328</td>
-              </tr>
-              <tr>
-                <td>總公司高雄</td>
-                <td>地址：高雄市左營區大順一路93號5樓之5</td>
-                <td>電話：07-5580096</td>
-                <td>傳真：07-5580128</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h1 className="text-center text-xl font-bold mt-1">
-            軟體買賣報價單
-          </h1>
-          <div className="text-center font-semibold">QUOTATION</div>
-        </header>
-
-        <table className="mb-1">
-          <tbody>
-            <tr>
-              <td>
-                報價單號：{previewQuote.quote.QuotationNo}
-                （類型：{quoteStatusLabel(previewQuote.quote.Status)}）
-              </td>
-              <td>
-                報價日期：
-                {formatDateForInput(previewQuote.quote.QuoteDate)}
-              </td>
-            </tr>
-            <tr>
-              <td>客戶代號：{previewQuote.quote.CustomerCode || '－'}</td>
-              <td>
-                客戶電話：
-                {previewQuote.quote.Tel ||
-                  previewQuote.quote.CustomerTel ||
-                  '－'}
-              </td>
-            </tr>
-            <tr>
-              <td>
-                客戶名稱：{previewQuote.quote.CustomerName || '－'}　
-                {previewQuote.quote.ContactName ||
-                  previewQuote.quote.Contacter ||
-                  ''}
-              </td>
-              <td>
-                客戶傳真：
-                {previewQuote.quote.Fax ||
-                  previewQuote.quote.CustomerFax ||
-                  '－'}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table className="w-full">
-          <colgroup>
-            <col className="w-[47%]" />
-            <col className="w-[16%]" />
-            <col className="w-[7%]" />
-            <col className="w-[13%]" />
-            <col className="w-[17%]" />
-          </colgroup>
-
-          <thead>
-            <tr className="text-center bg-gray-100">
-              <th>品名</th>
-              <th className="whitespace-nowrap">定價（未稅）</th>
-              <th>數量</th>
-              <th className="whitespace-nowrap">小計（未稅）</th>
-              <th>備註</th>
-            </tr>
-          </thead>
-
-  <tbody>
-  {previewQuote.items.map((item, index) => (
-    <tr
-      key={
-        item.QuotationItemId ||
-        `${item.SystemId}-${item.ItemType || 'item'}-${index}`
-      }
-    >
-      <td>
-        {(() => {
-          const systemCode = formatQuoteSystemCode(
-            item.SystemCode ?? item.systemCode
-          );
-
-          const systemName = String(item.SystemName || '').trim();
-
-          const itemType = String(
-            item.ItemType ??
-            item.itemType ??
-            ''
-          ).toUpperCase();
-
-          const isMaintenance = itemType === 'MAINTENANCE';
-
-          const isPtsSystem = /^PTS-/i.test(systemCode);
-
-          const isStandalone =
-            systemName.includes('單機版') ||
-            systemName.includes('單機');
-
-          const productName =
-            systemCode && systemName
-              ? `${systemCode}－${systemName}`
-              : systemName || systemCode || '－';
-        
-          if (isMaintenance) {
-            const maintenanceIndex = previewQuote.items
-              .slice(0, index + 1)
-              .filter((row) => {
-                const rowType = String(
-                  row.ItemType ??
-                  row.itemType ??
-                  ''
-                ).toUpperCase();
-
-                const rowSystemCode = formatQuoteSystemCode(
-                  row.SystemCode ?? row.systemCode
-                );
-
-                return (
-                  rowType === 'MAINTENANCE' &&
-                  rowSystemCode === systemCode
-                );
-              }).length;
-
-            const maintenanceLabel =
-              maintenanceIndex === 1
-                ? '維護費-本期'
-                : '維護費-未簽約各期';
-
-            return `${productName}（${maintenanceLabel}）`;
-          }
-
-          if (isPtsSystem || isStandalone) {
-            return productName;
-          }
-
-          return `${productName}（網路 ${item.UserCount || 1} 人版）`;
-        })()}
-      </td>
-
-      <td className="text-right whitespace-nowrap">
-        NT${Number(item.LineAmount || 0).toLocaleString()}
-      </td>
-
-      <td className="text-center">1</td>
-
-      <td className="text-right whitespace-nowrap">
-        NT${Number(item.LineAmount || 0).toLocaleString()}
-      </td>
-
-      <td className="text-xs leading-tight">
-        折數 {item.Discount ?? 100}%<br />
-
-        {(() => {
-          const discountAmount = Number(
-            item.DiscountAmount ??
-            item.discountAmount ??
-            0
-          );
-
-          const specialPrice =
-            item.SpecialPrice ??
-            item.specialPrice ??
-            null;
-
-          const finalAmount =
-            item.FinalAmount ??
-            item.finalAmount ??
-            null;
-
-          const upgradeCreditAmount = Number(
-            item.UpgradeCreditAmount ??
-            item.upgradeCreditAmount ??
-            0
-          );
-
-          const displayFinalAmount =
-            specialPrice !== null &&
-            specialPrice !== undefined &&
-            specialPrice !== ''
-              ? Number(specialPrice)
-              : finalAmount !== null &&
-                finalAmount !== undefined &&
-                finalAmount !== ''
-                ? Number(finalAmount) + upgradeCreditAmount
-                : null;
-
-          const hasDisplayFinalAmount =
-            displayFinalAmount !== null &&
-            Number.isFinite(displayFinalAmount) &&
-            displayFinalAmount > 0;
-
-          return (
-            <>
-              <span
-                className={
-                  hasDisplayFinalAmount
-                    ? 'line-through text-red-600 whitespace-nowrap'
-                    : 'whitespace-nowrap'
-                }
-              >
-                優惠含稅 NT${discountAmount.toLocaleString()}
-              </span>
-
-              {hasDisplayFinalAmount && (
-                <>
-                  <br />
-                  <span className="font-semibold text-red-600 whitespace-nowrap">
-                    → NT${displayFinalAmount.toLocaleString()}
-                  </span>
-                </>
-              )}
-            </>
-          );
-        })()}
-      </td>
-    </tr>
-  ))}
-
-  {(() => {
-    const discountSubtotal = previewQuote.items.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.DiscountAmount ??
-          item.discountAmount ??
-          0
-        ),
-      0
-    );
-
-    const beforeCreditFinalAmount = previewQuote.items.reduce(
-      (sum, item) => {
-        const specialPrice =
-          item.SpecialPrice ??
-          item.specialPrice ??
-          null;
-
-        const finalAmount =
-          item.FinalAmount ??
-          item.finalAmount ??
-          null;
-
-        const upgradeCreditAmount = Number(
-          item.UpgradeCreditAmount ??
-          item.upgradeCreditAmount ??
-          0
-        );
-
-        const itemBeforeCreditAmount =
-          specialPrice !== null &&
-          specialPrice !== undefined &&
-          specialPrice !== ''
-            ? Number(specialPrice)
-            : finalAmount !== null &&
-              finalAmount !== undefined &&
-              finalAmount !== ''
-              ? Number(finalAmount) + upgradeCreditAmount
-              : Number(
-                  item.DiscountAmount ??
-                  item.discountAmount ??
-                  0
-                );
-
-        return sum + itemBeforeCreditAmount;
-      },
-      0
-    );
-
-    const upgradeCreditItems = previewQuote.items.filter(
-      (item) =>
-        Number(
-          item.UpgradeCreditAmount ??
-          item.upgradeCreditAmount ??
-          0
-        ) > 0
-    );
-
-    const totalUpgradeCreditAmount = upgradeCreditItems.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.UpgradeCreditAmount ??
-          item.upgradeCreditAmount ??
-          0
-        ),
-      0
-    );
-
-    const finalOfferAmount =
-      beforeCreditFinalAmount - totalUpgradeCreditAmount;
-
-    const hasManualFinalAmount =
-      beforeCreditFinalAmount > 0 &&
-      beforeCreditFinalAmount !== discountSubtotal;
-
-    return (
-      <>
-        <tr>
-          <td></td>
-
-          <td></td>
-
-          <td className="text-right font-bold whitespace-nowrap">
-            優惠小計
-          </td>
-
-          <td className="text-right whitespace-nowrap">
-            <span
-              className={
-                hasManualFinalAmount
-                  ? 'line-through text-red-600'
-                  : 'font-bold'
-              }
+            {/* 原報價單內的關閉按鈕：螢幕顯示，列印隱藏 */}
+            <button
+              type="button"
+              onClick={() => setShowQuotePreview(false)}
+              className="no-print float-right text-2xl leading-none text-gray-400 hover:text-gray-700"
+              title="關閉"
+              aria-label="關閉預覽"
             >
-              NT${discountSubtotal.toLocaleString()}
-            </span>
-          </td>
+              ×
+            </button>
 
-          <td className="text-left whitespace-nowrap">
-            {hasManualFinalAmount && (
-              <span className="font-bold text-red-600">
-                → NT${beforeCreditFinalAmount.toLocaleString()}
-              </span>
-            )}
-          </td>
-        </tr>
+            {/* 公司抬頭 */}
+            <header className="mb-2 border-b-2 border-black pb-2">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/goinfo.jpg"
+                  alt="Goinfo"
+                  className="h-10 object-contain"
+                />
 
-        {upgradeCreditItems.map((item, index) => {
-          const description =
-            item.UpgradeCreditDescription ??
-            item.upgradeCreditDescription ??
-            '升級折抵';
+                <div className="text-xl font-bold">
+                  高益電腦股份有限公司 Goinfo Auto Co., Ltd.
+                </div>
+              </div>
 
-          const amount = Number(
-            item.UpgradeCreditAmount ??
-            item.upgradeCreditAmount ??
-            0
-          );
+              <table className="noborder compact mt-1">
+                <tbody>
+                  <tr>
+                    <td className="w-16">總公司台北</td>
+                    <td>地址：台北市松山區復興北路333號9樓之3</td>
+                    <td>電話：02-2713-7188</td>
+                    <td>傳真：02-2713-4563</td>
+                  </tr>
 
-          return (
-            <tr
-              key={`upgrade-credit-${
-                item.QuotationItemId || item.SystemId
-              }-${index}`}
-            >
-              <td></td>
+                  <tr>
+                    <td>總公司台中</td>
+                    <td>地址：台中市西屯區文心路三段241號16樓之9</td>
+                    <td>電話：04-2298-1378</td>
+                    <td>傳真：04-2298-1328</td>
+                  </tr>
 
-              <td></td>
+                  <tr>
+                    <td>總公司高雄</td>
+                    <td>地址：高雄市左營區大順一路93號5樓之5</td>
+                    <td>電話：07-5580096</td>
+                    <td>傳真：07-5580128</td>
+                  </tr>
+                </tbody>
+              </table>
 
-              <td className="text-right whitespace-nowrap">
-                扣：{description}
-              </td>
+              <h1 className="mt-1 text-center text-xl font-bold">
+                軟體買賣報價單
+              </h1>
 
-              <td className="text-right text-red-600 whitespace-nowrap">
-                −(NT${amount.toLocaleString()})
-              </td>
+              <div className="text-center font-semibold">QUOTATION</div>
+            </header>
 
-              <td></td>
-            </tr>
-          );
-        })}
+            {/* 報價與客戶資料 */}
+            <table className="mb-1">
+              <tbody>
+                <tr>
+                  <td>
+                    報價單號：{previewQuote.quote?.QuotationNo || "－"}
+                    （類型：
+                    {quoteStatusLabel(previewQuote.quote?.Status)}）
+                  </td>
 
-        <tr>
-          <td></td>
+                  <td>
+                    報價日期：
+                    {formatDateForInput(previewQuote.quote?.QuoteDate)}
+                  </td>
+                </tr>
 
-          <td></td>
+                <tr>
+                  <td>
+                    客戶代號：
+                    {previewQuote.quote?.CustomerCode || "－"}
+                  </td>
 
-          <td className="text-right font-bold whitespace-nowrap">
-            最終優惠
-          </td>
+                  <td>
+                    客戶電話：
+                    {previewQuote.quote?.Tel ||
+                      previewQuote.quote?.CustomerTel ||
+                      "－"}
+                  </td>
+                </tr>
 
-          <td className="text-right whitespace-nowrap">
-            <span
-              className={
-                totalUpgradeCreditAmount > 0
-                  ? 'line-through text-red-600'
-                  : 'font-bold'
-              }
-            >
-              NT${beforeCreditFinalAmount.toLocaleString()}
-            </span>
-          </td>
+                <tr>
+                  <td>
+                    客戶名稱：
+                    {previewQuote.quote?.CustomerName || "－"}　
+                    {previewQuote.quote?.ContactName ||
+                      previewQuote.quote?.Contacter ||
+                      ""}
+                  </td>
 
-          <td className="text-left whitespace-nowrap">
-            {totalUpgradeCreditAmount > 0 && (
-              <span className="font-bold text-red-600">
-                → NT${finalOfferAmount.toLocaleString()}
-              </span>
-            )}
-          </td>
-        </tr>
-      </>
-    );
-  })()}
-</tbody>
-</table>
+                  <td>
+                    客戶傳真：
+                    {previewQuote.quote?.Fax ||
+                      previewQuote.quote?.CustomerFax ||
+                      "－"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-{previewQuote.isNewPurchase &&
-   previewQuote.items.some(
-    (item) =>
-      String(
-        item.ItemType ??
-        item.itemType ??
-        ''
-      ).toUpperCase() !== 'MAINTENANCE'
-  ) && (
-  <section className="mt-3 compact">
-    <h2 className="font-bold text-sm border-b-2 border-black">
-      系統說明
-    </h2>
+            {/* 報價明細 */}
+            <table className="w-full">
+              <colgroup>
+                <col className="w-[47%]" />
+                <col className="w-[16%]" />
+                <col className="w-[7%]" />
+                <col className="w-[13%]" />
+                <col className="w-[17%]" />
+              </colgroup>
 
-    {previewQuote.items
-      .filter(
-        (item) =>
-          String(
-            item.ItemType ??
-            item.itemType ??
-            ''
-          ).toUpperCase() !== 'MAINTENANCE'
-      )
-      .map((item, index) => (
-      <div
-        key={`note-${item.QuotationItemId || item.SystemId}-${index}`}
-        className="mt-1"
-      >
-        <b className="block">
-          {formatQuoteSystemCode(
-            item.SystemCode ?? item.systemCode
-          )}－{item.SystemName}：
-        </b>
+              <thead>
+                <tr className="bg-gray-100 text-center">
+                  <th>品名</th>
+                  <th className="whitespace-nowrap">定價（未稅）</th>
+                  <th>數量</th>
+                  <th className="whitespace-nowrap">小計（未稅）</th>
+                  <th>備註</th>
+                </tr>
+              </thead>
 
-        <span className="block whitespace-pre-wrap">
-          {item.Note || '尚未設定系統內容說明'}
-        </span>
-      </div>
-    ))}
-  </section>
-)}
-
-        <div className="quote-footer">
-          <section className="compact">
-            <h2 className="border-b-2 border-black text-sm font-bold">
-              維護說明
-            </h2>
-
-            <ol className="list-decimal pl-5">
-              <li>
-                軟體系統自簽約日起
-                {' '}
-                {Number(previewQuote.warrantyMonths || 0) % 12 === 0
-                  ? `${Number(previewQuote.warrantyMonths || 0) / 12} 年`
-                  : `${Number(previewQuote.warrantyMonths || 0)} 個月`}
-                免費提供教育訓練及維護修復。保固期滿後年度維護費為
-                {' '}
-                NT${Number(previewQuote.maintenanceTotal || 0).toLocaleString()}
-                （含稅）
-                {previewQuote.maintenanceDiscountAmount !== null &&
-                previewQuote.maintenanceDiscountAmount !== undefined &&
-                previewQuote.maintenanceDiscountAmount !== ''
-                  ? `，優惠金額為 NT$${Number(
-                      previewQuote.maintenanceDiscountAmount
-                    ).toLocaleString()}（含稅）`
-                  : ''}
-                。
-
-                {(() => {
-                  const maintenanceItems = previewQuote.items.filter((item) => {
-                    const itemType = String(
-                      item.ItemType ??
-                      item.itemType ??
-                      ''
-                    ).toUpperCase();
-
-                    return (
-                      itemType !== 'MAINTENANCE' &&
-                      Number(item.addUserMaintenanceTaxIncluded || 0) > 0
-                    );
-                  });
-
-                  if (maintenanceItems.length === 0) {
-                    return null;
-                  }
-        
-                  return (
-                    <>
-                      日後若新增授權人數，各系統每增加一使用者維護費：
-                      {' '}
-                      {maintenanceItems.map((item, index) => (
-                        <span key={`maintenance-${item.SystemId}-${index}`}>
-                          {index > 0 ? '；' : ''}
-                          {formatQuoteSystemCode(
-                            item.SystemCode ?? item.systemCode
-                          ) || item.SystemName}
-                          {' '}
-                          NT$
-                          {Number(
-                            item.addUserMaintenanceTaxIncluded || 0
-                          ).toLocaleString()}
-                          （含稅）
-                        </span>
-                      ))}
-                      。
-                    </>
-                  );
-                })()}
-              </li>
-
-              {(() => {
-                const licenseAddUserItems = previewQuote.items.filter((item) => {
-                  const itemType = String(
-                    item.ItemType ??
-                    item.itemType ??
-                    ''
-                  ).toUpperCase();
-
+              <tbody>
+                {(previewQuote.items || []).map((item, index) => {
                   const systemCode = formatQuoteSystemCode(
                     item.SystemCode ?? item.systemCode
                   );
 
+                  const systemName = String(
+                    item.SystemName ?? item.systemName ?? ""
+                  ).trim();
+
+                  const itemType = String(
+                    item.ItemType ?? item.itemType ?? ""
+                  ).toUpperCase();
+
+                  const isMaintenance = itemType === "MAINTENANCE";
                   const isPtsSystem = /^PTS-/i.test(systemCode);
+                  const isStandalone =
+                    systemName.includes("單機版") ||
+                    systemName.includes("單機");
+
+                  const productName =
+                    systemCode && systemName
+                      ? `${systemCode}－${systemName}`
+                      : systemName || systemCode || "－";
+
+                  let displayName = productName;
+
+                  if (isMaintenance) {
+                    const maintenanceIndex = (previewQuote.items || [])
+                      .slice(0, index + 1)
+                      .filter((row) => {
+                        const rowType = String(
+                          row.ItemType ?? row.itemType ?? ""
+                        ).toUpperCase();
+
+                        const rowSystemCode = formatQuoteSystemCode(
+                          row.SystemCode ?? row.systemCode
+                        );
+
+                        return (
+                          rowType === "MAINTENANCE" &&
+                          rowSystemCode === systemCode
+                        );
+                      }).length;
+
+                    const maintenanceLabel =
+                      maintenanceIndex === 1
+                        ? "維護費-本期"
+                        : "維護費-未簽約各期";
+
+                    displayName = `${productName}（${maintenanceLabel}）`;
+                  } else if (!isPtsSystem && !isStandalone) {
+                    displayName = `${productName}（網路 ${
+                      item.UserCount ?? item.userCount ?? 1
+                    } 人版）`;
+                  }
+
+                  const lineAmount = Number(
+                    item.LineAmount ?? item.lineAmount ?? 0
+                  );
+
+                  const discountAmount = Number(
+                    item.DiscountAmount ?? item.discountAmount ?? 0
+                  );
+
+                  const specialPrice =
+                    item.SpecialPrice ?? item.specialPrice ?? null;
+
+                  const finalAmount =
+                    item.FinalAmount ?? item.finalAmount ?? null;
+
+                  const displayFinalAmount =
+                    specialPrice !== null &&
+                    specialPrice !== undefined &&
+                    specialPrice !== ""
+                      ? Number(specialPrice)
+                      : finalAmount !== null &&
+                          finalAmount !== undefined &&
+                          finalAmount !== ""
+                        ? Number(finalAmount)
+                        : null;
+
+                  const hasDisplayFinalAmount =
+                    displayFinalAmount !== null &&
+                    Number.isFinite(displayFinalAmount) &&
+                    displayFinalAmount > 0 &&
+                    displayFinalAmount !== discountAmount;
 
                   return (
-                    itemType !== 'MAINTENANCE' &&
-                    !isPtsSystem &&
-                    Number(item.licenseAddUserTaxIncluded || 0) > 0
+                    <tr
+                      key={
+                        item.QuotationItemId ??
+                        item.quotationItemId ??
+                        `${item.SystemId ?? item.systemId}-${
+                          item.ItemType ?? item.itemType ?? "item"
+                        }-${index}`
+                      }
+                    >
+                      <td>{displayName}</td>
+
+                      <td className="whitespace-nowrap text-right">
+                        NT${lineAmount.toLocaleString()}
+                      </td>
+
+                      <td className="text-center">1</td>
+
+                      <td className="whitespace-nowrap text-right">
+                        NT${lineAmount.toLocaleString()}
+                      </td>
+
+                      <td className="text-xs leading-tight">
+                        折數 {item.Discount ?? item.discount ?? 100}%
+                        <br />
+
+                        <span
+                          className={
+                            hasDisplayFinalAmount
+                              ? "whitespace-nowrap text-red-600 line-through"
+                              : "whitespace-nowrap"
+                          }
+                        >
+                          優惠含稅 NT${discountAmount.toLocaleString()}
+                        </span>
+
+                        {hasDisplayFinalAmount && (
+                          <>
+                            <br />
+
+                            <span className="whitespace-nowrap font-semibold text-red-600">
+                              → NT${displayFinalAmount.toLocaleString()}
+                            </span>
+                          </>
+                        )}
+                      </td>
+                    </tr>
                   );
-                });
+                })}
 
-                if (licenseAddUserItems.length === 0) {
-                  return null;
-                }
+                {(() => {
+                  const items = previewQuote.items || [];
 
-                return (
-                  <li>
-                    網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
-                    {' '}
-                    {licenseAddUserItems.map((item, index) => (
-                      <span key={`license-${item.SystemId}-${index}`}>
-                        {index > 0 ? '；' : ''}
-                        {formatQuoteSystemCode(
-                          item.SystemCode ?? item.systemCode
-                        ) || item.SystemName}
-                        {' '}
-                        NT$
-                        {Number(
-                          item.licenseAddUserTaxIncluded || 0
-                        ).toLocaleString()}
-                      </span>
-                    ))}
-                    。
-                  </li>
-                );
-              })()}
-            </ol>
-          </section>
+                  const discountSubtotal = items.reduce(
+                    (sum, item) =>
+                      sum +
+                      Number(
+                        item.DiscountAmount ??
+                          item.discountAmount ??
+                          0
+                      ),
+                    0
+                  );
 
-        <table className="w-full">
-            <tbody>
-              <tr>
-                <th className="w-[34%] text-center">客戶確認簽章</th>
-                <th className="w-[30%] text-center">報價專用章</th>
-                <th className="w-[36%] text-center">承辦人資料</th>
-              </tr>
+                  const beforeCreditFinalAmount = items.reduce(
+                    (sum, item) => {
+                      const specialPrice =
+                        item.SpecialPrice ?? item.specialPrice ?? null;
 
-              <tr className="h-32">
-                <td></td>
+                      const finalAmount =
+                        item.FinalAmount ?? item.finalAmount ?? null;
 
-                <td className="text-center">
-                  <img
-                    src="/seal.JPG"
-                    alt="報價專用章"
-                    className="h-28 mx-auto object-contain"
-                  />
-                </td>
+                      const upgradeCreditAmount = Number(
+                        item.UpgradeCreditAmount ??
+                          item.upgradeCreditAmount ??
+                          0
+                      );
 
-                <td className="p-0">
-                  <table className="h-full w-full">
-                    <tbody>
-                      <tr style={{ height: '25px' }}>
-                        <td className="w-16">承辦人</td>
-                        <td>產品規劃部副理　鐘廷睿</td>
-                      </tr>
+                      const itemBeforeCreditAmount =
+                        specialPrice !== null &&
+                        specialPrice !== undefined &&
+                        specialPrice !== ""
+                          ? Number(specialPrice)
+                          : finalAmount !== null &&
+                              finalAmount !== undefined &&
+                              finalAmount !== ""
+                            ? Number(finalAmount) + upgradeCreditAmount
+                            : Number(
+                                item.DiscountAmount ??
+                                  item.discountAmount ??
+                                  0
+                              );
 
-                      <tr style={{ height: '25px' }}>
-                        <td>電話</td>
-                        <td>(04)2298-1378#20</td>
-                      </tr>
+                      return sum + itemBeforeCreditAmount;
+                    },
+                    0
+                  );
 
-                      <tr style={{ height: '25px' }}>
-                        <td>傳真</td>
-                        <td>(04)2298-1328</td>
-                      </tr>
+                  const upgradeCreditItems = items.filter(
+                    (item) =>
+                      Number(
+                        item.UpgradeCreditAmount ??
+                          item.upgradeCreditAmount ??
+                          0
+                      ) > 0
+                  );
 
-                      <tr style={{ height: '30px' }}>
-                        <td>承辦人簽名</td>
-                        <td>
-                          <img
-                            src="/sign.jpg"
-                            alt="承辦人簽名"
-                            style={{
-                              display: 'block',
-                              width: '72px',
-                              height: '24px',
-                              maxWidth: '72px',
-                              maxHeight: '24px',
-                              objectFit: 'contain',
-                            }}
-                          />
+                  const totalUpgradeCreditAmount = upgradeCreditItems.reduce(
+                    (sum, item) =>
+                      sum +
+                      Number(
+                        item.UpgradeCreditAmount ??
+                          item.upgradeCreditAmount ??
+                          0
+                      ),
+                    0
+                  );
+
+                  const finalOfferAmount =
+                    beforeCreditFinalAmount - totalUpgradeCreditAmount;
+
+                  const hasManualFinalAmount =
+                    beforeCreditFinalAmount > 0 &&
+                    beforeCreditFinalAmount !== discountSubtotal;
+
+                  return (
+                    <>
+                      <tr>
+                        <td></td>
+                        <td></td>
+
+                        <td className="whitespace-nowrap text-right font-bold">
+                          優惠小計
+                        </td>
+
+                        <td className="whitespace-nowrap text-right">
+                          <span
+                            className={
+                              hasManualFinalAmount
+                                ? "text-red-600 line-through"
+                                : "font-bold"
+                            }
+                          >
+                            NT${discountSubtotal.toLocaleString()}
+                          </span>
+                        </td>
+
+                        <td className="whitespace-nowrap text-left">
+                          {hasManualFinalAmount && (
+                            <span className="font-bold text-red-600">
+                              → NT${beforeCreditFinalAmount.toLocaleString()}
+                            </span>
+                          )}
                         </td>
                       </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
 
-          <div className="border-t border-black mt-2 pt-1 compact">
-            說明：1. 本報價單以上金額含稅，有效期至{" "}
-            {quoteValidDate(previewQuote.quote)}。　2. 安裝完成後30日內，
-            100%（30日到期票）。
+                      {upgradeCreditItems.map((item, index) => {
+                        const description =
+                          item.UpgradeCreditDescription ??
+                          item.upgradeCreditDescription ??
+                          "升級折抵";
+
+                        const amount = Number(
+                          item.UpgradeCreditAmount ??
+                            item.upgradeCreditAmount ??
+                            0
+                        );
+
+                        return (
+                          <tr
+                            key={`upgrade-credit-${
+                              item.QuotationItemId ??
+                              item.quotationItemId ??
+                              item.SystemId ??
+                              item.systemId ??
+                              index
+                            }`}
+                          >
+                            <td></td>
+                            <td></td>
+
+                            <td className="whitespace-nowrap text-right">
+                              扣：{description}
+                            </td>
+
+                            <td className="whitespace-nowrap text-right text-red-600">
+                              −(NT${amount.toLocaleString()})
+                            </td>
+
+                            <td></td>
+                          </tr>
+                        );
+                      })}
+
+                      <tr>
+                        <td></td>
+                        <td></td>
+
+                        <td className="whitespace-nowrap text-right font-bold">
+                          最終優惠
+                        </td>
+
+                        <td className="whitespace-nowrap text-right">
+                          <span
+                            className={
+                              totalUpgradeCreditAmount > 0
+                                ? "text-red-600 line-through"
+                                : "font-bold"
+                            }
+                          >
+                            NT${beforeCreditFinalAmount.toLocaleString()}
+                          </span>
+                        </td>
+
+                        <td className="whitespace-nowrap text-left">
+                          {totalUpgradeCreditAmount > 0 && (
+                            <span className="font-bold text-red-600">
+                              → NT${finalOfferAmount.toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    </>
+                  );
+                })()}
+              </tbody>
+            </table>
+
+            {/* 系統說明：只有新購且有非維護項目時顯示 */}
+            {previewQuote.isNewPurchase &&
+              (previewQuote.items || []).some(
+                (item) =>
+                  String(
+                    item.ItemType ?? item.itemType ?? ""
+                  ).toUpperCase() !== "MAINTENANCE"
+              ) && (
+                <section className="compact mt-3">
+                  <h2 className="border-b-2 border-black text-sm font-bold">
+                    系統說明
+                  </h2>
+
+                  {(previewQuote.items || [])
+                    .filter(
+                      (item) =>
+                        String(
+                          item.ItemType ?? item.itemType ?? ""
+                        ).toUpperCase() !== "MAINTENANCE"
+                    )
+                    .map((item, index) => (
+                      <div
+                        key={`note-${
+                          item.QuotationItemId ??
+                          item.quotationItemId ??
+                          item.SystemId ??
+                          item.systemId ??
+                          index
+                        }`}
+                        className="mt-1"
+                      >
+                        <b className="block">
+                          {formatQuoteSystemCode(
+                            item.SystemCode ?? item.systemCode
+                          )}
+                          －
+                          {item.SystemName ?? item.systemName ?? ""}：
+                        </b>
+
+                        <span className="block whitespace-pre-wrap">
+                          {item.Note ?? item.note ?? "尚未設定系統內容說明"}
+                        </span>
+                      </div>
+                    ))}
+                </section>
+              )}
+
+            {/* 維護與簽章區 */}
+            <div className="quote-footer">
+              <section className="compact">
+                <h2 className="border-b-2 border-black text-sm font-bold">
+                  維護說明
+                </h2>
+
+                <ol className="list-decimal pl-5">
+                  <li>
+                    軟體系統自簽約日起{" "}
+                    {Number(previewQuote.warrantyMonths ?? 0) % 12 === 0
+                      ? `${Number(previewQuote.warrantyMonths ?? 0) / 12} 年`
+                      : `${Number(
+                          previewQuote.warrantyMonths ?? 0
+                        )} 個月`}
+                    免費提供教育訓練及維護修復。保固期滿後年度維護費為 NT$
+                    {Number(
+                      previewQuote.maintenanceTotal ?? 0
+                    ).toLocaleString()}
+                    （含稅）
+                    {previewQuote.maintenanceDiscountAmount !== null &&
+                    previewQuote.maintenanceDiscountAmount !== undefined &&
+                    previewQuote.maintenanceDiscountAmount !== ""
+                      ? `，優惠金額為 NT$${Number(
+                          previewQuote.maintenanceDiscountAmount
+                        ).toLocaleString()}（含稅）`
+                      : ""}
+                    。
+
+                    {(() => {
+                      const maintenanceItems = (
+                        previewQuote.items || []
+                      ).filter((item) => {
+                        const itemType = String(
+                          item.ItemType ?? item.itemType ?? ""
+                        ).toUpperCase();
+
+                        return (
+                          itemType !== "MAINTENANCE" &&
+                          Number(
+                            item.addUserMaintenanceTaxIncluded ?? 0
+                          ) > 0
+                        );
+                      });
+
+                      if (maintenanceItems.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <>
+                          日後若新增授權人數，各系統每增加一使用者維護費：{" "}
+                          {maintenanceItems.map((item, index) => (
+                            <span
+                              key={`maintenance-${
+                                item.SystemId ??
+                                item.systemId ??
+                                index
+                              }`}
+                            >
+                              {index > 0 ? "；" : ""}
+                              {formatQuoteSystemCode(
+                                item.SystemCode ?? item.systemCode
+                              ) || item.SystemName}
+                              {" "}NT$
+                              {Number(
+                                item.addUserMaintenanceTaxIncluded ?? 0
+                              ).toLocaleString()}
+                              （含稅）
+                            </span>
+                          ))}
+                          。
+                        </>
+                      );
+                    })()}
+                  </li>
+
+                  {(() => {
+                    const licenseAddUserItems = (
+                      previewQuote.items || []
+                    ).filter((item) => {
+                      const itemType = String(
+                        item.ItemType ?? item.itemType ?? ""
+                      ).toUpperCase();
+
+                      const systemCode = formatQuoteSystemCode(
+                        item.SystemCode ?? item.systemCode
+                      );
+
+                      return (
+                        itemType !== "MAINTENANCE" &&
+                        !/^PTS-/i.test(systemCode) &&
+                        Number(item.licenseAddUserTaxIncluded ?? 0) > 0
+                      );
+                    });
+
+                    if (licenseAddUserItems.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <li>
+                        網路版同時作業人數，各系統每增加一人優惠金額如下（含稅）：
+                        {" "}
+                        {licenseAddUserItems.map((item, index) => (
+                          <span
+                            key={`license-${
+                              item.SystemId ??
+                              item.systemId ??
+                              index
+                            }`}
+                          >
+                            {index > 0 ? "；" : ""}
+                            {formatQuoteSystemCode(
+                              item.SystemCode ?? item.systemCode
+                            ) || item.SystemName}
+                            {" "}NT$
+                            {Number(
+                              item.licenseAddUserTaxIncluded ?? 0
+                            ).toLocaleString()}
+                          </span>
+                        ))}
+                        。
+                      </li>
+                    );
+                  })()}
+                </ol>
+              </section>
+
+              {/* 客戶確認、公司用印、承辦人資料 */}
+              <table className="mt-3 w-full">
+                <tbody>
+                  <tr>
+                    <th className="w-[34%] text-center">客戶確認簽章</th>
+                    <th className="w-[30%] text-center">報價專用章</th>
+                    <th className="w-[36%] text-center">承辦人資料</th>
+                  </tr>
+
+                  <tr className="h-32">
+                    <td></td>
+
+                    <td className="text-center">
+                      <img
+                        src="/seal.JPG"
+                        alt="報價專用章"
+                        className="mx-auto h-28 object-contain"
+                      />
+                    </td>
+
+                    <td className="p-0">
+                      <table className="h-full w-full">
+                        <tbody>
+                          <tr style={{ height: "25px" }}>
+                            <td className="w-16">承辦人</td>
+                            <td>產品規劃部副理　鐘廷睿</td>
+                          </tr>
+
+                          <tr style={{ height: "25px" }}>
+                            <td>電話</td>
+                            <td>(04)2298-1378#20</td>
+                          </tr>
+
+                          <tr style={{ height: "25px" }}>
+                            <td>傳真</td>
+                            <td>(04)2298-1328</td>
+                          </tr>
+
+                          <tr style={{ height: "30px" }}>
+                            <td>承辦人簽名</td>
+
+                            <td>
+                              <img
+                                src="/sign.jpg"
+                                alt="承辦人簽名"
+                                style={{
+                                  display: "block",
+                                  width: "72px",
+                                  height: "24px",
+                                  maxWidth: "72px",
+                                  maxHeight: "24px",
+                                  objectFit: "contain",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* 最下方原始說明 */}
+              <div className="mt-2 border-t border-black pt-1 compact">
+                說明：1. 本報價單以上金額含稅，有效期至{" "}
+                {quoteValidDate(previewQuote.quote)}。　2.
+                安裝完成後30日內，100%（30日到期票）。
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div className="quote-actions no-print flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
-      <button
-        type="button"
-        onClick={printQuoteSheet}
-        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-700"
-      >
-        列印
-      </button>
+      {/* 下方固定操作列：列印時隱藏 */}
+      <div className="quote-actions no-print flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
+        <button
+          type="button"
+          onClick={printQuoteSheet}
+          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-700"
+        >
+          列印
+        </button>
 
-      <button
-        type="button"
-        onClick={() => editQuote(previewQuote.quote)}
-        className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-50"
-      >
-        帶入修改
-      </button>
+        <button
+          type="button"
+          onClick={() => editQuote(previewQuote.quote)}
+          className="rounded-lg border border-amber-500 px-5 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-50"
+        >
+          帶入修改
+        </button>
 
-      <button
-        type="button"
-        onClick={() => setShowQuotePreview(false)}
-        className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-      >
-        關閉
-      </button>
+        <button
+          type="button"
+          onClick={() => setShowQuotePreview(false)}
+          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+        >
+          關閉
+        </button>
+      </div>
     </div>
   </div>
-</div>
 )}
+
       {showCustomerPicker && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
