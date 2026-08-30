@@ -4744,7 +4744,7 @@ const renderUserManagement = () => {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 0;
+          margin: 5mm;
         }
 
         html,
