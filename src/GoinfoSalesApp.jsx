@@ -4846,19 +4846,19 @@ const renderUserManagement = () => {
           min-width: 0 !important;
 
           /*
-           * A4 297mm - 上下頁邊距各 4mm = 289mm。
-           * box-sizing: border-box 表示 padding / border 都包含在 289mm 內，
-           * 因此外框底線不會被裁掉。
+           * 不強制撐滿整張 A4：
+           * 報價單高度依實際內容決定，
+           * 不會在底部留下大片空白。
            */
-          min-height: 289mm !important;
-          height: 289mm !important;
+          min-height: 0 !important;
+          height: auto !important;
 
           margin: 0 auto !important;
           padding: 5mm !important;
           box-sizing: border-box !important;
 
           border: 1px solid #111 !important;
-          overflow: hidden !important;
+          overflow: visible !important;
           transform: none !important;
 
           print-color-adjust: exact !important;
@@ -4874,8 +4874,14 @@ const renderUserManagement = () => {
 
         .quote-spacer {
           display: block !important;
-          flex: 1 1 auto !important;
-          min-height: 0 !important;
+
+          /*
+           * 列印時只保留適量間距，
+           * 不用 flex 撐到整張紙的底端。
+           */
+          flex: 0 0 8mm !important;
+          min-height: 8mm !important;
+          height: 8mm !important;
         }
 
         .quote-footer {
