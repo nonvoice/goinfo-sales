@@ -356,6 +356,7 @@ export default function App() {
   const [salesUserOptions, setSalesUserOptions] = useState([]);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
+  const [quoteSpacerHeight, setQuoteSpacerHeight] = useState(8);
 
   const normalizeList = (data) => {
     if (Array.isArray(data)) return data;
@@ -1420,14 +1421,62 @@ const previewQuoteById = async (quotationId) => {
 
     setPreviewQuote(quoteFormalDetails(detail));
     setShowQuotePreview(true);
+
+    setTimeout(() => {
+      calculateQuoteSpacer();
+    }, 80);
   } catch (e) {
     console.error(e);
     alert('無法讀取報價單詳細資料，請確認 get-quote-detail 工作流。');
   }
 };
 
+const calculateQuoteSpacer = () => {
+  const sheet = document.querySelector(".quote-sheet");
+  const mainContent = document.querySelector(".quote-main-content");
+  const quoteFooter = document.querySelector(".quote-footer");
+
+  if (!sheet || !mainContent || !quoteFooter) {
+    return;
+  }
+
+  /*
+   * 1mm 約等於 3.7795 CSS px。
+   * A4 可用內容高度：
+   * 297mm - 上下列印頁邊距各 4mm = 289mm。
+   *
+   * 此處另外保留約 2mm 作為底線與瀏覽器列印誤差安全空間。
+   */
+  const pxPerMm = 96 / 25.4;
+  const printableHeightMm = 287;
+  const safetyMm = 2;
+
+  const mainHeightMm = mainContent.getBoundingClientRect().height / pxPerMm;
+  const footerHeightMm = quoteFooter.getBoundingClientRect().height / pxPerMm;
+
+  const calculatedSpacerMm =
+    printableHeightMm - mainHeightMm - footerHeightMm - safetyMm;
+
+  /*
+   * 最少保留 4mm，最多 90mm。
+   * 若內容較多，spacer 會縮小但不會負值；
+   * 內容太短時也不會留下誇張的大片空白。
+   */
+  const spacerMm = Math.max(4, Math.min(calculatedSpacerMm, 90));
+
+  setQuoteSpacerHeight(Number(spacerMm.toFixed(2)));
+};
+
   const printQuoteSheet = () => {
-     window.print();
+    calculateQuoteSpacer();
+
+    /*
+     * 等 React 將新的 spacer 高度寫回 DOM，
+     * 再開啟列印視窗，避免用到上一次的高度。
+     */
+    setTimeout(() => {
+      window.print();
+    }, 120);
   };
 
   const voidQuote = async (quote) => {
@@ -4695,8 +4744,12 @@ const renderUserManagement = () => {
 
       /* 中間自動空白區：上方系統說明越少，空白越大 */
       .quote-spacer {
-        flex: 1 1 auto;
-        min-height: 0;
+        /*
+         * 高度由 React 依實際內容動態寫入 inline style。
+         * 不再使用 flex: 1，避免空白被錯誤撐到頁底或產生溢出頁。
+         */
+        flex: 0 0 auto;
+        min-height: 4mm;
       }
 
       /* 下方固定區：維護說明、簽章、付款條件 */
@@ -4874,14 +4927,8 @@ const renderUserManagement = () => {
 
         .quote-spacer {
           display: block !important;
-
-          /*
-           * 列印時只保留適量間距，
-           * 不用 flex 撐到整張紙的底端。
-           */
-          flex: 0 0 8mm !important;
-          min-height: 8mm !important;
-          height: 8mm !important;
+          flex: 0 0 auto !important;
+          min-height: 4mm !important;
         }
 
         .quote-footer {
@@ -5460,7 +5507,10 @@ const renderUserManagement = () => {
           </div>
 
           {/* 自動填滿系統說明與維護說明之間的空白 */}
-          <div className="quote-spacer" />
+          <div
+            className="quote-spacer"
+            style={{ height: `${quoteSpacerHeight}mm` }}
+          />
 
           {/* 維護、簽章、付款資訊固定靠近 A4 底部 */}
           <div className="quote-footer">
