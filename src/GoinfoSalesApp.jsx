@@ -4891,7 +4891,7 @@ const renderUserManagement = () => {
               <th>備註</th>
             </tr>
           </thead>
-  <tbody>
+<tbody>
   {previewQuote.items.map((item, index) => {
     const systemCode = formatQuoteSystemCode(
       item.SystemCode ?? item.systemCode
@@ -4995,17 +4995,13 @@ const renderUserManagement = () => {
           `${systemCode}-${itemType || 'item'}-${index}`
         }
       >
-        <td>
-          {productLabel}
-        </td>
+        <td>{productLabel}</td>
 
         <td className="text-right whitespace-nowrap">
           NT${lineAmount.toLocaleString()}
         </td>
 
-        <td className="text-center">
-          1
-        </td>
+        <td className="text-center">1</td>
 
         <td className="text-right whitespace-nowrap">
           NT${lineAmount.toLocaleString()}
@@ -5018,11 +5014,11 @@ const renderUserManagement = () => {
             優惠含稅 NT${discountAmount.toLocaleString()}
           </span>
 
-          {hasDisplayFinalAmount && (
+          {hasDisplayFinalAmount ? (
             <span className="ml-1">
               → NT${displayFinalAmount.toLocaleString()}
             </span>
-          )}
+          ) : null}
         </td>
       </tr>
     );
@@ -5078,14 +5074,13 @@ const renderUserManagement = () => {
       0
     );
 
-    const upgradeCreditItems = previewQuote.items.filter(
-      (item) =>
-        Number(
-          item.UpgradeCreditAmount ??
-          item.upgradeCreditAmount ??
-          0
-        ) > 0
-    );
+    const upgradeCreditItems = previewQuote.items.filter((item) => {
+      return Number(
+        item.UpgradeCreditAmount ??
+        item.upgradeCreditAmount ??
+        0
+      ) > 0;
+    });
 
     const totalUpgradeCreditAmount = upgradeCreditItems.reduce(
       (sum, item) =>
@@ -5111,7 +5106,6 @@ const renderUserManagement = () => {
       <>
         <tr>
           <td></td>
-
           <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
@@ -5131,11 +5125,11 @@ const renderUserManagement = () => {
           </td>
 
           <td className="text-left whitespace-nowrap">
-            {hasManualFinalAmount && (
+            {hasManualFinalAmount ? (
               <span className="font-bold text-red-600">
                 → NT${beforeCreditFinalAmount.toLocaleString()}
               </span>
-            )}
+            ) : null}
           </td>
         </tr>
 
@@ -5162,7 +5156,6 @@ const renderUserManagement = () => {
               }-${index}`}
             >
               <td></td>
-
               <td></td>
 
               <td className="text-right whitespace-nowrap">
@@ -5180,7 +5173,6 @@ const renderUserManagement = () => {
 
         <tr>
           <td></td>
-
           <td></td>
 
           <td className="text-right font-bold whitespace-nowrap">
@@ -5200,17 +5192,17 @@ const renderUserManagement = () => {
           </td>
 
           <td className="text-left whitespace-nowrap">
-            {totalUpgradeCreditAmount > 0 && (
+            {totalUpgradeCreditAmount > 0 ? (
               <span className="font-bold text-red-600">
                 → NT${finalOfferAmount.toLocaleString()}
               </span>
-            )}
+            ) : null}
           </td>
         </tr>
       </>
     );
   })()}
-</tbody>  </table>
+</tbody></table>
 
 {previewQuote.isNewPurchase &&
   previewQuote.items.some((item) => {
