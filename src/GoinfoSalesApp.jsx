@@ -4891,6 +4891,40 @@ const renderUserManagement = () => {
         .quote-sheet button {
           display: none !important;
         }
+                /*
+         * 三套以上系統時，底部說明可能差少量高度被裁切。
+         * 列印版微調簽章區，回收約 5mm 高度，
+         * 預覽畫面完全不受影響。
+         */
+        .quote-signature-table {
+          margin-top: 2mm !important;
+        }
+
+        .quote-signature-table > tbody > tr:last-child {
+          height: 27mm !important;
+        }
+
+        .quote-signature-table img {
+          max-height: 24mm !important;
+          width: auto !important;
+          object-fit: contain !important;
+        }
+
+        .quote-signature-table td,
+        .quote-signature-table th {
+          padding-top: 2px !important;
+          padding-bottom: 2px !important;
+        }
+
+        .quote-bottom-note {
+          margin-top: 1mm !important;
+          padding-top: 0.5mm !important;
+          font-size: 9px !important;
+          line-height: 1.15 !important;
+
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
       }    
 `}</style>
 
@@ -5552,7 +5586,7 @@ const renderUserManagement = () => {
               </section>
 
               {/* 客戶確認、公司用印、承辦人資料 */}
-              <table className="mt-3 w-full">
+              <table className="quote-signature-table mt-3 w-full">
                 <tbody>
                   <tr>
                     <th className="w-[34%] text-center">客戶確認簽章</th>
@@ -5615,7 +5649,7 @@ const renderUserManagement = () => {
               </table>
 
               {/* 最下方原始說明 */}
-              <div className="mt-2 border-t border-black pt-1 compact">
+              <div className="quote-bottom-note mt-2 border-t border-black pt-1 compact">
                 說明：1. 本報價單以上金額含稅，有效期至{" "}
                 {quoteValidDate(previewQuote.quote)}。　2.
                 安裝完成後30日內，100%（30日到期票）。
