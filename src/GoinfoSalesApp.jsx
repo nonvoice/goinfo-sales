@@ -371,6 +371,10 @@ export default function App() {
   const [contractVoiding, setContractVoiding] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [contractPreview, setContractPreview] = useState(null);
+  const [showConvertContractDialog, setShowConvertContractDialog] = useState(false);
+  const [quotePendingContractConversion, setQuotePendingContractConversion] = useState(null);
+  const [pendingContractDate, setPendingContractDate] = useState(new Date().toISOString().slice(0, 10));
+  const [contractConverting, setContractConverting] = useState(false);
   const initialContractForm = {
     contractId: "",
     contractNo: "",
@@ -1629,10 +1633,40 @@ const loadContractDetail = async (contractId, options = {}) => {
   }
 };
 
-const convertQuoteToContract = async (quote) => {
+const convertQuoteToContract = (quote) => {
   const quotationId =
     quote?.QuotationId ??
-    quote?.quotationId;
+    quote?.quotationId ??
+    null;
+
+  if (!quotationId) {
+    alert("找不到報價單編號，無法轉換合約");
+    return;
+  }
+
+  /*
+   * 不直接呼叫 API。
+   * 先開啟簽約日選擇視窗，讓使用者確認日期。
+   */
+  setQuotePendingContractConversion(quote);
+
+  /*
+   * 預設填今天，但可由使用者自行選擇過去或未來日期。
+   */
+  setPendingContractDate(
+    new Date().toISOString().slice(0, 10)
+  );
+
+  setShowConvertContractDialog(true);
+};
+
+const confirmConvertQuoteToContract = async () => {
+  const quote = quotePendingContractConversion;
+
+  const quotationId =
+    quote?.QuotationId ??
+    quote?.quotationId ??
+    null;
 
   const quotationNo =
     quote?.QuotationNo ??
@@ -1644,14 +1678,12 @@ const convertQuoteToContract = async (quote) => {
     return;
   }
 
-  const confirmed = window.confirm(
-    `確定要將報價單「${quotationNo}」轉成合約嗎？\n\n` +
-      "系統會建立合約與合約明細快照；日後修改報價單不會自動修改合約。"
-  );
-
-  if (!confirmed) {
+  if (!isIsoDate(pendingContractDate)) {
+    alert("請選擇正確的簽約日");
     return;
   }
+
+  setContractConverting(true);
 
   try {
     const result = await salesApiFetch(
@@ -1660,7 +1692,13 @@ const convertQuoteToContract = async (quote) => {
         method: "POST",
         body: JSON.stringify({
           quotationId: Number(quotationId),
-          contractDate: new Date().toISOString().slice(0, 10),
+
+          /*
+           * 使用者在彈窗中選取的簽約日。
+           * n8n 會傳入 SQL Stored Procedure 的 @ContractDate，
+           * 合約編號也會依這個日期產生當日流水號。
+           */
+          contractDate: pendingContractDate,
         }),
       }
     );
@@ -1676,10 +1714,51 @@ const convertQuoteToContract = async (quote) => {
       result?.ContractId ??
       null;
 
+    const newContractNo =
+      result?.contractNo ??
+      result?.ContractNo ??
+      "";
+
     alert(
-      `${result?.message || "合約已建立"}\n` +
-        `合約編號：${result?.contractNo || result?.ContractNo || ""}`
+      `${result?.message || "合約已建立"}\n\n` +
+        `來源報價：${quotationNo}\n` +
+        `簽約日期：${pendingContractDate}\n` +
+        `合約編號：${newContractNo}`
     );
+
+    /*
+     * 成功後關閉簽約日選擇視窗與報價預覽。
+     */
+    setShowConvertContractDialog(false);
+    setQuotePendingContractConversion(null);
+    setShowQuotePreview(false);
+
+    /*
+     * 切到合約專區、重整清單。
+     */
+    setActiveTab("contracts");
+
+    await loadContracts();
+
+    /*
+     * 若 API 回傳新合約主鍵，直接展開該筆合約資料。
+     */
+    if (newContractId) {
+      await loadContractDetail(newContractId, {
+        openEditor: true,
+      });
+    }
+  } catch (error) {
+    console.error("confirmConvertQuoteToContract error:", error);
+
+    alert(
+      error.message ||
+      "轉換合約失敗，請確認報價單未作廢、已有明細且尚未轉過合約。"
+    );
+  } finally {
+    setContractConverting(false);
+  }
+};
 
     setShowQuotePreview(false);
 
@@ -6861,6 +6940,116 @@ const renderUserManagement = () => {
           className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
         >
           關閉
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showConvertContractDialog && quotePendingContractConversion && (
+  <div
+    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+    onMouseDown={() => {
+      if (!contractConverting) {
+        setShowConvertContractDialog(false);
+        setQuotePendingContractConversion(null);
+      }
+    }}
+  >
+    <div
+      className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">
+            轉換為客戶合約
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            請確認來源報價與選擇簽約日期。
+          </p>
+        </div>
+
+        <button
+          type="button"
+          disabled={contractConverting}
+          onClick={() => {
+            setShowConvertContractDialog(false);
+            setQuotePendingContractConversion(null);
+          }}
+          className="text-2xl leading-none text-gray-400 hover:text-gray-700 disabled:text-gray-300"
+          aria-label="關閉"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="text-xs text-gray-500">
+            來源報價單
+          </div>
+
+          <div className="mt-1 font-semibold text-gray-800">
+            {quotePendingContractConversion.QuotationNo ??
+              quotePendingContractConversion.quotationNo ??
+              "－"}
+          </div>
+
+          <div className="mt-2 text-sm text-gray-700">
+            {quotePendingContractConversion.CustomerName ??
+              quotePendingContractConversion.customerName ??
+              ""}
+          </div>
+        </div>
+
+        <label className="block text-sm font-medium text-gray-700">
+          簽約日期
+          <span className="ml-1 text-red-500">*</span>
+
+          <input
+            type="date"
+            value={pendingContractDate}
+            onChange={(event) =>
+              setPendingContractDate(event.target.value)
+            }
+            disabled={contractConverting}
+            className="mt-1 w-full rounded-lg border border-gray-300 p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100"
+          />
+        </label>
+
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+          合約編號會依簽約日自動產生當日流水號，例如：
+          <br />
+          簽約日為 2026-09-01 時，編號格式為
+          <span className="ml-1 font-semibold">
+            C1150901xxx
+          </span>
+          。
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          disabled={contractConverting}
+          onClick={() => {
+            setShowConvertContractDialog(false);
+            setQuotePendingContractConversion(null);
+          }}
+          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:text-gray-300"
+        >
+          取消
+        </button>
+
+        <button
+          type="button"
+          disabled={contractConverting}
+          onClick={confirmConvertQuoteToContract}
+          className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400"
+        >
+          {contractConverting ? "建立合約中..." : "確認轉合約"}
         </button>
       </div>
     </div>
