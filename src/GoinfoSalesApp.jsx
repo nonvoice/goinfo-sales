@@ -1738,23 +1738,6 @@ const confirmConvertQuoteToContract = async () => {
   }
 };
 
-    setShowQuotePreview(false);
-
-    setActiveTab("contracts");
-
-    await loadContracts();
-
-    if (newContractId) {
-      await loadContractDetail(newContractId, {
-        openEditor: true,
-      });
-    }
-  } catch (error) {
-    console.error("convertQuoteToContract error:", error);
-    alert(error.message || "轉換合約失敗");
-  }
-};
-
 const saveContract = async () => {
   if (!contractForm.contractId) {
     alert("找不到合約編號");
