@@ -356,6 +356,38 @@ export default function App() {
   const [salesUserOptions, setSalesUserOptions] = useState([]);
   const [showQuotePreview, setShowQuotePreview] = useState(false);
   const [previewQuote, setPreviewQuote] = useState(null);
+  const [contractList, setContractList] = useState([]);
+  const [contractListLoading, setContractListLoading] = useState(false);
+  const [contractDateFrom, setContractDateFrom] = useState("");
+  const [contractDateTo, setContractDateTo] = useState("");
+  const [contractOwnerUserId, setContractOwnerUserId] = useState("");
+  const [contractKeyword, setContractKeyword] = useState("");
+  const [hideVoidedContracts, setHideVoidedContracts] = useState(true);
+  const [selectedContractId, setSelectedContractId] = useState(null);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [selectedContractItems, setSelectedContractItems] = useState([]);
+  const [contractDetailLoading, setContractDetailLoading] = useState(false);
+  const [contractSaving, setContractSaving] = useState(false);
+  const [contractVoiding, setContractVoiding] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
+  const [contractPreview, setContractPreview] = useState(null);
+  const initialContractForm = {
+    contractId: "",
+    contractNo: "",
+    sourceQuotationNo: "",
+    customerName: "",
+    customerCode: "",
+    contractDate: "",
+    effectiveStartDate: "",
+    effectiveEndDate: "",
+    status: "DRAFT",
+    paymentTerms: "",
+    contractTerms: "",
+    note: "",
+    ownerUserId: "",
+    ownerName: "",
+  };
+  const [contractForm, setContractForm] = useState(initialContractForm);
   const [quoteSpacerHeight, setQuoteSpacerHeight] = useState(8);
 
   const normalizeList = (data) => {
@@ -958,6 +990,12 @@ try {
   }, [salesUser, activeTab]);
 
   useEffect(() => {
+    if (salesUser && activeTab === "contracts") {
+      loadContracts();
+    }
+  }, [salesUser, activeTab]);
+
+  useEffect(() => {
     const currentRole = String(
       salesUser?.role ||
       salesUser?.Role ||
@@ -1329,6 +1367,477 @@ const calculateLineAmount = (item) =>
     console.error('loadQuotes error:', e);
   } finally {
     setQuoteListLoading(false);
+  }
+};
+
+const normalizeContractList = (result) => {
+  if (Array.isArray(result)) return result;
+
+  if (Array.isArray(result?.contracts)) {
+    return result.contracts;
+  }
+
+  if (Array.isArray(result?.rows)) {
+    return result.rows;
+  }
+
+  if (Array.isArray(result?.data)) {
+    return result.data;
+  }
+
+  return [];
+};
+
+const getContractId = (contract) =>
+  contract?.ContractId ??
+  contract?.contractId ??
+  null;
+
+const getContractStatus = (contract) =>
+  String(
+    contract?.Status ??
+    contract?.status ??
+    ""
+  ).toUpperCase();
+
+const isVoidedContract = (contract) =>
+  getContractStatus(contract) === "VOID";
+
+const contractStatusLabel = (status) => {
+  const normalized = String(status || "").toUpperCase();
+
+  const labels = {
+    DRAFT: "草稿",
+    ACTIVE: "生效",
+    COMPLETED: "已完成",
+    VOID: "作廢",
+  };
+
+  return labels[normalized] || normalized || "－";
+};
+
+const contractStatusClassName = (status) => {
+  const normalized = String(status || "").toUpperCase();
+
+  if (normalized === "ACTIVE") {
+    return "bg-green-100 text-green-700";
+  }
+
+  if (normalized === "COMPLETED") {
+    return "bg-blue-100 text-blue-700";
+  }
+
+  if (normalized === "VOID") {
+    return "bg-red-100 text-red-700";
+  }
+
+  return "bg-amber-100 text-amber-700";
+};
+
+const loadContracts = async () => {
+  setContractListLoading(true);
+
+  try {
+    const params = new URLSearchParams();
+
+    if (contractDateFrom) {
+      params.set("dateFrom", contractDateFrom);
+    }
+
+    if (contractDateTo) {
+      params.set("dateTo", contractDateTo);
+    }
+
+    if (contractOwnerUserId) {
+      params.set("ownerUserId", contractOwnerUserId);
+    }
+
+    if (contractKeyword.trim()) {
+      params.set("keyword", contractKeyword.trim());
+    }
+
+    params.set(
+      "hideVoided",
+      hideVoidedContracts ? "true" : "false"
+    );
+
+    const queryString = params.toString();
+
+    const result = await salesApiFetch(
+      `get-contracts${queryString ? `?${queryString}` : ""}`
+    );
+
+    setContractList(normalizeContractList(result));
+  } catch (error) {
+    console.error("loadContracts error:", error);
+    alert(error.message || "讀取合約清單失敗");
+    setContractList([]);
+  } finally {
+    setContractListLoading(false);
+  }
+};
+
+const loadContractDetail = async (contractId, options = {}) => {
+  const { openPreview = false, openEditor = false } = options;
+
+  if (!contractId) {
+    alert("找不到合約編號");
+    return null;
+  }
+
+  setContractDetailLoading(true);
+
+  try {
+    const result = await salesApiFetch(
+      `get-contract-detail?contractId=${encodeURIComponent(contractId)}`
+    );
+
+    const detail = Array.isArray(result)
+      ? result[0] || {}
+      : result || {};
+
+    const contract =
+      detail.contract ||
+      detail.Contract ||
+      detail.header ||
+      detail.data?.contract ||
+      detail.data ||
+      null;
+
+    const items =
+      detail.items ||
+      detail.Items ||
+      detail.contractItems ||
+      detail.data?.items ||
+      [];
+
+    if (!contract) {
+      throw new Error("找不到合約主檔資料");
+    }
+
+    const normalizedItems = Array.isArray(items) ? items : [];
+
+    setSelectedContractId(
+      contract.ContractId ??
+      contract.contractId ??
+      contractId
+    );
+
+    setSelectedContract(contract);
+    setSelectedContractItems(normalizedItems);
+
+    if (openPreview) {
+      setContractPreview({
+        contract,
+        items: normalizedItems,
+      });
+
+      setShowContractPreview(true);
+    }
+
+    if (openEditor) {
+      setContractForm({
+        contractId: String(
+          contract.ContractId ??
+          contract.contractId ??
+          ""
+        ),
+
+        contractNo:
+          contract.ContractNo ??
+          contract.contractNo ??
+          "",
+
+        sourceQuotationNo:
+          contract.SourceQuotationNo ??
+          contract.sourceQuotationNo ??
+          "",
+
+        customerName:
+          contract.CustomerName ??
+          contract.customerName ??
+          "",
+
+        customerCode:
+          contract.CustomerCode ??
+          contract.customerCode ??
+          "",
+
+        contractDate:
+          formatDateForInput(
+            contract.ContractDate ??
+            contract.contractDate
+          ),
+
+        effectiveStartDate:
+          formatDateForInput(
+            contract.EffectiveStartDate ??
+            contract.effectiveStartDate
+          ),
+
+        effectiveEndDate:
+          formatDateForInput(
+            contract.EffectiveEndDate ??
+            contract.effectiveEndDate
+          ),
+
+        status:
+          String(
+            contract.Status ??
+            contract.status ??
+            "DRAFT"
+          ).toUpperCase(),
+
+        paymentTerms:
+          contract.PaymentTerms ??
+          contract.paymentTerms ??
+          "",
+
+        contractTerms:
+          contract.ContractTerms ??
+          contract.contractTerms ??
+          "",
+
+        note:
+          contract.Note ??
+          contract.note ??
+          "",
+
+        ownerUserId: String(
+          contract.OwnerUserId ??
+          contract.ownerUserId ??
+          ""
+        ),
+
+        ownerName:
+          contract.OwnerName ??
+          contract.ownerName ??
+          "",
+      });
+    }
+
+    return {
+      contract,
+      items: normalizedItems,
+    };
+  } catch (error) {
+    console.error("loadContractDetail error:", error);
+    alert(error.message || "讀取合約明細失敗");
+    return null;
+  } finally {
+    setContractDetailLoading(false);
+  }
+};
+
+const convertQuoteToContract = async (quote) => {
+  const quotationId =
+    quote?.QuotationId ??
+    quote?.quotationId;
+
+  const quotationNo =
+    quote?.QuotationNo ??
+    quote?.quotationNo ??
+    "";
+
+  if (!quotationId) {
+    alert("找不到報價單編號，無法轉換合約");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `確定要將報價單「${quotationNo}」轉成合約嗎？\n\n` +
+      "系統會建立合約與合約明細快照；日後修改報價單不會自動修改合約。"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const result = await salesApiFetch(
+      "convert-quotation-to-contract",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          quotationId: Number(quotationId),
+          contractDate: new Date().toISOString().slice(0, 10),
+        }),
+      }
+    );
+
+    if (result?.success === false) {
+      throw new Error(
+        result.message || "轉換合約失敗"
+      );
+    }
+
+    const newContractId =
+      result?.contractId ??
+      result?.ContractId ??
+      null;
+
+    alert(
+      `${result?.message || "合約已建立"}\n` +
+        `合約編號：${result?.contractNo || result?.ContractNo || ""}`
+    );
+
+    setShowQuotePreview(false);
+
+    setActiveTab("contracts");
+
+    await loadContracts();
+
+    if (newContractId) {
+      await loadContractDetail(newContractId, {
+        openEditor: true,
+      });
+    }
+  } catch (error) {
+    console.error("convertQuoteToContract error:", error);
+    alert(error.message || "轉換合約失敗");
+  }
+};
+
+const saveContract = async () => {
+  if (!contractForm.contractId) {
+    alert("找不到合約編號");
+    return;
+  }
+
+  if (!contractForm.contractDate) {
+    alert("請輸入合約日期");
+    return;
+  }
+
+  if (
+    !isIsoDate(contractForm.contractDate) ||
+    !isIsoDate(contractForm.effectiveStartDate) ||
+    !isIsoDate(contractForm.effectiveEndDate)
+  ) {
+    alert("日期格式請使用 YYYY-MM-DD");
+    return;
+  }
+
+  if (
+    contractForm.effectiveStartDate &&
+    contractForm.effectiveEndDate &&
+    contractForm.effectiveStartDate > contractForm.effectiveEndDate
+  ) {
+    alert("合約起日不可晚於合約迄日");
+    return;
+  }
+
+  setContractSaving(true);
+
+  try {
+    const result = await salesApiFetch("save-contract", {
+      method: "POST",
+      body: JSON.stringify({
+        contractId: Number(contractForm.contractId),
+        contractDate: contractForm.contractDate,
+        effectiveStartDate:
+          contractForm.effectiveStartDate || null,
+        effectiveEndDate:
+          contractForm.effectiveEndDate || null,
+        status: contractForm.status,
+        paymentTerms: contractForm.paymentTerms,
+        contractTerms: contractForm.contractTerms,
+        note: contractForm.note,
+        ownerUserId: contractForm.ownerUserId
+          ? Number(contractForm.ownerUserId)
+          : null,
+      }),
+    });
+
+    if (result?.success === false) {
+      throw new Error(
+        result.message || "儲存合約失敗"
+      );
+    }
+
+    alert(result?.message || "合約資料已儲存");
+
+    await loadContracts();
+
+    await loadContractDetail(
+      Number(contractForm.contractId),
+      { openEditor: true }
+    );
+  } catch (error) {
+    console.error("saveContract error:", error);
+    alert(error.message || "儲存合約失敗");
+  } finally {
+    setContractSaving(false);
+  }
+};
+
+const voidContract = async (contract) => {
+  const contractId = getContractId(contract);
+
+  const contractNo =
+    contract?.ContractNo ??
+    contract?.contractNo ??
+    "";
+
+  if (!contractId) {
+    alert("找不到要作廢的合約");
+    return;
+  }
+
+  if (isVoidedContract(contract)) {
+    alert("此合約已經作廢");
+    return;
+  }
+
+  const voidReason = window.prompt(
+    `確定要作廢合約「${contractNo}」嗎？\n\n請輸入作廢原因：`
+  );
+
+  if (voidReason === null) {
+    return;
+  }
+
+  if (!voidReason.trim()) {
+    alert("請輸入作廢原因");
+    return;
+  }
+
+  setContractVoiding(true);
+
+  try {
+    const result = await salesApiFetch("void-contract", {
+      method: "POST",
+      body: JSON.stringify({
+        contractId: Number(contractId),
+        voidReason: voidReason.trim(),
+      }),
+    });
+
+    if (result?.success === false) {
+      throw new Error(
+        result.message || "作廢合約失敗"
+      );
+    }
+
+    alert(result?.message || "合約已作廢");
+
+    setShowContractPreview(false);
+
+    if (
+      Number(selectedContractId) === Number(contractId)
+    ) {
+      setSelectedContract(null);
+      setSelectedContractItems([]);
+      setSelectedContractId(null);
+      setContractForm(initialContractForm);
+    }
+
+    await loadContracts();
+  } catch (error) {
+    console.error("voidContract error:", error);
+    alert(error.message || "作廢合約失敗");
+  } finally {
+    setContractVoiding(false);
   }
 };
 
@@ -2417,6 +2926,16 @@ const calculateQuoteSpacer = () => {
               >
                 預覽
               </button>
+
+              {can("CONTRACT", "canCreate") && !isVoidedQuote(q) && (
+                <button
+                  type="button"
+                  onClick={() => convertQuoteToContract(q)}
+                  className="text-green-700 hover:underline"
+                >
+                  轉合約
+                </button>
+              )}
 
               <button
                 type="button"
@@ -4469,13 +4988,610 @@ const renderUserManagement = () => {
   );
 };
 
-  const renderContracts = () => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">4. 客戶合約資料專區</h2>
-      <p className="text-gray-500 mb-4">此區塊顯示已成交的報價轉換成的正式合約記錄，包含授權範圍與維護到期日。</p>
-      <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">開發建置中...</div>
+  const renderContracts = () => {
+  const canQueryContracts = can("CONTRACT", "canQuery");
+  const canUpdateContracts = can("CONTRACT", "canUpdate");
+  const canDeleteContracts = can("CONTRACT", "canDelete");
+
+  if (!canQueryContracts) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+        您沒有查詢客戶合約資料的權限。
+      </div>
+    );
+  }
+
+  const selectedIsVoided = isVoidedContract(selectedContract);
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              4. 客戶合約資料專區
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              合約由已確認報價單轉入，保留來源報價與系統明細快照。
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={loadContracts}
+            disabled={contractListLoading}
+            className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:text-gray-400"
+          >
+            {contractListLoading ? "讀取中..." : "重新整理"}
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <label className="text-sm text-gray-600">
+            合約日期起
+            <input
+              type="date"
+              value={contractDateFrom}
+              onChange={(event) =>
+                setContractDateFrom(event.target.value)
+              }
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
+
+          <label className="text-sm text-gray-600">
+            合約日期迄
+            <input
+              type="date"
+              value={contractDateTo}
+              onChange={(event) =>
+                setContractDateTo(event.target.value)
+              }
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
+
+          <label className="text-sm text-gray-600">
+            成交業務
+            <select
+              value={contractOwnerUserId}
+              onChange={(event) =>
+                setContractOwnerUserId(event.target.value)
+              }
+              className="mt-1 w-full rounded border p-2"
+            >
+              <option value="">全部</option>
+
+              {salesUserOptions.map((user) => (
+                <option
+                  key={user.UserId}
+                  value={user.UserId}
+                >
+                  {user.DisplayName}（{user.RoleCode}）
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-gray-600">
+            合約／客戶／系統搜尋
+            <input
+              value={contractKeyword}
+              onChange={(event) =>
+                setContractKeyword(event.target.value)
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  loadContracts();
+                }
+              }}
+              placeholder="合約編號、客戶或系統"
+              className="mt-1 w-full rounded border p-2"
+            />
+          </label>
+
+          <label className="flex items-center gap-2 pt-6 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={hideVoidedContracts}
+              onChange={(event) =>
+                setHideVoidedContracts(event.target.checked)
+              }
+            />
+            已作廢略
+          </label>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={loadContracts}
+              className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              查詢
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1120px] text-left text-sm">
+            <thead className="bg-gray-100 text-gray-600">
+              <tr>
+                <th className="p-3">合約編號</th>
+                <th className="p-3">合約日期</th>
+                <th className="p-3">客戶名稱</th>
+                <th className="p-3">購買系統</th>
+                <th className="p-3 text-right">合約金額</th>
+                <th className="p-3">成交業務</th>
+                <th className="p-3 text-center">狀態</th>
+                <th className="p-3 text-center">操作</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {contractListLoading ? (
+                <tr>
+                  <td
+                    colSpan="8"
+                    className="p-10 text-center text-gray-400"
+                  >
+                    合約資料讀取中...
+                  </td>
+                </tr>
+              ) : contractList.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="8"
+                    className="p-10 text-center text-gray-400"
+                  >
+                    尚無符合條件的合約資料
+                  </td>
+                </tr>
+              ) : (
+                contractList.map((contract) => {
+                  const contractId = getContractId(contract);
+                  const status = getContractStatus(contract);
+                  const isVoided = status === "VOID";
+
+                  return (
+                    <tr
+                      key={contractId}
+                      className="border-t hover:bg-blue-50"
+                    >
+                      <td className="p-3 font-medium">
+                        {contract.ContractNo ??
+                          contract.contractNo ??
+                          "－"}
+                      </td>
+
+                      <td className="p-3">
+                        {formatDateForInput(
+                          contract.ContractDate ??
+                          contract.contractDate
+                        )}
+                      </td>
+
+                      <td className="p-3">
+                        {contract.CustomerName ??
+                          contract.customerName ??
+                          "－"}
+                      </td>
+
+                      <td className="max-w-[320px] p-3">
+                        <div className="line-clamp-2">
+                          {contract.PurchasedSystems ??
+                            contract.purchasedSystems ??
+                            "－"}
+                        </div>
+                      </td>
+
+                      <td className="p-3 text-right font-medium">
+                        NT${" "}
+                        {Number(
+                          contract.FinalAmount ??
+                          contract.finalAmount ??
+                          contract.TaxIncludedAmount ??
+                          contract.taxIncludedAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-3">
+                        {contract.OwnerName ??
+                          contract.ownerName ??
+                          "－"}
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <span
+                          className={[
+                            "rounded px-2 py-1 text-xs",
+                            contractStatusClassName(status),
+                          ].join(" ")}
+                        >
+                          {contractStatusLabel(status)}
+                        </span>
+                      </td>
+
+                      <td className="p-3">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              loadContractDetail(contractId, {
+                                openPreview: true,
+                              })
+                            }
+                            className="text-blue-600 hover:underline"
+                          >
+                            預覽
+                          </button>
+
+                          {canUpdateContracts && !isVoided && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                loadContractDetail(contractId, {
+                                  openEditor: true,
+                                })
+                              }
+                              className="text-amber-600 hover:underline"
+                            >
+                              修改
+                            </button>
+                          )}
+
+                          {canDeleteContracts && !isVoided && (
+                            <button
+                              type="button"
+                              onClick={() => voidContract(contract)}
+                              disabled={contractVoiding}
+                              className="text-red-600 hover:underline disabled:text-gray-300"
+                            >
+                              作廢
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {selectedContract && (
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">
+                合約資料修改
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                合約編號：
+                {selectedContract.ContractNo ??
+                  selectedContract.contractNo ??
+                  ""}
+                {"　"}來源報價：
+                {selectedContract.SourceQuotationNo ??
+                  selectedContract.sourceQuotationNo ??
+                  ""}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedContract(null);
+                setSelectedContractItems([]);
+                setSelectedContractId(null);
+                setContractForm(initialContractForm);
+              }}
+              className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              關閉編輯
+            </button>
+          </div>
+
+          {selectedIsVoided ? (
+            <div className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              此合約已作廢，僅供檢視，不可修改。
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <label className="text-sm text-gray-700">
+                合約編號
+                <input
+                  readOnly
+                  value={contractForm.contractNo}
+                  className="mt-1 w-full rounded border bg-gray-100 p-2 text-gray-600"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                來源報價單
+                <input
+                  readOnly
+                  value={contractForm.sourceQuotationNo}
+                  className="mt-1 w-full rounded border bg-gray-100 p-2 text-gray-600"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                客戶
+                <input
+                  readOnly
+                  value={`${contractForm.customerCode} ${contractForm.customerName}`.trim()}
+                  className="mt-1 w-full rounded border bg-gray-100 p-2 text-gray-600"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                合約日期
+                <input
+                  type="date"
+                  value={contractForm.contractDate}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      contractDate: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                合約起日
+                <input
+                  type="date"
+                  value={contractForm.effectiveStartDate}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      effectiveStartDate: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                合約迄日
+                <input
+                  type="date"
+                  value={contractForm.effectiveEndDate}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      effectiveEndDate: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                合約狀態
+                <select
+                  value={contractForm.status}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      status: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                >
+                  <option value="DRAFT">草稿</option>
+                  <option value="ACTIVE">生效</option>
+                  <option value="COMPLETED">已完成</option>
+                </select>
+              </label>
+
+              <label className="text-sm text-gray-700">
+                成交業務
+                <select
+                  value={contractForm.ownerUserId}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      ownerUserId: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                >
+                  <option value="">維持原承辦業務</option>
+
+                  {salesUserOptions.map((user) => (
+                    <option
+                      key={user.UserId}
+                      value={user.UserId}
+                    >
+                      {user.DisplayName}（{user.RoleCode}）
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="text-sm text-gray-700">
+                合約金額
+                <div className="mt-1 rounded border bg-gray-100 p-2 text-right text-gray-600">
+                  NT${" "}
+                  {Number(
+                    selectedContract.FinalAmount ??
+                    selectedContract.finalAmount ??
+                    0
+                  ).toLocaleString()}
+                </div>
+              </div>
+
+              <label className="text-sm text-gray-700 md:col-span-2 xl:col-span-3">
+                付款條件
+                <textarea
+                  rows="2"
+                  value={contractForm.paymentTerms}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      paymentTerms: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700 md:col-span-2 xl:col-span-3">
+                合約條款
+                <textarea
+                  rows="5"
+                  value={contractForm.contractTerms}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      contractTerms: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                  placeholder="輸入合約的特別約定、交付範圍或其他條款..."
+                />
+              </label>
+
+              <label className="text-sm text-gray-700 md:col-span-2 xl:col-span-3">
+                內部備註
+                <textarea
+                  rows="3"
+                  value={contractForm.note}
+                  onChange={(event) =>
+                    setContractForm((prev) => ({
+                      ...prev,
+                      note: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </label>
+            </div>
+          )}
+
+          <div className="mt-6 border-t pt-5">
+            <h4 className="mb-3 font-semibold text-gray-800">
+              合約系統明細
+            </h4>
+
+            <div className="overflow-x-auto rounded border">
+              <table className="w-full min-w-[850px] text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="p-3 text-left">系統</th>
+                    <th className="p-3 text-center">類型</th>
+                    <th className="p-3 text-center">人數</th>
+                    <th className="p-3 text-right">牌價</th>
+                    <th className="p-3 text-right">優惠金額</th>
+                    <th className="p-3 text-right">最終金額</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {selectedContractItems.map((item, index) => (
+                    <tr
+                      key={
+                        item.ContractItemId ??
+                        item.contractItemId ??
+                        `${item.SystemId ?? item.systemId}-${index}`
+                      }
+                      className="border-t"
+                    >
+                      <td className="p-3">
+                        {item.SystemCode ??
+                          item.systemCode ??
+                          ""}
+                        {" "}
+                        {item.SystemName ??
+                          item.systemName ??
+                          ""}
+                      </td>
+
+                      <td className="p-3 text-center">
+                        {item.ItemType ??
+                          item.itemType ??
+                          "－"}
+                      </td>
+
+                      <td className="p-3 text-center">
+                        {item.UserCount ??
+                          item.userCount ??
+                          1}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        NT${" "}
+                        {Number(
+                          item.ListAmount ??
+                          item.listAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        NT${" "}
+                        {Number(
+                          item.DiscountAmount ??
+                          item.discountAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-3 text-right font-medium">
+                        NT${" "}
+                        {Number(
+                          item.FinalAmount ??
+                          item.finalAmount ??
+                          item.DiscountAmount ??
+                          item.discountAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {selectedContractItems.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="p-6 text-center text-gray-400"
+                      >
+                        此合約沒有系統明細
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {canUpdateContracts && !selectedIsVoided && (
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={saveContract}
+                disabled={contractSaving}
+                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {contractSaving ? "儲存中..." : "儲存合約資料"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
+};
 
   if (!salesAuthReady) {
     return (
@@ -5720,6 +6836,16 @@ const renderUserManagement = () => {
         >
           列印
         </button>
+
+        {can("CONTRACT", "canCreate") && (
+          <button
+            type="button"
+            onClick={() => convertQuoteToContract(previewQuote.quote)}
+            className="rounded-lg border border-green-600 px-5 py-2.5 text-sm font-medium text-green-700 hover:bg-green-50"
+          >
+            轉合約
+          </button>
+        )}
 
         <button
           type="button"
