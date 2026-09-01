@@ -1644,15 +1644,8 @@ const convertQuoteToContract = (quote) => {
     return;
   }
 
-  /*
-   * 不直接呼叫 API。
-   * 先開啟簽約日選擇視窗，讓使用者確認日期。
-   */
   setQuotePendingContractConversion(quote);
 
-  /*
-   * 預設填今天，但可由使用者自行選擇過去或未來日期。
-   */
   setPendingContractDate(
     new Date().toISOString().slice(0, 10)
   );
@@ -1692,12 +1685,6 @@ const confirmConvertQuoteToContract = async () => {
         method: "POST",
         body: JSON.stringify({
           quotationId: Number(quotationId),
-
-          /*
-           * 使用者在彈窗中選取的簽約日。
-           * n8n 會傳入 SQL Stored Procedure 的 @ContractDate，
-           * 合約編號也會依這個日期產生當日流水號。
-           */
           contractDate: pendingContractDate,
         }),
       }
@@ -1726,23 +1713,14 @@ const confirmConvertQuoteToContract = async () => {
         `合約編號：${newContractNo}`
     );
 
-    /*
-     * 成功後關閉簽約日選擇視窗與報價預覽。
-     */
     setShowConvertContractDialog(false);
     setQuotePendingContractConversion(null);
     setShowQuotePreview(false);
 
-    /*
-     * 切到合約專區、重整清單。
-     */
     setActiveTab("contracts");
 
     await loadContracts();
 
-    /*
-     * 若 API 回傳新合約主鍵，直接展開該筆合約資料。
-     */
     if (newContractId) {
       await loadContractDetail(newContractId, {
         openEditor: true,
