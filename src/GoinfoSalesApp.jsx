@@ -1497,23 +1497,51 @@ const loadContractDetail = async (contractId, options = {}) => {
     );
 
     const detail = Array.isArray(result)
-      ? result[0] || {}
-      : result || {};
+  ? result[0] || {}
+  : result || {};
 
-    const contract =
-      detail.contract ||
-      detail.Contract ||
-      detail.header ||
-      detail.data?.contract ||
-      detail.data ||
-      null;
+/*
+ * n8n 的 get-contract-detail 建議回傳：
+ * { success: true, contract: {...}, items: [...] }
+ *
+ * 但為了相容目前可能的不同 n8n 回傳格式，
+ * 這裡同時支援 contract、header、data、平鋪欄位。
+ */
+const candidateContract =
+  detail.contract ??
+  detail.Contract ??
+  detail.header ??
+  detail.Header ??
+  detail.data?.contract ??
+  detail.data?.Contract ??
+  detail.data?.header ??
+  detail.data?.Header ??
+  detail.data ??
+  detail;
 
-    const items =
-      detail.items ||
-      detail.Items ||
-      detail.contractItems ||
-      detail.data?.items ||
-      [];
+/*
+ * 只有真的含 ContractId / contractId 的物件才視為合約主檔。
+ * 避免把 { success: true, items: [...] } 誤當成 contract。
+ */
+const contract =
+  candidateContract &&
+  (
+    candidateContract.ContractId ??
+    candidateContract.contractId
+  )
+    ? candidateContract
+    : null;
+
+const items =
+  detail.items ??
+  detail.Items ??
+  detail.contractItems ??
+  detail.ContractItems ??
+  detail.data?.items ??
+  detail.data?.Items ??
+  detail.data?.contractItems ??
+  detail.data?.ContractItems ??
+  [];
 
     if (!contract) {
       throw new Error("找不到合約主檔資料");
