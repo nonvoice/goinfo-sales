@@ -1568,85 +1568,96 @@ const items =
     }
 
     if (openEditor) {
-      setContractForm({
-        contractId: String(
-          contract.ContractId ??
-          contract.contractId ??
-          ""
-        ),
+  const valueOrEmpty = (...values) => {
+    const found = values.find(
+      (value) =>
+        value !== null &&
+        value !== undefined
+    );
 
-        contractNo:
-          contract.ContractNo ??
-          contract.contractNo ??
-          "",
+    return found === undefined || found === null
+      ? ""
+      : String(found);
+  };
 
-        sourceQuotationNo:
-          contract.SourceQuotationNo ??
-          contract.sourceQuotationNo ??
-          "",
+  setContractForm({
+    contractId: valueOrEmpty(
+      contract.ContractId,
+      contract.contractId
+    ),
 
-        customerName:
-          contract.CustomerName ??
-          contract.customerName ??
-          "",
+    contractNo: valueOrEmpty(
+      contract.ContractNo,
+      contract.contractNo
+    ),
 
-        customerCode:
-          contract.CustomerCode ??
-          contract.customerCode ??
-          "",
+    sourceQuotationNo: valueOrEmpty(
+      contract.SourceQuotationNo,
+      contract.sourceQuotationNo,
+      contract.CurrentSourceQuotationNo,
+      contract.currentSourceQuotationNo
+    ),
 
-        contractDate:
-          formatDateForInput(
-            contract.ContractDate ??
-            contract.contractDate
-          ),
+    customerName: valueOrEmpty(
+      contract.CustomerName,
+      contract.customerName
+    ),
 
-        effectiveStartDate:
-          formatDateForInput(
-            contract.EffectiveStartDate ??
-            contract.effectiveStartDate
-          ),
+    customerCode: valueOrEmpty(
+      contract.CustomerCode,
+      contract.customerCode
+    ),
 
-        effectiveEndDate:
-          formatDateForInput(
-            contract.EffectiveEndDate ??
-            contract.effectiveEndDate
-          ),
+    contractDate:
+      formatDateForInput(
+        contract.ContractDate ??
+        contract.contractDate
+      ) || "",
 
-        status:
-          String(
-            contract.Status ??
-            contract.status ??
-            "DRAFT"
-          ).toUpperCase(),
+    effectiveStartDate:
+      formatDateForInput(
+        contract.EffectiveStartDate ??
+        contract.effectiveStartDate
+      ) || "",
 
-        paymentTerms:
-          contract.PaymentTerms ??
-          contract.paymentTerms ??
-          "",
+    effectiveEndDate:
+      formatDateForInput(
+        contract.EffectiveEndDate ??
+        contract.effectiveEndDate
+      ) || "",
 
-        contractTerms:
-          contract.ContractTerms ??
-          contract.contractTerms ??
-          "",
+    status: String(
+      contract.Status ??
+      contract.status ??
+      "DRAFT"
+    ).toUpperCase(),
 
-        note:
-          contract.Note ??
-          contract.note ??
-          "",
+    paymentTerms: valueOrEmpty(
+      contract.PaymentTerms,
+      contract.paymentTerms
+    ),
 
-        ownerUserId: String(
-          contract.OwnerUserId ??
-          contract.ownerUserId ??
-          ""
-        ),
+    contractTerms: valueOrEmpty(
+      contract.ContractTerms,
+      contract.contractTerms
+    ),
 
-        ownerName:
-          contract.OwnerName ??
-          contract.ownerName ??
-          "",
-      });
-    }
+    note: valueOrEmpty(
+      contract.Note,
+      contract.note
+    ),
+
+    ownerUserId: valueOrEmpty(
+      contract.OwnerUserId,
+      contract.ownerUserId
+    ),
+
+    ownerName: valueOrEmpty(
+      contract.OwnerName,
+      contract.ownerName
+    ),
+  });
+}
 
     return {
       contract,
