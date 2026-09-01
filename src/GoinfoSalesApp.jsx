@@ -5301,6 +5301,7 @@ const renderUserManagement = () => {
                             onClick={() =>
                               loadContractDetail(contractId, {
                                 openPreview: true,
+                        openEditor: false,
                               })
                             }
                             className="text-blue-600 hover:underline"
@@ -5313,7 +5314,8 @@ const renderUserManagement = () => {
                               type="button"
                               onClick={() =>
                                 loadContractDetail(contractId, {
-                                  openEditor: true,
+                          openPreview: false,
+                                   openEditor: true,
                                 })
                               }
                               className="text-amber-600 hover:underline"
@@ -7050,6 +7052,390 @@ const renderUserManagement = () => {
           className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400"
         >
           {contractConverting ? "建立合約中..." : "確認轉合約"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showContractPreview && contractPreview && (
+  <div
+    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-3"
+    onMouseDown={() => setShowContractPreview(false)}
+  >
+    <div
+      className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      {/* 預覽視窗標題列 */}
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3">
+        <div>
+          <h2 className="text-lg font-bold text-gray-800">
+            客戶合約預覽
+          </h2>
+
+          <p className="mt-0.5 text-xs text-gray-500">
+            合約編號：
+            {contractPreview.contract?.ContractNo ??
+              contractPreview.contract?.contractNo ??
+              "－"}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowContractPreview(false)}
+          className="text-2xl leading-none text-gray-400 hover:text-gray-700"
+          title="關閉"
+          aria-label="關閉預覽"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* 合約內容可捲動，但底部按鈕固定 */}
+      <div className="flex-1 overflow-auto bg-gray-100 p-4 sm:p-6">
+        <div className="mx-auto max-w-5xl rounded-lg border border-gray-300 bg-white p-5 text-sm shadow-sm sm:p-7">
+          {/* 合約標題 */}
+          <div className="mb-5 border-b-2 border-gray-800 pb-4 text-center">
+            <h1 className="text-2xl font-bold text-gray-900">
+              客戶合約資料
+            </h1>
+
+            <div className="mt-1 text-sm text-gray-500">
+              CUSTOMER CONTRACT
+            </div>
+          </div>
+
+          {/* 合約基本資料：完全唯讀 */}
+          <section className="mb-5">
+            <h3 className="mb-3 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+              合約基本資料
+            </h3>
+
+            <div className="grid grid-cols-1 overflow-hidden rounded-lg border border-gray-300 md:grid-cols-2">
+              <div className="border-b border-gray-300 p-3 md:border-r">
+                <div className="text-xs text-gray-500">合約編號</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.ContractNo ??
+                    contractPreview.contract?.contractNo ??
+                    "－"}
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3">
+                <div className="text-xs text-gray-500">來源報價單</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.SourceQuotationNo ??
+                    contractPreview.contract?.sourceQuotationNo ??
+                    contractPreview.contract?.CurrentSourceQuotationNo ??
+                    contractPreview.contract?.currentSourceQuotationNo ??
+                    "－"}
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3 md:border-r">
+                <div className="text-xs text-gray-500">簽約日期</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {formatDateForInput(
+                    contractPreview.contract?.ContractDate ??
+                    contractPreview.contract?.contractDate
+                  ) || "－"}
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3">
+                <div className="text-xs text-gray-500">合約狀態</div>
+                <div className="mt-1">
+                  <span
+                    className={[
+                      "rounded px-2 py-1 text-xs font-medium",
+                      contractStatusClassName(
+                        contractPreview.contract?.Status ??
+                        contractPreview.contract?.status
+                      ),
+                    ].join(" ")}
+                  >
+                    {contractStatusLabel(
+                      contractPreview.contract?.Status ??
+                      contractPreview.contract?.status
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3 md:border-r md:border-b-0">
+                <div className="text-xs text-gray-500">合約起日</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {formatDateForInput(
+                    contractPreview.contract?.EffectiveStartDate ??
+                    contractPreview.contract?.effectiveStartDate
+                  ) || "－"}
+                </div>
+              </div>
+
+              <div className="p-3">
+                <div className="text-xs text-gray-500">合約迄日</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {formatDateForInput(
+                    contractPreview.contract?.EffectiveEndDate ??
+                    contractPreview.contract?.effectiveEndDate
+                  ) || "－"}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 客戶資料：完全唯讀 */}
+          <section className="mb-5">
+            <h3 className="mb-3 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+              客戶資料
+            </h3>
+
+            <div className="grid grid-cols-1 overflow-hidden rounded-lg border border-gray-300 md:grid-cols-2">
+              <div className="border-b border-gray-300 p-3 md:border-r">
+                <div className="text-xs text-gray-500">客戶代號</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.CustomerCode ??
+                    contractPreview.contract?.customerCode ??
+                    "－"}
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3">
+                <div className="text-xs text-gray-500">客戶名稱</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.CustomerName ??
+                    contractPreview.contract?.customerName ??
+                    "－"}
+                </div>
+              </div>
+
+              <div className="border-b border-gray-300 p-3 md:border-r md:border-b-0">
+                <div className="text-xs text-gray-500">聯絡人</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.ContactName ??
+                    contractPreview.contract?.contactName ??
+                    "－"}
+                </div>
+              </div>
+
+              <div className="p-3">
+                <div className="text-xs text-gray-500">聯絡電話</div>
+                <div className="mt-1 font-medium text-gray-900">
+                  {contractPreview.contract?.CustomerTel ??
+                    contractPreview.contract?.customerTel ??
+                    "－"}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-gray-300 p-3">
+              <div className="text-xs text-gray-500">客戶地址</div>
+
+              <div className="mt-1 font-medium text-gray-900">
+                {contractPreview.contract?.CustomerAddress ??
+                  contractPreview.contract?.customerAddress ??
+                  "－"}
+              </div>
+            </div>
+          </section>
+
+          {/* 合約系統明細：完全唯讀 */}
+          <section className="mb-5">
+            <h3 className="mb-3 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+              合約系統明細
+            </h3>
+
+            <div className="overflow-x-auto rounded-lg border border-gray-300">
+              <table className="w-full min-w-[780px] border-collapse text-sm">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="border-b border-gray-300 p-3 text-left">
+                      系統
+                    </th>
+                    <th className="border-b border-gray-300 p-3 text-center">
+                      類型
+                    </th>
+                    <th className="border-b border-gray-300 p-3 text-center">
+                      授權人數
+                    </th>
+                    <th className="border-b border-gray-300 p-3 text-right">
+                      牌價
+                    </th>
+                    <th className="border-b border-gray-300 p-3 text-right">
+                      優惠金額
+                    </th>
+                    <th className="border-b border-gray-300 p-3 text-right">
+                      最終金額
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {(contractPreview.items || []).map((item, index) => (
+                    <tr
+                      key={
+                        item.ContractItemId ??
+                        item.contractItemId ??
+                        `${item.SystemId ?? item.systemId}-${index}`
+                      }
+                      className="border-b border-gray-200 last:border-b-0"
+                    >
+                      <td className="p-3">
+                        <div className="font-medium text-gray-900">
+                          {item.SystemCode ??
+                            item.systemCode ??
+                            ""}
+                          {" "}
+                          {item.SystemName ??
+                            item.systemName ??
+                            "－"}
+                        </div>
+                      </td>
+
+                      <td className="p-3 text-center">
+                        {item.ItemType ??
+                          item.itemType ??
+                          "－"}
+                      </td>
+
+                      <td className="p-3 text-center">
+                        {item.UserCount ??
+                          item.userCount ??
+                          1}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        NT${" "}
+                        {Number(
+                          item.ListAmount ??
+                          item.listAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        NT${" "}
+                        {Number(
+                          item.DiscountAmount ??
+                          item.discountAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-3 text-right font-semibold text-gray-900">
+                        NT${" "}
+                        {Number(
+                          item.FinalAmount ??
+                          item.finalAmount ??
+                          item.DiscountAmount ??
+                          item.discountAmount ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {(contractPreview.items || []).length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="p-8 text-center text-gray-400"
+                      >
+                        此合約沒有系統明細
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+
+                <tfoot className="bg-gray-50">
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="border-t border-gray-300 p-3 text-right font-bold text-gray-800"
+                    >
+                      合約總金額
+                    </td>
+
+                    <td className="border-t border-gray-300 p-3 text-right text-base font-bold text-blue-700">
+                      NT${" "}
+                      {Number(
+                        contractPreview.contract?.FinalAmount ??
+                        contractPreview.contract?.finalAmount ??
+                        contractPreview.contract?.TaxIncludedAmount ??
+                        contractPreview.contract?.taxIncludedAmount ??
+                        0
+                      ).toLocaleString()}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+
+          {/* 條款與備註：完全唯讀 */}
+          <section className="space-y-4">
+            <div>
+              <h3 className="mb-2 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+                付款條件
+              </h3>
+
+              <div className="min-h-[48px] whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-800">
+                {contractPreview.contract?.PaymentTerms ??
+                  contractPreview.contract?.paymentTerms ??
+                  "－"}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+                合約條款
+              </h3>
+
+              <div className="min-h-[96px] whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-800">
+                {contractPreview.contract?.ContractTerms ??
+                  contractPreview.contract?.contractTerms ??
+                  "－"}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 border-l-4 border-blue-600 pl-3 text-base font-bold text-gray-800">
+                內部備註
+              </h3>
+
+              <div className="min-h-[72px] whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-800">
+                {contractPreview.contract?.Note ??
+                  contractPreview.contract?.note ??
+                  "－"}
+              </div>
+            </div>
+
+            {isVoidedContract(contractPreview.contract) && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+                <div className="font-bold">此合約已作廢</div>
+
+                <div className="mt-1 whitespace-pre-wrap text-sm">
+                  作廢原因：
+                  {contractPreview.contract?.VoidReason ??
+                    contractPreview.contract?.voidReason ??
+                    "未填寫"}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* 底部操作列：預覽只提供關閉，不提供儲存或修改 */}
+      <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4">
+        <button
+          type="button"
+          onClick={() => setShowContractPreview(false)}
+          className="rounded-lg border border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+        >
+          關閉
         </button>
       </div>
     </div>
