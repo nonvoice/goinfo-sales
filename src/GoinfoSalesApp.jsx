@@ -4,6 +4,8 @@ const API_BASE = 'https://goinfosales-n8n.zeabur.app/webhook';
 console.log('Goinfo Sales frontend version: 2026-08-04-tab-fix');
 const initialSystemForm = { SystemId: '', SystemCode: '', SystemName: '', Category: '', IsActive: true, Note: '' };
 const initialRuleForm = { PricingRuleId: '', SystemId: '', RuleType: 'LICENSE', VersionNo: 1, EffectiveStartDate: new Date().toISOString().slice(0, 10), EffectiveEndDate: '', FirstUserPrice: '', AdditionalUserPrice: '', MinimumUsers: 1, IsActive: true, Remark: '' };
+const contractEditorRef = useRef(null);
+const [originalContractAmount, setOriginalContractAmount] = useState(0);
 
 const permissionFunctions = [
   { code: 'CUSTOMER', label: '潛在客戶資料建檔' },
@@ -115,6 +117,29 @@ function SalesLoginPage({ onLoginSuccess }) {
       setLoading(false);
     }
   };
+
+      const currentContractAmount = Number(
+          String(contractForm.finalAmount ?? "")
+            .replace(/,/g, "")
+            .replace(/[^\d.-]/g, "")
+        ) || 0;
+
+        const isSavedManualAmount =
+          selectedContract?.IsAmountManuallyAdjusted === true ||
+          selectedContract?.IsAmountManuallyAdjusted === 1 ||
+          selectedContract?.IsAmountManuallyAdjusted === "1" ||
+          selectedContract?.IsAmountManuallyAdjusted === "true" ||
+          selectedContract?.isAmountManuallyAdjusted === true ||
+          selectedContract?.isAmountManuallyAdjusted === 1 ||
+          selectedContract?.isAmountManuallyAdjusted === "1" ||
+          selectedContract?.isAmountManuallyAdjusted === "true";
+
+        const isUnsavedAmountChange =
+          Boolean(contractForm.contractId) &&
+          currentContractAmount !== Number(originalContractAmount || 0);
+
+        const isContractAmountModified =
+          isSavedManualAmount || isUnsavedAmountChange;
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -385,6 +410,7 @@ export default function App() {
     effectiveStartDate: "",
     effectiveEndDate: "",
     status: "DRAFT",
+    finalAmount: "",
     paymentTerms: "",
     contractTerms: "",
     note: "",
@@ -1547,6 +1573,14 @@ const items =
       throw new Error("找不到合約主檔資料");
     }
 
+    const contractAmount = Number(
+      contract.FinalAmount ??
+      contract.finalAmount ??
+      contract.TaxIncludedAmount ??
+      contract.taxIncludedAmount ??
+      0
+    );
+
     const normalizedItems = Array.isArray(items) ? items : [];
 
     setSelectedContractId(
@@ -1568,6 +1602,7 @@ const items =
     }
 
     if (openEditor) {
+ setOriginalContractAmount(contractAmount);
   const valueOrEmpty = (...values) => {
     const found = values.find(
       (value) =>
@@ -1656,7 +1691,16 @@ const items =
       contract.OwnerName,
       contract.ownerName
     ),
+
+    finalAmount: String(contractAmount),
   });
+
+    window.setTimeout(() => {
+      contractEditorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
 }
 
     return {
@@ -1822,6 +1866,8 @@ const saveContract = async () => {
         paymentTerms: contractForm.paymentTerms,
         contractTerms: contractForm.contractTerms,
         note: contractForm.note,
+        finalAmount: currentContractAmount,
+         isAmountManuallyAdjusted: isContractAmountModified,
         ownerUserId: contractForm.ownerUserId
           ? Number(contractForm.ownerUserId)
           : null,
@@ -5237,7 +5283,34 @@ const renderUserManagement = () => {
                   return (
                     <tr
                       key={contractId}
-                      className="border-t hover:bg-blue-50"
+                      onClick={() =>
+                        loadContractDetail(contractId, {
+                          openEditor: true,
+                          openPreview: false,
+                        })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+
+                          loadContractDetail(contractId, {
+                            openEditor: true,
+                            openPreview: false,
+                          });
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className={[
+                        "cursor-pointer border-t transition hover:bg-blue-50",
+                        String(
+                          selectedContract?.ContractId ??
+                          selectedContract?.contractId ??
+                          ""
+                        ) === String(contractId)
+                          ? "bg-blue-50"
+                          : "",
+                      ].join(" ")}
                     >
                       <td className="p-3 font-medium">
                         {contract.ContractNo ??
@@ -5299,6 +5372,7 @@ const renderUserManagement = () => {
                           <button
                             type="button"
                             onClick={() =>
+                     event.stopPropagation();
                               loadContractDetail(contractId, {
                                 openPreview: true,
                         openEditor: false,
@@ -5313,6 +5387,7 @@ const renderUserManagement = () => {
                             <button
                               type="button"
                               onClick={() =>
+                        event.stopPropagation();
                                 loadContractDetail(contractId, {
                           openPreview: false,
                                    openEditor: true,
@@ -5327,9 +5402,11 @@ const renderUserManagement = () => {
                           {canDeleteContracts && !isVoided && (
                             <button
                               type="button"
-                              onClick={() => voidContract(contract)}
-                              disabled={contractVoiding}
-                              className="text-red-600 hover:underline disabled:text-gray-300"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                voidContract(contract);
+                              }}
+                              className="text-red-600 hover:underline"
                             >
                               作廢
                             </button>
@@ -5500,17 +5577,54 @@ const renderUserManagement = () => {
                 </select>
               </label>
 
-              <div className="text-sm text-gray-700">
-                合約金額
-                <div className="mt-1 rounded border bg-gray-100 p-2 text-right text-gray-600">
-                  NT${" "}
-                  {Number(
-                    selectedContract.FinalAmount ??
-                    selectedContract.finalAmount ??
-                    0
-                  ).toLocaleString()}
-                </div>
-              </div>
+              <div>
+
+  <label className="block text-sm font-medium text-gray-700">
+    合約金額
+  </label>
+
+  <div className="relative mt-1">
+    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-500">
+      NT$
+    </span>
+
+    <input
+      type="text"
+      inputMode="decimal"
+      value={contractForm.finalAmount}
+      onChange={(event) => {
+        const rawValue = event.target.value.replace(/[^\d]/g, "");
+
+        setContractForm((previous) => ({
+          ...previous,
+          finalAmount: rawValue,
+        }));
+      }}
+      placeholder="請輸入合約金額"
+      className={[
+        "w-full rounded border p-2 pl-12 pr-3 text-right outline-none transition",
+        isContractAmountModified
+          ? "border-red-400 bg-red-50 font-semibold text-red-600 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          : "border-gray-300 bg-white text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+      ].join(" ")}
+    />
+  </div>
+
+  {isContractAmountModified ? (
+    <p className="mt-1 text-xs font-medium text-red-600">
+      已手動修改合約金額：原金額 NT$
+      {" "}
+      {Number(originalContractAmount || 0).toLocaleString()}
+      ，目前金額 NT$
+      {" "}
+      {currentContractAmount.toLocaleString()}
+    </p>
+  ) : (
+    <p className="mt-1 text-xs text-gray-500">
+      此金額預設由合約系統明細加總帶入；如有議價或特殊調整，可直接修改。
+    </p>
+  )}
+</div>
 
               <label className="text-sm text-gray-700 md:col-span-2 xl:col-span-3">
                 付款條件
